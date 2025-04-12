@@ -71,4 +71,7 @@ dependencies {
 
     implementation(libs.vico.compose.m3)
     implementation(libs.vico.views)
+
+    implementation(libs.ar.core)
+    implementation(libs.ar.sceneview)
 }
