@@ -99,14 +99,14 @@ fun HomeScreen (
                 modelLoader = modelLoader,
                 collisionSystem = collisionSystem,
                 sessionConfiguration = { session, config ->
+                    config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
                     config.depthMode =
                         when (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
                             true -> Config.DepthMode.AUTOMATIC
                             else -> Config.DepthMode.DISABLED
                         }
                     config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
-                    config.lightEstimationMode =
-                        Config.LightEstimationMode.ENVIRONMENTAL_HDR
+                    config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                 },
                 cameraNode = cameraNode,
                 planeRenderer = planeRenderer,
@@ -115,7 +115,8 @@ fun HomeScreen (
                 },
                 onSessionUpdated = { session, updatedFrame ->
                     frame = updatedFrame
-
+                    // Colocar automaticamente un modelo al detectar plano
+                    /*
                     if (childNodes.isEmpty()) {
                         updatedFrame.getUpdatedPlanes()
                             .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
@@ -128,7 +129,7 @@ fun HomeScreen (
                                     anchor = anchor
                                 )
                             }
-                    }
+                    }*/
                 },
                 onGestureListener = rememberOnGestureListener(
                     onSingleTapConfirmed = { motionEvent, node ->
@@ -136,12 +137,12 @@ fun HomeScreen (
                             val hitResults = frame?.hitTest(motionEvent.x, motionEvent.y)
                             hitResults?.firstOrNull {
                                 it.isValid(
-                                    depthPoint = false,
-                                    point = false
+                                    depthPoint = true,
+                                    point = true
                                 )
                             }?.createAnchorOrNull()
                                 ?.let { anchor ->
-                                    planeRenderer = false
+                                    //planeRenderer = false desactivar puntos de deteccion
                                     childNodes += createAnchorNode(
                                         engine = engine,
                                         modelLoader = modelLoader,
@@ -163,7 +164,7 @@ fun HomeScreen (
                 fontSize = 28.sp,
                 color = Color.White,
                 text = trackingFailureReason?.getDescription(LocalContext.current) ?: if (childNodes.isEmpty()) {
-                    "Telefono Down"
+                    "Busque un plano horizontal o vertical"
                 } else {
                     "Click para agregar"
                 }
