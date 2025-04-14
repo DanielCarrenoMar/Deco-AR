@@ -25,7 +25,7 @@ fun NavigationWrapper() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = Home,
+        startDestination = Catalog,
         enterTransition = { fadeIn(animationSpec = tween(700)) },
         exitTransition = { fadeOut(animationSpec = tween(700)) },
         popEnterTransition = {fadeIn(animationSpec = tween(0))},

@@ -21,19 +21,42 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.app.homear.ui.component.NavBard
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import java.io.File
+import java.io.FileOutputStream
+
+fun saveFileToMedia(context: Context, fileName: String, fileContent: ByteArray): String? {
+    val mediaDir = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)?.parentFile?.parentFile
+        ?.resolve("media/com.app.homear")
+
+    if (mediaDir != null && !mediaDir.exists()) {
+        mediaDir.mkdirs() // Crea la carpeta si no existe
+    }
+
+    return try {
+        val file = File(mediaDir, fileName)
+        FileOutputStream(file).use { output ->
+            output.write(fileContent)
+        }
+        file.absolutePath // Retorna la ruta del archivo guardado
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
 
 @Composable
 fun CatalogScreen (
     navigateToHome: () -> Unit,
 ){
-
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
 
     // Configurar el launcher para seleccionar archivos
@@ -70,17 +93,11 @@ fun CatalogScreen (
             val context = LocalContext.current
             val fileName = uri.lastPathSegment?.substringAfterLast("/") ?: "archivo_seleccionado.glb"
             val inputStream = context.contentResolver.openInputStream(uri)
-            val modelsDir = File(context.filesDir, "models") // Selecciona la carpeta models
-            if (!modelsDir.exists()) {
-                modelsDir.mkdir() // La crea y la selecciona si no existe
-            }
-            val outputFile = File(modelsDir, fileName) // Guarda el archivo en la carpeta 'models'
-            inputStream?.use { input ->
-                outputFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            Text(text = "Archivo guardado en: ${outputFile.absolutePath}")
+            val filePath = inputStream?.use { stream ->
+                saveFileToMedia(context, fileName, stream.readBytes())
+            } ?: "Error: No se pudo leer el archivo"
+
+            Text(text = "Archivo guardado en: $filePath")
         }
 
 
