@@ -62,7 +62,6 @@ fun isArCoreSupported(context: Context): Boolean {
     return availability.isSupported
 }
 
-@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
 fun HomeScreen (
     navigateToCatalog: () -> Unit,
@@ -218,7 +217,6 @@ fun HomeScreen (
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 fun createAnchorNode(
     engine: Engine,
     modelLoader: ModelLoader,
