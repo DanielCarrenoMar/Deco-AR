@@ -1,5 +1,6 @@
 package com.app.homear.ui.home
 
+import android.util.Log
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -135,6 +136,7 @@ fun HomeScreen (
                     onSingleTapConfirmed = { motionEvent, node ->
                         if (node == null) {
                             val hitResults = frame?.hitTest(motionEvent.x, motionEvent.y)
+                            Log.d("AR_DEBUG", "Detectado tap en coordenadas (${motionEvent.x}, ${motionEvent.y})")
                             hitResults?.firstOrNull {
                                 it.isValid(
                                     depthPoint = true,
@@ -224,13 +226,16 @@ fun createAnchorNode(
     modelInstances: MutableList<ModelInstance>,
     anchor: Anchor
 ): AnchorNode {
+    Log.d("AR_DEBUG", "Entrando a createAnchorNode")
+
     val anchorNode = AnchorNode(engine = engine, anchor = anchor)
     val modelNode = ModelNode(
         modelInstance = modelInstances.apply {
             if (isEmpty()) {
+                Log.d("AR_DEBUG", "Cargando nuevo modelo desde archivo: $kModelFile")
                 this += modelLoader.createInstancedModel(kModelFile, kMaxModelInstances)
             }
-        }.removeLast(),
+        }.removeAt(modelInstances.size - 1),
         // Scale to fit in a 0.5 meters cube
         scaleToUnits = 0.5f
     ).apply {
@@ -253,5 +258,6 @@ fun createAnchorNode(
             boundingBoxNode.isVisible = editingTransforms.isNotEmpty()
         }
     }
+    Log.d("AR_DEBUG", "createAnchorNode completado exitosamente")
     return anchorNode
 }
