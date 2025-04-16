@@ -84,7 +84,7 @@ fun HomeScreen (
             val view = rememberView(engine)
             val collisionSystem = rememberCollisionSystem(view)
 
-            var planeRenderer by remember { mutableStateOf(true) }
+            var planeRenderer = remember { mutableStateOf(true) }
 
             val modelInstances = remember { mutableListOf<ModelInstance>() }
             var trackingFailureReason by remember {
@@ -109,7 +109,7 @@ fun HomeScreen (
                     config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                 },
                 cameraNode = cameraNode,
-                planeRenderer = planeRenderer,
+                planeRenderer = planeRenderer.value,
                 onTrackingFailureChanged = {
                     trackingFailureReason = it
                 },
@@ -169,6 +169,22 @@ fun HomeScreen (
                     "Click para agregar"
                 }
             )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(60.dp)
+                    .padding(bottom = 70.dp),
+                verticalArrangement = Arrangement.Bottom
+            ) {
+                androidx.compose.material3.Button(
+                    onClick = { planeRenderer.value = !planeRenderer.value},
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = if (planeRenderer.value) Color.Green else Color.Red
+                    )
+                ) {
+                    Text(text = if (planeRenderer.value) "Desactivar Plano" else "Activar Plano")
+                }
+            }
         }
     }else {
         Column (
