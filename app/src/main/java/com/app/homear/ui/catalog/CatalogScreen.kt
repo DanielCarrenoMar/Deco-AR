@@ -26,37 +26,46 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import java.io.File
 import java.io.FileOutputStream
 
 fun saveFileToMedia(context: Context, fileName: String, fileContent: ByteArray): String? {
-    val mediaDir = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)?.parentFile?.parentFile
-        ?.resolve("media/com.app.homear")
+    val mediaDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
 
-    if (mediaDir != null && !mediaDir.exists()) {
-        mediaDir.mkdirs() // Crea la carpeta si no existe
-    }
-
-    return try {
+    try {
         val file = File(mediaDir, fileName)
         FileOutputStream(file).use { output ->
             output.write(fileContent)
         }
-        file.absolutePath // Retorna la ruta del archivo guardado
+        return file.absolutePath
     } catch (e: Exception) {
-        e.printStackTrace()
-        null
+        Log.e("FileSave", "Error saving file: ${e.message}")
     }
+    return null
 }
 
 @Composable
 fun CatalogScreen (
     navigateToHome: () -> Unit,
+    viewModel: CatalogViewModel = hiltViewModel(),
 ){
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.getAllModelFiles(context)
+        }
+    }
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
 
     // Configurar el launcher para seleccionar archivos
