@@ -23,42 +23,71 @@ import com.app.homear.ui.component.NavBard
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 
 fun saveFileToMedia(context: Context, fileName: String, fileContent: ByteArray): String? {
-    val mediaDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+    val mediaDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)?.parentFile?.parentFile
+        ?.resolve("media")
 
-    try {
+    if (mediaDir != null && !mediaDir.exists()) {
+        mediaDir.mkdirs() // Crea la carpeta si no existe
+    }
+
+    return try {
         val file = File(mediaDir, fileName)
         FileOutputStream(file).use { output ->
             output.write(fileContent)
         }
-        return file.absolutePath
+        file.absolutePath // Retorna la ruta del archivo guardado
     } catch (e: Exception) {
-        Log.e("FileSave", "Error saving file: ${e.message}")
+        e.printStackTrace()
+        null
     }
-    return null
+}
+
+fun getMediaFiles(context: Context): List<File> {
+    val mediaDir = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)?.parentFile?.parentFile
+        ?.resolve("media")
+
+    return mediaDir?.listFiles()?.filter { it.isFile } ?: emptyList()
 }
 
 @Composable
-fun CatalogScreen (
+fun CatalogScreen(
     navigateToHome: () -> Unit,
     viewModel: CatalogViewModel = hiltViewModel(),
-){
+) {
+    val showDialog = remember { mutableStateOf(false) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(viewModel) {
@@ -89,7 +118,10 @@ fun CatalogScreen (
             val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                 type = "*/*"
                 addCategory(Intent.CATEGORY_OPENABLE)
-                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("model/gltf-binary", "application/octet-stream"))
+                putExtra(
+                    Intent.EXTRA_MIME_TYPES,
+                    arrayOf("model/gltf-binary", "application/octet-stream")
+                )
             }
             filePickerLauncher.launch(intent)
         }) {
@@ -100,7 +132,15 @@ fun CatalogScreen (
         // EL localContext es parA localizar todo lo referente a las rutas del proyecto actual
         selectedFileUri?.let { uri ->
             val context = LocalContext.current
-            val fileName = uri.lastPathSegment?.substringAfterLast("/") ?: "archivo_seleccionado.glb"
+            // En caso de tener problemas para obtener el nombre con la URI
+            val fileName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                val nameIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME)
+                if (nameIndex != -1 && cursor.moveToFirst()) {
+                    cursor.getString(nameIndex)
+                } else {
+                    "archivo_seleccionado.glb"
+                }
+            } ?: "archivo_seleccionado.glb"
             val inputStream = context.contentResolver.openInputStream(uri)
             val filePath = inputStream?.use { stream ->
                 saveFileToMedia(context, fileName, stream.readBytes())
@@ -109,38 +149,53 @@ fun CatalogScreen (
             Text(text = "Archivo guardado en: $filePath")
         }
 
+        val context = LocalContext.current
+        val mediaFiles = remember { getMediaFiles(context) }
 
 
         // Layout para mostrar el grid con la vista previa de los modelos (aún no he puesto la vista previa ya que no hemos definido donde se van a guardar los modelos)
         LazyVerticalGrid(
             columns = GridCells.Fixed(2), // 2 Columnas
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 116.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Por los momentos solo cargo 6 elementos
-            items(6) { index ->
+            items(mediaFiles.size) { index ->
+                val file = mediaFiles[index]
                 Box(
                     modifier = Modifier
                         .background(color = Color(0xFFefefef))
                         .fillMaxSize()
                         .height(100.dp)
                         .width(100.dp)
+                        .clickable(
+                            enabled = true
+                        ) {
+                            showDialog.value = true
+                        }
                 ) {
-                    Text(
-                        text = "Item ${index + 1}", // Texto que se muestra en cada elemento
-                        color = Color.Black,
-                        modifier = Modifier.align(Alignment.Center)
+                    val painter =
+                        rememberImagePainter(data = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhMeyVirGc0WA_ev1-BX5W9DtsSrHsaaXCe2SmUcPI-N7soXsxZZv8-n1n18Uhjz_syxbkpB-lM9hslx8-8ts-cRyPJAl1kDPwe7mMfdvkz8abyL6iJeF18pV6t6rp7vexPy_Z4/s1600/imagenes-gratis-para-ver-y-compartir-en-facebook-y-google+-fotos-free-photos-to-share+(1).jpg")
+                    Image(
+                        painter = painter,
+                        contentDescription = "Imagen cargada de internet",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
         }
     }
 
-    Column (
-        modifier = Modifier.fillMaxSize().zIndex(1f),
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(1f),
         verticalArrangement = Arrangement.Bottom
-    ){
+    ) {
         NavBard(
             items = listOf(
                 NavBard.NavBarItem(
@@ -156,6 +211,36 @@ fun CatalogScreen (
             )
         )
     }
+
+    if (showDialog.value) {
+        Dialog(onDismissRequest = { showDialog.value = false }) {
+            Column(
+                modifier = Modifier
+                    .background(Color.White)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "¿Quieres descargar este recurso?",
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    Button(modifier = Modifier.padding(end = 32.dp),
+                        onClick = {
+                        }) {
+                        Text(text = "Descargar")
+                    }
+                    Button(onClick = { showDialog.value = false }) {
+                        Text(text = "Cerrar")
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 // Para previsualizar el frontend
