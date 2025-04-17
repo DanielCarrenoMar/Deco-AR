@@ -37,9 +37,7 @@ fun NavigationWrapper() {
         }
 
         composable<Catalog> {
-            CatalogScreen {
-                navController.navigatePop(Home)
-            }
+            CatalogScreen ({ navController.navigatePop(Home) })
         }
 
     }
