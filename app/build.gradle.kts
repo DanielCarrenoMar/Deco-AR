@@ -74,4 +74,5 @@ dependencies {
 
     implementation(libs.ar.core)
     implementation(libs.ar.sceneview)
+    implementation(libs.coil.compose)
 }
