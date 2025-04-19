@@ -4,19 +4,13 @@ import android.util.Log
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,6 +47,8 @@ import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberNodes
 import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberView
+import kotlin.math.sqrt
+import io.github.sceneview.node.SphereNode
 
 private const val kModelFile = "models/apple.glb"
 private const val kMaxModelInstances = 10
@@ -63,19 +59,16 @@ fun isArCoreSupported(context: Context): Boolean {
 }
 
 @Composable
-fun HomeScreen (
+fun HomeScreen(
     navigateToCatalog: () -> Unit,
-    //viewModel: HomeViewModel = hiltViewModel()
-){
+) {
     val context = LocalContext.current
-    var haveAr by remember { mutableStateOf(isArCoreSupported(context)) }
+    val haveAr by remember { mutableStateOf(isArCoreSupported(context)) }
 
-    if (haveAr){
+    if (haveAr) {
         Box(
             modifier = Modifier.fillMaxSize(),
         ) {
-            // The destroy calls are automatically made when their disposable effect leaves
-            // the composition or its key changes.
             val engine = rememberEngine()
             val modelLoader = rememberModelLoader(engine)
             val materialLoader = rememberMaterialLoader(engine)
@@ -84,13 +77,20 @@ fun HomeScreen (
             val view = rememberView(engine)
             val collisionSystem = rememberCollisionSystem(view)
 
-            var planeRenderer = remember { mutableStateOf(true) }
+            val planeRenderer = remember { mutableStateOf(true) }
 
             val modelInstances = remember { mutableListOf<ModelInstance>() }
-            var trackingFailureReason by remember {
-                mutableStateOf<TrackingFailureReason?>(null)
-            }
+            var trackingFailureReason by remember { mutableStateOf<TrackingFailureReason?>(null) }
             var frame by remember { mutableStateOf<Frame?>(null) }
+
+            var isMeasuring by remember { mutableStateOf(false) }
+            var firstAnchor: Anchor? by remember { mutableStateOf(null) }
+            var secondAnchor: Anchor? by remember { mutableStateOf(null) }
+            var measuredDistance by remember { mutableStateOf<Float?>(null) }
+            val measurementHistory = remember { mutableStateListOf<Float>() }
+            var showHistory by remember { mutableStateOf(false) }
+            val measurementPoints = remember { mutableListOf<AnchorNode>() }
+
             ARScene(
                 modifier = Modifier.fillMaxSize(),
                 childNodes = childNodes,
@@ -101,10 +101,8 @@ fun HomeScreen (
                 sessionConfiguration = { session, config ->
                     config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
                     config.depthMode =
-                        when (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-                            true -> Config.DepthMode.AUTOMATIC
-                            else -> Config.DepthMode.DISABLED
-                        }
+                        if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) Config.DepthMode.AUTOMATIC
+                        else Config.DepthMode.DISABLED
                     config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
                     config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                 },
@@ -115,35 +113,47 @@ fun HomeScreen (
                 },
                 onSessionUpdated = { session, updatedFrame ->
                     frame = updatedFrame
-                    // Colocar automaticamente un modelo al detectar plano
-                    /*
-                    if (childNodes.isEmpty()) {
-                        updatedFrame.getUpdatedPlanes()
-                            .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
-                            ?.let { it.createAnchorOrNull(it.centerPose) }?.let { anchor ->
-                                childNodes += createAnchorNode(
-                                    engine = engine,
-                                    modelLoader = modelLoader,
-                                    materialLoader = materialLoader,
-                                    modelInstances = modelInstances,
-                                    anchor = anchor
-                                )
-                            }
-                    }*/
                 },
                 onGestureListener = rememberOnGestureListener(
                     onSingleTapConfirmed = { motionEvent, node ->
                         if (node == null) {
                             val hitResults = frame?.hitTest(motionEvent.x, motionEvent.y)
-                            Log.d("AR_DEBUG", "Detectado tap en coordenadas (${motionEvent.x}, ${motionEvent.y})")
                             hitResults?.firstOrNull {
-                                it.isValid(
-                                    depthPoint = true,
-                                    point = true
-                                )
-                            }?.createAnchorOrNull()
-                                ?.let { anchor ->
-                                    //planeRenderer = false desactivar puntos de deteccion
+                                it.isValid(depthPoint = true, point = true)
+                            }?.createAnchorOrNull()?.let { anchor ->
+                                if (isMeasuring) {
+                                    if (firstAnchor == null) {
+                                        firstAnchor = anchor
+                                        // Crear y agregar punto visual para el primer anclaje
+                                        val pointNode = createMeasurementPointNode(
+                                            engine = engine,
+                                            materialLoader = materialLoader,
+                                            anchor = anchor
+                                        )
+                                        childNodes += pointNode
+                                        measurementPoints.add(pointNode)
+                                    } else {
+                                        secondAnchor = anchor
+                                        // Crear y agregar punto visual para el segundo anclaje
+                                        val pointNode = createMeasurementPointNode(
+                                            engine = engine,
+                                            materialLoader = materialLoader,
+                                            anchor = anchor
+                                        )
+                                        childNodes += pointNode
+                                        measurementPoints.add(pointNode)
+
+                                        val pose1 = firstAnchor!!.pose
+                                        val pose2 = secondAnchor!!.pose
+                                        val dx = pose1.tx() - pose2.tx()
+                                        val dy = pose1.ty() - pose2.ty()
+                                        val dz = pose1.tz() - pose2.tz()
+                                        measuredDistance = sqrt(dx * dx + dy * dy + dz * dz)
+                                        measuredDistance?.let { measurementHistory.add(it) }
+                                        firstAnchor = null
+                                        secondAnchor = null
+                                    }
+                                } else {
                                     childNodes += createAnchorNode(
                                         engine = engine,
                                         modelLoader = modelLoader,
@@ -152,9 +162,34 @@ fun HomeScreen (
                                         anchor = anchor
                                     )
                                 }
+                            }
                         }
                     })
             )
+
+            // Puntero visual en forma de cruz en el centro de la pantalla
+            val pointerColor = if (isMeasuring) Color.Cyan else Color.Red
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(40.dp)
+                    .zIndex(2f),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .height(24.dp)
+                        .background(pointerColor)
+                )
+                Box(
+                    modifier = Modifier
+                        .height(2.dp)
+                        .width(24.dp)
+                        .background(pointerColor)
+                )
+            }
+
             Text(
                 modifier = Modifier
                     .systemBarsPadding()
@@ -170,6 +205,20 @@ fun HomeScreen (
                     "Click para agregar"
                 }
             )
+
+            measuredDistance?.let { distance ->
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(top = 640.dp),
+                    text = "Distancia: ${"%.2f".format(distance)} m",
+                    textAlign = TextAlign.Center,
+                    fontSize = 20.sp,
+                    color = Color.Yellow
+                )
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -177,29 +226,97 @@ fun HomeScreen (
                     .padding(bottom = 70.dp),
                 verticalArrangement = Arrangement.Bottom
             ) {
-                androidx.compose.material3.Button(
-                    onClick = { planeRenderer.value = !planeRenderer.value},
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                Button(
+                    onClick = { planeRenderer.value = !planeRenderer.value },
+                    colors = ButtonDefaults.buttonColors(
                         containerColor = if (planeRenderer.value) Color.Green else Color.Red
                     )
                 ) {
                     Text(text = if (planeRenderer.value) "Desactivar Plano" else "Activar Plano")
                 }
+
+                Button(
+                    onClick = {
+                        isMeasuring = !isMeasuring
+                        firstAnchor = null
+                        secondAnchor = null
+                        measuredDistance = null
+                        // Limpiar puntos de medición cuando se desactiva el modo
+                        if (!isMeasuring) {
+                            measurementPoints.forEach { point ->
+                                childNodes.remove(point)
+                            }
+                            measurementPoints.clear()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isMeasuring) Color(0xFF64B5F6) else Color.Gray
+                    )
+                ) {
+                    Text(text = if (isMeasuring) "Modo MediciÃ³n: ON" else "Modo MediciÃ³n: OFF")
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 96.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Button(onClick = { showHistory = !showHistory }) {
+                        Text(text = "Historial")
+                    }
+                    if (showHistory) {
+                        Box(
+                            modifier = Modifier
+                                .background(Color.DarkGray.copy(alpha = 0.9f))
+                                .padding(8.dp)
+                                .zIndex(2f)
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.Start
+                            ) {
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .height(150.dp)
+                                        .width(200.dp)
+                                ) {
+                                    items(measurementHistory) { dist ->
+                                        Text(
+                                            text = "${"%.2f".format(dist)} m",
+                                            color = Color.White,
+                                            fontSize = 16.sp
+                                        )
+                                    }
+                                }
+                                Button(
+                                    onClick = { measurementHistory.clear() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                                    modifier = Modifier.padding(top = 8.dp)
+                                ) {
+                                    Text(text = "Limpiar", color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
-    }else {
-        Column (
+    } else {
+        Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center
-        ){
-            Text(text = "ARCore no está soportado en este dispositivo.")
+        ) {
+            Text(text = "ARCore no estÃ¡ soportado en este dispositivo.")
         }
     }
 
-    Column (
+    Column(
         modifier = Modifier.fillMaxSize().zIndex(1f),
         verticalArrangement = Arrangement.Bottom
-    ){
+    ) {
         NavBard(
             items = listOf(
                 NavBard.NavBarItem(
@@ -234,10 +351,8 @@ fun createAnchorNode(
                 this += modelLoader.createInstancedModel(kModelFile, kMaxModelInstances)
             }
         }.removeAt(modelInstances.size - 1),
-        // Scale to fit in a 0.5 meters cube
         scaleToUnits = 0.5f
     ).apply {
-        // Model Node needs to be editable for independent rotation from the anchor rotation
         isEditable = true
     }
     val boundingBoxNode = CubeNode(
@@ -257,5 +372,20 @@ fun createAnchorNode(
         }
     }
     Log.d("AR_DEBUG", "createAnchorNode completado exitosamente")
+    return anchorNode
+}
+
+fun createMeasurementPointNode(
+    engine: Engine,
+    materialLoader: MaterialLoader,
+    anchor: Anchor
+): AnchorNode {
+    val anchorNode = AnchorNode(engine = engine, anchor = anchor)
+    val sphereNode = SphereNode(
+        engine = engine,
+        radius = 0.05f, // Tamaño pequeño para el punto
+        materialInstance = materialLoader.createColorInstance(Color.Cyan.copy(alpha = 0.8f))
+    )
+    anchorNode.addChildNode(sphereNode)
     return anchorNode
 }
