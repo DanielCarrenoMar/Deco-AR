@@ -1,6 +1,6 @@
 package com.app.homear.di
 
-import com.app.homear.data.repository.LocalStorageRepositoryImpl
+import com.app.homear.data.database.repository.LocalStorageRepositoryImpl
 import com.app.homear.domain.repository.LocalStorageRepository
 import dagger.Binds
 import dagger.Module

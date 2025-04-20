@@ -20,8 +20,7 @@ ksp = "2.1.10-1.0.30"
 vico = "2.1.0"
 arCore = "1.48.0"
 arSceneView = "2.2.1"
-
-#roomVersion = "2.6.1"
+roomVersion = "2.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,10 +50,9 @@ vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", ve
 vico-views = { group = "com.patrykandpatrick.vico", name = "views", version.ref = "vico" }
 ar-core = { group = "com.google.ar", name = "core", version.ref = "arCore" }
 ar-sceneview = { group = "io.github.sceneview", name = "arsceneview", version.ref = "arSceneView" }
-
-#androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
-#androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
-#androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
