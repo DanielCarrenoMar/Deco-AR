@@ -27,9 +27,10 @@ class LocalStorageRepositoryImpl @Inject constructor(
                    keywords = stringToHashSet(fModelEntity.keywords),
                    modelPath = File(fModelEntity.modelPath),
                    imagePath = File(fModelEntity.imagePath),
-                   height = fModelEntity.heigth,
+                   height = fModelEntity.height,
                    width = fModelEntity.width,
                    length = fModelEntity.length,
+                   superficie = fModelEntity.superficie
                )
            }
         }catch (e: Exception){

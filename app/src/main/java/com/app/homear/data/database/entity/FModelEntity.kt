@@ -5,6 +5,7 @@ import android.icu.text.ListFormatter.Width
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.app.homear.domain.model.Superficie
 
 @Entity(tableName = "fmodel")
 data class FModelEntity (
@@ -16,7 +17,8 @@ data class FModelEntity (
     @ColumnInfo(name = "keywords") val keywords: String,
     @ColumnInfo(name = "modelPath") val modelPath: String,
     @ColumnInfo(name = "imagePath") val imagePath: String,
-    @ColumnInfo(name = "heigth") val heigth: Float,
+    @ColumnInfo(name = "height") val height: Float,
     @ColumnInfo(name = "width") val width: Float,
     @ColumnInfo(name = "length") val length: Float,
+    @ColumnInfo(name = "superficie") val superficie: Superficie
 )
