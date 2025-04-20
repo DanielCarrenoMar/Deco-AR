@@ -1,5 +1,5 @@
 package com.app.homear.domain.model
 
-data class 3DModelModel (
+data class FModelModel (
 
 )
