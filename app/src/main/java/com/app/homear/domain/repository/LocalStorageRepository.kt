@@ -11,7 +11,7 @@ interface LocalStorageRepository {
 
     suspend fun getAllFModels(): List<FModelModel>
     suspend fun insertFModel(fModel: FModelModel): Long
-    suspend fun updateFModelById(fModelId: Int, name: String, description: String): Int
+    suspend fun updateFModelById(fModelId: Int, name: String, description: String): Boolean
     suspend fun deleteAllFModels(): Int
-    suspend fun deleteFModelFromId(fModelId: Int): Int
+    suspend fun deleteFModelFromId(fModelId: Int): Boolean
 }
