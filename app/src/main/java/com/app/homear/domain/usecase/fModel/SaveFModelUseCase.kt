@@ -13,7 +13,7 @@ class SaveFModelUseCase @Inject constructor(
     operator fun invoke(fModelModel: FModelModel): Flow<Resource<Long>> = channelFlow {
         try {
             send(Resource.Loading())
-            val data = repository.insertFModel(fModelModel)
+            val data = repository.saveFModel(fModelModel)
             if (data.toInt() != -1){
                 send(
                     Resource.Success(data = data)
