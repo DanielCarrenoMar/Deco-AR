@@ -1,4 +1,4 @@
-package com.app.homear.domain.usecase
+package com.app.homear.domain.usecase.fModel
 
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.repository.LocalStorageRepository
@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 
-class ExampleUseCase @Inject constructor(
+class DeleteAllFModelsUseCase @Inject constructor(
     private val repository: LocalStorageRepository
 ) {
     operator fun invoke(): Flow<Resource<Int>> = channelFlow {
@@ -14,7 +14,7 @@ class ExampleUseCase @Inject constructor(
             send(Resource.Loading())
             send(
                 Resource.Success(
-                    data = 1 //Respuesta
+                    data = repository.deleteAllFModels()
                 )
             )
         } catch (e: Exception) {
