@@ -1,5 +1,6 @@
 package com.app.homear.domain.usecase.fModel
 
+import android.util.Log
 import com.app.homear.domain.model.FModelModel
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.repository.LocalStorageRepository
@@ -18,6 +19,7 @@ class SaveFModelUseCase @Inject constructor(
                 send(
                     Resource.Success(data = data)
                 )
+                Log.i("SaveFModelUseCase", "model guardado")
             } else {
                 send(
                     Resource.Error("Save fModel Error")
