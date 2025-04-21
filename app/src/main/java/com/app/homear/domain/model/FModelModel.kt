@@ -6,6 +6,13 @@ import java.io.File
 /**
  * File Model Model contiene la informacion que se mostrara de los modelso 3D
  */
+public final enum class Superficie(){
+    PISO,
+    TECHO,
+    PARED,
+    TODAS
+}
+
 data class FModelModel (
     val name: String,
     val description: String,
@@ -16,7 +23,8 @@ data class FModelModel (
     val height: Float,
     val width: Float,
     val length: Float,
-){
+    val superficie: Superficie
+    ){
     companion object {
         val DEFAULT = FModelModel(
             name = "Vacio",
@@ -28,6 +36,7 @@ data class FModelModel (
             height = 0f,
             width = 0f,
             length = 0f,
+            superficie = Superficie.TODAS
         )
     }
 }
@@ -43,5 +52,6 @@ fun FModelModel.toFModelEntity(): FModelEntity{
         height = this.height,
         width = this.width,
         length = this.length,
+        superficie = superficie
     )
 }
