@@ -1,27 +1,24 @@
-package com.app.homear.domain.usecase
+package com.app.homear.domain.usecase.fModel
 
-import com.app.homear.domain.model.FModelModel
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.repository.LocalStorageRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import java.io.File
 import javax.inject.Inject
 
-class SaveFModelsCase @Inject constructor(
+class UpdateFModelUseCase @Inject constructor(
     private val repository: LocalStorageRepository
 ) {
-    operator fun invoke(fModelModel: FModelModel): Flow<Resource<Long>> = channelFlow {
+    operator fun invoke(fModelId: Int, name: String, description: String): Flow<Resource<Unit>> = channelFlow {
         try {
             send(Resource.Loading())
-            val data = repository.insertFModel(fModelModel)
-            if (data.toInt() != -1){
+            if (repository.updateFModelById(fModelId, name, description)){
                 send(
-                    Resource.Success(data = data)
+                    Resource.Success(data = Unit)
                 )
             } else {
                 send(
-                    Resource.Error("Save fModel Error")
+                    Resource.Error("Update grade Error")
                 )
             }
         } catch (e: Exception) {

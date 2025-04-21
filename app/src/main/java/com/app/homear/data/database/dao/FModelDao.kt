@@ -28,5 +28,5 @@ interface FModelDao {
     suspend fun deleteFModelFromId(fModelId: Int): Int
 
     @Query("SELECT * FROM fmodel WHERE id = :fModelId")
-    suspend fun getModelFromId(fModelId: Int): FModelEntity?
+    suspend fun getFModelFromId(fModelId: Int): FModelEntity?
 }

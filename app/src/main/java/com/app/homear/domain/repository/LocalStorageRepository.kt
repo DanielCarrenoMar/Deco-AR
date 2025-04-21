@@ -10,7 +10,8 @@ interface LocalStorageRepository {
     suspend fun getAllFilesTypeFromDir(directory: String, type: String): List<File>
 
     suspend fun getAllFModels(): List<FModelModel>
-    suspend fun insertFModel(fModel: FModelModel): Long
+    suspend fun getFModelById(fModelId: Int): FModelModel?
+    suspend fun saveFModel(fModelModel: FModelModel): Long
     suspend fun updateFModelById(fModelId: Int, name: String, description: String): Boolean
     suspend fun deleteAllFModels(): Int
     suspend fun deleteFModelFromId(fModelId: Int): Boolean

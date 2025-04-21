@@ -1,26 +1,26 @@
-package com.app.homear.domain.usecase
+package com.app.homear.domain.usecase.fModel
 
 import com.app.homear.domain.model.FModelModel
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.repository.LocalStorageRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import java.io.File
 import javax.inject.Inject
 
-class DeleteFModelsFromIdCase @Inject constructor(
+class GetFModelFromIdUseCase @Inject constructor(
     private val repository: LocalStorageRepository
 ) {
-    operator fun invoke(fModelId:Int): Flow<Resource<Unit>> = channelFlow {
+    operator fun invoke(fModelId: Int): Flow<Resource<FModelModel>> = channelFlow {
         try {
             send(Resource.Loading())
-            if (repository.deleteFModelFromId(fModelId)){
+            val fModel = repository.getFModelById(fModelId)
+            if (fModel != null){
                 send(
-                    Resource.Success(Unit)
+                    Resource.Success(fModel)
                 )
             }else{
                 send(
-                    Resource.Error("Delete fModel id: $fModelId Error")
+                    Resource.Error("Get fModel id: $fModelId Error")
                 )
             }
         } catch (e: Exception) {
