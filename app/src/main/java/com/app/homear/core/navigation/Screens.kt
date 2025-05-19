@@ -7,3 +7,6 @@ object Home
 
 @Serializable
 object Catalog
+
+@Serializable
+object Configuracion

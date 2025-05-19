@@ -11,6 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import com.app.homear.ui.catalog.CatalogScreen
 import com.app.homear.ui.home.HomeScreen
 
+
 /**
  * Navega a una pantalla borrandola de la pila de pantallas
  */
@@ -39,6 +40,7 @@ fun NavigationWrapper() {
         composable<Catalog> {
             CatalogScreen ({ navController.navigatePop(Home) })
         }
+
 
     }
 }
