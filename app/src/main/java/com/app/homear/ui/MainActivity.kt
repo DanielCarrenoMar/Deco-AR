@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.app.homear.core.navigation.NavigationWrapper
 import com.app.homear.ui.theme.HomeARTheme
+import com.google.firebase.Firebase
+import com.google.firebase.database.database
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -19,6 +21,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             HomeARTheme {
+                val database = Firebase.database
+                val myRef = database.getReference("message")
+
+                myRef.setValue("Hello, World!")
                 NavigationWrapper()
             }
         }

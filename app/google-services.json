@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBVTJV2pMt5yUZsahhwLqrldN6q4Jz1eTs"
+          "current_key": "${BuildConfig.API_GOOGLE_SERVICES}"
         }
       ],
       "services": {
