@@ -21,6 +21,8 @@ roomVersion = "2.7.0"
 arSceneView = "2.2.1"
 arCore = "1.48.0"
 coilCompose = "2.6.0"
+googleServices = "4.4.2"
+firebase = "33.13.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -53,6 +55,8 @@ ar-sceneview = { group = "io.github.sceneview", name = "arsceneview", version.re
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -61,4 +65,5 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 jetbrainsKotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 android-hilt = { id = "com.google.dagger.hilt.android", version.ref = "hiltAndroid" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 
