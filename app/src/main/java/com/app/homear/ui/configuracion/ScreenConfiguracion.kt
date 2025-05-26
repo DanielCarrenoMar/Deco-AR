@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun ScrennConfiguracion()
+fun ConfigurationScreenn()
 {
 
 
@@ -113,5 +113,5 @@ fun OptionConfiguracion(nombre: String, idImagen: Int)
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    ScrennConfiguracion()
+    ConfigurationScreenn()
 }
