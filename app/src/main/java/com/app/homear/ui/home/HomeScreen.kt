@@ -3,6 +3,7 @@ package com.app.homear.ui.home
 import android.util.Log
 import android.content.Context
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -205,6 +206,30 @@ fun HomeScreen(
                     "Click para agregar"
                 }
             )
+
+            //Botón de screenshot
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                val context = LocalContext.current
+
+                Button(
+                    modifier = Modifier
+                        .align(Alignment.TopStart),
+                    onClick = {
+                        Toast.makeText(
+                            context,
+                            "Has tomado una foto",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                ) {
+                    Text(text = "Foto")
+                }
+            }
+
+
 
             measuredDistance?.let { distance ->
                 Text(
