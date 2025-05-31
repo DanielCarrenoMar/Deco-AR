@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "558180511983",
-    "project_id": "decorar-ids-ucab",
-    "storage_bucket": "decorar-ids-ucab.firebasestorage.app"
+    "project_number": "853819546635",
+    "project_id": "decorar-ids-ucab-c908f",
+    "storage_bucket": "decorar-ids-ucab-c908f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:558180511983:android:cd2ad51e6329fa1807eb1a",
+        "mobilesdk_app_id": "1:853819546635:android:fd9132047aefa308a03b0e",
         "android_client_info": {
           "package_name": "com.app.homear"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "${BuildConfig.API_GOOGLE_SERVICES}"
+          "current_key": "AIzaSyCirdbukmI_Ub1ZO0aaeQ4DNzGwUhzRpxk"
         }
       ],
       "services": {
