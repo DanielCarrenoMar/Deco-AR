@@ -9,7 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.app.homear.ui.catalog.CatalogScreen
-import com.app.homear.ui.home.HomeScreen
+import com.app.homear.ui.camera.HomeScreen
 
 
 /**
@@ -31,14 +31,14 @@ fun NavigationWrapper() {
         exitTransition = { fadeOut(animationSpec = tween(700)) },
         popEnterTransition = {fadeIn(animationSpec = tween(0))},
     ) {
-        composable<Home> {
+        composable<Camera> {
             HomeScreen{
                 navController.navigate(Catalog)
             }
         }
 
         composable<Catalog> {
-            CatalogScreen ({ navController.navigatePop(Home) })
+            CatalogScreen ({ navController.navigatePop(Camera) })
         }
 
 
