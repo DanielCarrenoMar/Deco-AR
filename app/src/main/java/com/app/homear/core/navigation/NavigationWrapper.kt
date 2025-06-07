@@ -9,7 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.app.homear.ui.screens.catalog.CatalogScreen
-import com.app.homear.ui.screens.camera.HomeScreen
+import com.app.homear.ui.screens.camera.CameraScreen
 import com.app.homear.ui.screens.configuracion.ConfigurationScreenn
 import com.app.homear.ui.screens.loading.LoadingScreen
 import com.app.homear.ui.screens.login.LoginScreen
@@ -54,9 +54,9 @@ fun NavigationWrapper() {
         }
 
         composable<Camera> {
-            HomeScreen{
+            CameraScreen({
                 navController.navigate(Catalog)
-            }
+            })
         }
 
         composable<Catalog> {

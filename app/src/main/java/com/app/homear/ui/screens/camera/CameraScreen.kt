@@ -17,7 +17,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.homear.ui.component.NavBard
+import com.app.homear.ui.screens.catalog.CatalogViewModel
 import com.google.android.filament.Engine
 import com.google.ar.core.Anchor
 import com.google.ar.core.ArCoreApk
@@ -45,20 +47,13 @@ import io.github.sceneview.rememberView
 import kotlin.math.sqrt
 import io.github.sceneview.node.SphereNode
 
-private const val kModelFile = "models/apple.glb"
-private const val kMaxModelInstances = 10
-
-fun isArCoreSupported(context: Context): Boolean {
-    val availability = ArCoreApk.getInstance().checkAvailability(context)
-    return availability.isSupported
-}
-
 @Composable
-fun HomeScreen(
+fun CameraScreen(
     navigateToCatalog: () -> Unit,
+    viewModel: CameraViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val haveAr by remember { mutableStateOf(isArCoreSupported(context)) }
+    val haveAr by remember { mutableStateOf(viewModel.isArCoreSupported(context)) }
 
     if (haveAr) {
         Box(
@@ -71,20 +66,6 @@ fun HomeScreen(
             val childNodes = rememberNodes()
             val view = rememberView(engine)
             val collisionSystem = rememberCollisionSystem(view)
-
-            val planeRenderer = remember { mutableStateOf(true) }
-
-            val modelInstances = remember { mutableListOf<ModelInstance>() }
-            var trackingFailureReason by remember { mutableStateOf<TrackingFailureReason?>(null) }
-            var frame by remember { mutableStateOf<Frame?>(null) }
-
-            var isMeasuring by remember { mutableStateOf(false) }
-            var firstAnchor: Anchor? by remember { mutableStateOf(null) }
-            var secondAnchor: Anchor? by remember { mutableStateOf(null) }
-            var measuredDistance by remember { mutableStateOf<Float?>(null) }
-            val measurementHistory = remember { mutableStateListOf<Float>() }
-            var showHistory by remember { mutableStateOf(false) }
-            val measurementPoints = remember { mutableListOf<AnchorNode>() }
 
             ARScene(
                 modifier = Modifier.fillMaxSize(),
@@ -102,58 +83,58 @@ fun HomeScreen(
                     config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                 },
                 cameraNode = cameraNode,
-                planeRenderer = planeRenderer.value,
+                planeRenderer = viewModel.planeRenderer.value,
                 onTrackingFailureChanged = {
-                    trackingFailureReason = it
+                    viewModel.trackingFailureReason.value = it
                 },
                 onSessionUpdated = { session, updatedFrame ->
-                    frame = updatedFrame
+                    viewModel.frame.value = updatedFrame
                 },
                 onGestureListener = rememberOnGestureListener(
                     onSingleTapConfirmed = { motionEvent, node ->
                         if (node == null) {
-                            val hitResults = frame?.hitTest(motionEvent.x, motionEvent.y)
+                            val hitResults = viewModel.frame.value?.hitTest(motionEvent.x, motionEvent.y)
                             hitResults?.firstOrNull {
                                 it.isValid(depthPoint = true, point = true)
                             }?.createAnchorOrNull()?.let { anchor ->
-                                if (isMeasuring) {
-                                    if (firstAnchor == null) {
-                                        firstAnchor = anchor
+                                if (viewModel.isMeasuring.value) {
+                                    if (viewModel.firstAnchor.value == null) {
+                                        viewModel.firstAnchor.value = anchor
                                         // Crear y agregar punto visual para el primer anclaje
-                                        val pointNode = createMeasurementPointNode(
+                                        val pointNode = viewModel.createMeasurementPointNode(
                                             engine = engine,
                                             materialLoader = materialLoader,
                                             anchor = anchor
                                         )
                                         childNodes += pointNode
-                                        measurementPoints.add(pointNode)
+                                        viewModel.measurementPoints.add(pointNode)
                                     } else {
-                                        secondAnchor = anchor
+                                        viewModel.secondAnchor.value = anchor
                                         // Crear y agregar punto visual para el segundo anclaje
-                                        val pointNode = createMeasurementPointNode(
+                                        val pointNode = viewModel.createMeasurementPointNode(
                                             engine = engine,
                                             materialLoader = materialLoader,
                                             anchor = anchor
                                         )
                                         childNodes += pointNode
-                                        measurementPoints.add(pointNode)
+                                        viewModel.measurementPoints.add(pointNode)
 
-                                        val pose1 = firstAnchor!!.pose
-                                        val pose2 = secondAnchor!!.pose
+                                        val pose1 = viewModel.firstAnchor.value!!.pose
+                                        val pose2 = viewModel.secondAnchor.value!!.pose
                                         val dx = pose1.tx() - pose2.tx()
                                         val dy = pose1.ty() - pose2.ty()
                                         val dz = pose1.tz() - pose2.tz()
-                                        measuredDistance = sqrt(dx * dx + dy * dy + dz * dz)
-                                        measuredDistance?.let { measurementHistory.add(it) }
-                                        firstAnchor = null
-                                        secondAnchor = null
+                                        viewModel.measuredDistance.value = sqrt(dx * dx + dy * dy + dz * dz)
+                                        viewModel.measuredDistance.value?.let { viewModel.measurementHistory.add(it) }
+                                        viewModel.firstAnchor.value = null
+                                        viewModel.secondAnchor.value = null
                                     }
                                 } else {
-                                    childNodes += createAnchorNode(
+                                    childNodes += viewModel.createAnchorNode(
                                         engine = engine,
                                         modelLoader = modelLoader,
                                         materialLoader = materialLoader,
-                                        modelInstances = modelInstances,
+                                        modelInstances = viewModel.modelInstances,
                                         anchor = anchor
                                     )
                                 }
@@ -163,7 +144,7 @@ fun HomeScreen(
             )
 
             // Puntero visual en forma de cruz en el centro de la pantalla
-            val pointerColor = if (isMeasuring) Color.Cyan else Color.Red
+            val pointerColor = if (viewModel.isMeasuring.value) Color.Cyan else Color.Red
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -194,7 +175,7 @@ fun HomeScreen(
                 textAlign = TextAlign.Center,
                 fontSize = 28.sp,
                 color = Color.White,
-                text = trackingFailureReason?.getDescription(LocalContext.current) ?: if (childNodes.isEmpty()) {
+                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?: if (childNodes.isEmpty()) {
                     "Busque un plano horizontal o vertical"
                 } else {
                     "Click para agregar"
@@ -225,7 +206,7 @@ fun HomeScreen(
 
 
 
-            measuredDistance?.let { distance ->
+            viewModel.measuredDistance.value?.let { distance ->
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -246,33 +227,33 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.Bottom
             ) {
                 Button(
-                    onClick = { planeRenderer.value = !planeRenderer.value },
+                    onClick = { viewModel.planeRenderer.value = !viewModel.planeRenderer.value },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (planeRenderer.value) Color.Green else Color.Red
+                        containerColor = if (viewModel.planeRenderer.value) Color.Green else Color.Red
                     )
                 ) {
-                    Text(text = if (planeRenderer.value) "Desactivar Plano" else "Activar Plano")
+                    Text(text = if (viewModel.planeRenderer.value) "Desactivar Plano" else "Activar Plano")
                 }
 
                 Button(
                     onClick = {
-                        isMeasuring = !isMeasuring
-                        firstAnchor = null
-                        secondAnchor = null
-                        measuredDistance = null
+                        viewModel.isMeasuring.value = !viewModel.isMeasuring.value
+                        viewModel.firstAnchor.value = null
+                        viewModel.secondAnchor.value = null
+                        viewModel.measuredDistance.value = null
                         // Limpiar puntos de medición cuando se desactiva el modo
-                        if (!isMeasuring) {
-                            measurementPoints.forEach { point ->
+                        if (!viewModel.isMeasuring.value) {
+                            viewModel.measurementPoints.forEach { point ->
                                 childNodes.remove(point)
                             }
-                            measurementPoints.clear()
+                            viewModel.measurementPoints.clear()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isMeasuring) Color(0xFF64B5F6) else Color.Gray
+                        containerColor = if (viewModel.isMeasuring.value) Color(0xFF64B5F6) else Color.Gray
                     )
                 ) {
-                    Text(text = if (isMeasuring) "Modo MediciÃ³n: ON" else "Modo MediciÃ³n: OFF")
+                    Text(text = if (viewModel.isMeasuring.value) "Modo MediciÃ³n: ON" else "Modo MediciÃ³n: OFF")
                 }
             }
 
@@ -284,10 +265,10 @@ fun HomeScreen(
                 Column(
                     horizontalAlignment = Alignment.End
                 ) {
-                    Button(onClick = { showHistory = !showHistory }) {
+                    Button(onClick = { viewModel.showHistory.value = !viewModel.showHistory.value }) {
                         Text(text = "Historial")
                     }
-                    if (showHistory) {
+                    if (viewModel.showHistory.value) {
                         Box(
                             modifier = Modifier
                                 .background(Color.DarkGray.copy(alpha = 0.9f))
@@ -302,7 +283,7 @@ fun HomeScreen(
                                         .height(150.dp)
                                         .width(200.dp)
                                 ) {
-                                    items(measurementHistory) { dist ->
+                                    items(viewModel.measurementHistory) { dist ->
                                         Text(
                                             text = "${"%.2f".format(dist)} m",
                                             color = Color.White,
@@ -311,7 +292,7 @@ fun HomeScreen(
                                     }
                                 }
                                 Button(
-                                    onClick = { measurementHistory.clear() },
+                                    onClick = { viewModel.measurementHistory.clear() },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
                                     modifier = Modifier.padding(top = 8.dp)
                                 ) {
@@ -353,58 +334,4 @@ fun HomeScreen(
     }
 }
 
-fun createAnchorNode(
-    engine: Engine,
-    modelLoader: ModelLoader,
-    materialLoader: MaterialLoader,
-    modelInstances: MutableList<ModelInstance>,
-    anchor: Anchor
-): AnchorNode {
-    Log.d("AR_DEBUG", "Entrando a createAnchorNode")
 
-    val anchorNode = AnchorNode(engine = engine, anchor = anchor)
-    val modelNode = ModelNode(
-        modelInstance = modelInstances.apply {
-            if (isEmpty()) {
-                Log.d("AR_DEBUG", "Cargando nuevo modelo desde archivo: $kModelFile")
-                this += modelLoader.createInstancedModel(kModelFile, kMaxModelInstances)
-            }
-        }.removeAt(modelInstances.size - 1),
-        scaleToUnits = 0.5f
-    ).apply {
-        isEditable = true
-    }
-    val boundingBoxNode = CubeNode(
-        engine,
-        size = modelNode.extents,
-        center = modelNode.center,
-        materialInstance = materialLoader.createColorInstance(Color.White.copy(alpha = 0.5f))
-    ).apply {
-        isVisible = false
-    }
-    modelNode.addChildNode(boundingBoxNode)
-    anchorNode.addChildNode(modelNode)
-
-    listOf(modelNode, anchorNode).forEach {
-        it.onEditingChanged = { editingTransforms ->
-            boundingBoxNode.isVisible = editingTransforms.isNotEmpty()
-        }
-    }
-    Log.d("AR_DEBUG", "createAnchorNode completado exitosamente")
-    return anchorNode
-}
-
-fun createMeasurementPointNode(
-    engine: Engine,
-    materialLoader: MaterialLoader,
-    anchor: Anchor
-): AnchorNode {
-    val anchorNode = AnchorNode(engine = engine, anchor = anchor)
-    val sphereNode = SphereNode(
-        engine = engine,
-        radius = 0.05f, // Tamaño pequeño para el punto
-        materialInstance = materialLoader.createColorInstance(Color.Cyan.copy(alpha = 0.8f))
-    )
-    anchorNode.addChildNode(sphereNode)
-    return anchorNode
-}
