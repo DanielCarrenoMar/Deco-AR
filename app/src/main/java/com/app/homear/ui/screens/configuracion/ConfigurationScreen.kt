@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun ConfigurationScreenn()
+fun ConfigurationScreen()
 {
 
 
@@ -89,7 +89,7 @@ fun ConfigurationScreenn()
 
 
 /**
- * esta funcion es para celdas estaticas
+ * Esta funcion es para celdas estaticas
 esta funcion composable define a las celdas de las opciones
 @param nombre: define el texto que va a tener la opcion
 @param idImagen: recibe la direccion de donde esta almacenado el icono de la opcion,
@@ -356,5 +356,5 @@ fun OptionConfiguracionDropMenu(nombre: String, idImagen: Int, opciones: List<St
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    ConfigurationScreenn()
+    ConfigurationScreen()
 }
