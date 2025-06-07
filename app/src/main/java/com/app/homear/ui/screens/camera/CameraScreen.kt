@@ -48,7 +48,10 @@ import kotlin.math.sqrt
 
 @Composable
 fun CameraScreen(
+    navigateToTutorial: () -> Unit,
     navigateToCatalog: () -> Unit,
+    navigateToProfile: () -> Unit,
+    navigateToConfiguration: () -> Unit,
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -317,7 +320,11 @@ fun CameraScreen(
         verticalArrangement = Arrangement.Bottom
     ) {
         NavBard(
-            toCatalog = navigateToCatalog
+            toCamera = null,
+            toTutorial = navigateToTutorial,
+            toCatalog = navigateToCatalog,
+            toProfile = navigateToProfile,
+            toConfiguration = navigateToConfiguration,
         )
     }
 }

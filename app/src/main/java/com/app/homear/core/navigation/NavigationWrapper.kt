@@ -10,7 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.app.homear.ui.screens.catalog.CatalogScreen
 import com.app.homear.ui.screens.camera.CameraScreen
-import com.app.homear.ui.screens.configuracion.ConfigurationScreenn
+import com.app.homear.ui.screens.configuracion.ConfigurationScreen
 import com.app.homear.ui.screens.loading.LoadingScreen
 import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
@@ -55,25 +55,48 @@ fun NavigationWrapper() {
         }
 
         composable<Tutorial> {
-            TutorialScreen ()
+            TutorialScreen (
+                { navController.navigatePop(Catalog) },
+                { navController.navigatePop(Camera) },
+                { navController.navigatePop(Profile) },
+                { navController.navigatePop(Configuration) },
+            )
         }
 
         composable<Camera> {
-            CameraScreen({
-                navController.navigate(Catalog)
-            })
+            CameraScreen(
+                { navController.navigatePop(Tutorial) },
+                { navController.navigate(Catalog) },
+                { navController.navigatePop(Profile) },
+                { navController.navigatePop(Configuration) },
+            )
         }
 
         composable<Catalog> {
-            CatalogScreen ({ navController.navigatePop(Camera) })
+            CatalogScreen (
+                { navController.navigatePop(Tutorial) },
+                { navController.navigatePop(Camera) },
+                { navController.navigatePop(Profile) },
+                { navController.navigatePop(Configuration) },
+            )
         }
 
         composable<Profile> {
-            ProfileScreen ()
+            ProfileScreen (
+                { navController.navigatePop(Tutorial) },
+                { navController.navigatePop(Catalog) },
+                { navController.navigatePop(Camera) },
+                { navController.navigatePop(Configuration) },
+            )
         }
 
         composable<Configuration> {
-            ConfigurationScreenn ()
+            ConfigurationScreen(
+                { navController.navigatePop(Tutorial) },
+                { navController.navigatePop(Catalog) },
+                { navController.navigatePop(Camera) },
+                { navController.navigatePop(Profile) },
+            )
         }
 
     }

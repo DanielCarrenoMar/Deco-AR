@@ -1,8 +1,5 @@
 package com.app.homear.ui.screens.configuracion
 
-
-
-
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -40,12 +37,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.app.homear.ui.component.NavBard
+import com.app.homear.ui.screens.profile.ProfileViewModel
 
 @Composable
-fun ConfigurationScreen()
-{
-
-
+fun ConfigurationScreen(
+    navigateToTutorial: () -> Unit,
+    navigateToCatalog: () -> Unit,
+    navigateToCamera: () -> Unit,
+    navigateToProfile: () -> Unit,
+    viewModel: ConfigurationViewModel = hiltViewModel()
+) {
     Box(
         contentAlignment = Alignment.TopCenter,
         modifier = Modifier
@@ -84,6 +87,13 @@ fun ConfigurationScreen()
             OptionConfiguracion("AYUDA", R.drawable.icono_error)
             OptionConfiguracion("SOBRE NOSOTROS", R.drawable.icono_group)
         }
+        NavBard(
+            toCamera = navigateToCamera,
+            toTutorial = navigateToTutorial,
+            toCatalog = navigateToCatalog,
+            toProfile = navigateToProfile,
+            toConfiguration = null,
+        )
     }
 }
 
@@ -349,12 +359,4 @@ fun OptionConfiguracionDropMenu(nombre: String, idImagen: Int, opciones: List<St
 
     //este es el margin entre los elementos
     Spacer(modifier = Modifier.height(10.dp))
-}
-
-
-//composable para preview de la pantalla
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ConfigurationScreen()
 }
