@@ -16,6 +16,9 @@ object Login
 object Register
 
 @Serializable
+object Tutorial
+
+@Serializable
 object Camera
 
 @Serializable

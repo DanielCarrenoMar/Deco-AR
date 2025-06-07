@@ -16,6 +16,7 @@ import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
 import com.app.homear.ui.screens.register.RegisterScreen
 import com.app.homear.ui.screens.request.RequestScreen
+import com.app.homear.ui.screens.tutorial.TutorialScreen
 
 
 /**
@@ -51,6 +52,10 @@ fun NavigationWrapper() {
 
         composable<Register> {
             RegisterScreen ()
+        }
+
+        composable<Tutorial> {
+            TutorialScreen ()
         }
 
         composable<Camera> {
