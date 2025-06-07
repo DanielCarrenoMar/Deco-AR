@@ -2,14 +2,10 @@ package com.app.homear.ui.screens.camera
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
-import com.app.homear.domain.usecase.GetModelFilesFromDirUseCase
 import com.google.android.filament.Engine
 import com.google.ar.core.Anchor
 import com.google.ar.core.ArCoreApk
