@@ -10,6 +10,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.app.homear.ui.screens.catalog.CatalogScreen
 import com.app.homear.ui.screens.camera.HomeScreen
+import com.app.homear.ui.screens.configuracion.ConfigurationScreenn
+import com.app.homear.ui.screens.loading.LoadingScreen
+import com.app.homear.ui.screens.login.LoginScreen
+import com.app.homear.ui.screens.profile.ProfileScreen
+import com.app.homear.ui.screens.register.RegisterScreen
+import com.app.homear.ui.screens.request.RequestScreen
 
 
 /**
@@ -31,6 +37,22 @@ fun NavigationWrapper() {
         exitTransition = { fadeOut(animationSpec = tween(700)) },
         popEnterTransition = {fadeIn(animationSpec = tween(0))},
     ) {
+        composable<Loading> {
+            LoadingScreen ()
+        }
+
+        composable<Request> {
+            RequestScreen()
+        }
+
+        composable<Login> {
+            LoginScreen()
+        }
+
+        composable<Register> {
+            RegisterScreen ()
+        }
+
         composable<Camera> {
             HomeScreen{
                 navController.navigate(Catalog)
@@ -41,6 +63,13 @@ fun NavigationWrapper() {
             CatalogScreen ({ navController.navigatePop(Camera) })
         }
 
+        composable<Profile> {
+            ProfileScreen ()
+        }
+
+        composable<Configuration> {
+            ConfigurationScreenn ()
+        }
 
     }
 }
