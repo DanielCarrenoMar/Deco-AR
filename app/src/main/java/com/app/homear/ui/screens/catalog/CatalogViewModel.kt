@@ -1,8 +1,7 @@
-package com.app.homear.ui.catalog
+package com.app.homear.ui.screens.catalog
 
 import android.content.Context
 import android.os.Environment
-import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

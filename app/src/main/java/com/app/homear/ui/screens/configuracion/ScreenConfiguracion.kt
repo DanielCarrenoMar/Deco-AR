@@ -1,4 +1,4 @@
-package com.app.homear.ui.configuracion
+package com.app.homear.ui.screens.configuracion
 
 
 

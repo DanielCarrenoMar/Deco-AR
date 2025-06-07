@@ -1,4 +1,4 @@
-package com.app.homear.ui.camera
+package com.app.homear.ui.screens.camera
 
 import android.util.Log
 import android.content.Context

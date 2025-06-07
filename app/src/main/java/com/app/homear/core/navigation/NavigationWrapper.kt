@@ -8,8 +8,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.app.homear.ui.catalog.CatalogScreen
-import com.app.homear.ui.camera.HomeScreen
+import com.app.homear.ui.screens.catalog.CatalogScreen
+import com.app.homear.ui.screens.camera.HomeScreen
 
 
 /**
