@@ -317,18 +317,7 @@ fun CameraScreen(
         verticalArrangement = Arrangement.Bottom
     ) {
         NavBard(
-            items = listOf(
-                NavBard.NavBarItem(
-                    title = "Home",
-                    icon = -1,
-                    onClick = null
-                ),
-                NavBard.NavBarItem(
-                    title = "Catalogo",
-                    icon = -1,
-                    onClick = navigateToCatalog
-                )
-            )
+            toCatalog = navigateToCatalog
         )
     }
 }
