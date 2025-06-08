@@ -7,9 +7,6 @@ import kotlinx.serialization.Serializable
 object Loading
 
 @Serializable
-object Request
-
-@Serializable
 object Login
 
 @Serializable

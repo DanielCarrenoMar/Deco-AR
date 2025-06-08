@@ -42,12 +42,10 @@ fun NavigationWrapper() {
             LoadingScreen ()
         }
 
-        composable<Request> {
-            RequestScreen()
-        }
-
         composable<Login> {
-            LoginScreen()
+            LoginScreen(
+                { navController.navigatePop(Tutorial) },
+            )
         }
 
         composable<Register> {
