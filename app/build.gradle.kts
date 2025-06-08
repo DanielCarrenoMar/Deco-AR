@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.auth.ktx)
+    implementation(libs.androidx.runtime.livedata)
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.hilt.android)
@@ -70,6 +71,7 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.material.icons.extended)
 
     implementation(libs.material)
     implementation(libs.androidx.activity)
