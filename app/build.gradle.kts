@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,11 +7,16 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinSerialization)
     alias(libs.plugins.kotlin.ksp)
     alias(libs.plugins.android.hilt)
+    alias(libs.plugins.google.services)
 }
 
 android {
     namespace = "com.app.homear"
     compileSdk = 35
+
+    val file = rootProject.file("local.properties")
+    val properties = Properties()
+    properties.load(file.inputStream())
 
     defaultConfig {
         applicationId = "com.app.homear"
@@ -17,6 +24,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField("String", "API_GOOGLE_SERVICES", properties.getProperty("API_GOOGLE_SERVICES"))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -43,12 +52,17 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
 dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
+    implementation(libs.firebase.database)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.androidx.runtime.livedata)
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.hilt.android)
@@ -57,6 +71,7 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.material.icons.extended)
 
     implementation(libs.material)
     implementation(libs.androidx.activity)
@@ -83,4 +98,6 @@ dependencies {
     implementation(libs.ar.core)
     implementation(libs.ar.sceneview)
     implementation(libs.coil.compose)
+
+    implementation(platform(libs.firebase.bom))
 }
