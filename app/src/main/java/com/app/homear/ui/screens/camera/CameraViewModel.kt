@@ -12,6 +12,7 @@ import com.google.ar.core.ArCoreApk
 import com.google.ar.core.Frame
 import com.google.ar.core.TrackingFailureReason
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
@@ -19,14 +20,27 @@ import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.CubeNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.SphereNode
+import io.github.sceneview.rememberEngine
+import io.github.sceneview.rememberMaterialLoader
+import io.github.sceneview.rememberModelLoader
 import javax.inject.Inject
+
+data class ARModel(
+    val name: String,
+    val modelPath: String,
+)
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
 
 ): ViewModel(){
     // Testing
-    private val kModelFile = "models/apple.glb"
+    private val kModelFile: String
+        get() {
+            val path = selectedModel.value?.modelPath ?: "models/Duck.glb"
+            Log.d("AR_DEBUG", "kModelFile getter - Path seleccionado: $path")
+            return path
+        }
     private val kMaxModelInstances = 10
 
 
@@ -60,6 +74,38 @@ class CameraViewModel @Inject constructor(
     val showHistory = _showHistory
     private val _measurementPoints = mutableStateListOf<AnchorNode>()
     val measurementPoints = _measurementPoints
+
+    // Estado para el menú desplegable
+    var isDropdownExpanded = mutableStateOf(false)
+    var selectedModel = mutableStateOf<ARModel?>(null)
+        set(value) {
+            Log.d("AR_DEBUG", "Cambiando modelo seleccionado a: ${value.value?.name}, path: ${value.value?.modelPath}")
+            field = value
+        }
+
+    // Lista de modelos disponibles
+    val availableModels = listOf(
+        ARModel(
+            name = "Mueble Moderno",
+            modelPath = "models/Mueble-1.glb"
+        ),
+        ARModel(
+            name = "BoomBox Retro",
+            modelPath = "models/BoomBox.glb"
+        ),
+        ARModel(
+            name = "Caja Decorativa",
+            modelPath = "models/Box.glb"
+        ),
+        ARModel(
+            name = "Decoración Apple",
+            modelPath = "models/apple.glb"
+        ),
+        ARModel(
+            name = "Pato Decorativo",
+            modelPath = "models/Duck.glb"
+        )
+    )
 
     fun isArCoreSupported(context: Context): Boolean {
         val availability = ArCoreApk.getInstance().checkAvailability(context)

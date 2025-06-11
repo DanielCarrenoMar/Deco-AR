@@ -1,10 +1,12 @@
 package com.app.homear.ui.screens.camera
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,9 +16,10 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +48,59 @@ import io.github.sceneview.rememberNodes
 import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberView
 import kotlin.math.sqrt
+
+@Composable
+private fun ModelSelector(
+    viewModel: CameraViewModel,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Button(
+            onClick = { viewModel.isDropdownExpanded.value = !viewModel.isDropdownExpanded.value },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = viewModel.selectedModel.value?.name ?: "Seleccionar modelo",
+                    modifier = Modifier.weight(3f)
+                )
+                Icon(
+                    imageVector = if (viewModel.isDropdownExpanded.value) 
+                        Icons.Default.KeyboardArrowUp 
+                    else 
+                        Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Expandir menú"
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = viewModel.isDropdownExpanded.value,
+            onDismissRequest = { viewModel.isDropdownExpanded.value = false },
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.surface)
+                .width(250.dp)
+        ) {
+            viewModel.availableModels.forEach { model ->
+                DropdownMenuItem(
+                    text = { Text(text = model.name) },
+                    onClick = {
+                        Log.d("AR_DEBUG", "Seleccionando modelo: ${model.name}, path: ${model.modelPath}")
+                        viewModel.selectedModel.value = model
+                        viewModel.modelInstances.clear() // Limpiar instancias anteriores
+                        viewModel.isDropdownExpanded.value = false
+                    }
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun CameraScreen(
@@ -206,8 +262,6 @@ fun CameraScreen(
                 }
             }
 
-
-
             viewModel.measuredDistance.value?.let { distance ->
                 Text(
                     modifier = Modifier
@@ -224,7 +278,7 @@ fun CameraScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(60.dp)
+                    .padding(65.dp)
                     .padding(bottom = 70.dp),
                 verticalArrangement = Arrangement.Bottom
             ) {
@@ -255,14 +309,14 @@ fun CameraScreen(
                         containerColor = if (viewModel.isMeasuring.value) Color(0xFF64B5F6) else Color.Gray
                     )
                 ) {
-                    Text(text = if (viewModel.isMeasuring.value) "Modo MediciÃ³n: ON" else "Modo MediciÃ³n: OFF")
+                    Text(text = if (viewModel.isMeasuring.value) "Modo Medicion: ON" else "Modo Medicion: OFF")
                 }
             }
 
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 96.dp)
+                    .padding(end = 16.dp, bottom = 148.dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.End
@@ -305,18 +359,30 @@ fun CameraScreen(
                     }
                 }
             }
+
+            // Menú desplegable de modelos
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 48.dp, end = 16.dp)
+                    .zIndex(2f)
+            ) {
+                ModelSelector(viewModel = viewModel)
+            }
         }
     } else {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "ARCore no estÃ¡ soportado en este dispositivo.")
+            Text(text = "ARCore no está soportado en este dispositivo.")
         }
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().zIndex(1f),
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(1f),
         verticalArrangement = Arrangement.Bottom
     ) {
         NavBard(
