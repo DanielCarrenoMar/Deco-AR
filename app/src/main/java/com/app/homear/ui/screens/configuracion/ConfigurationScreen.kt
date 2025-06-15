@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.homear.ui.component.NavBard
 import com.app.homear.ui.screens.profile.ProfileViewModel
@@ -87,6 +89,17 @@ fun ConfigurationScreen(
             OptionConfiguracion("AYUDA", R.drawable.icono_error)
             OptionConfiguracion("SOBRE NOSOTROS", R.drawable.icono_group)
         }
+
+    }
+
+    // Barra de navegación en la parte inferior
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(1f),
+        verticalArrangement = Arrangement.Bottom
+    )
+    {
         NavBard(
             toCamera = navigateToCamera,
             toTutorial = navigateToTutorial,
