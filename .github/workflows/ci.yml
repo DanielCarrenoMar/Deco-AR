@@ -21,9 +21,13 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Crear local.properties
-        run: | 
+
+      - shell: bash
+        env:
+          API_GOOGLE_SERVICES: ${{ secrets.API_GOOGLE_SERVICES }}
+        run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
-          echo "API_GOOGLE_SERVICES=${{ secrets.API_GOOGLE_SERVICES }}" >> local.properties
+          echo "API_GOOGLE_SERVICES=$API_GOOGLE_SERVICES" >> local.properties
+
       - name: Build with Gradle
         run: ./gradlew build
