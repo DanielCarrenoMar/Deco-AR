@@ -128,7 +128,7 @@ fun InputPassword(
 
             // Mesajes adicionales
 
-            Box(modifier = Modifier.fillMaxWidth())
+            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp))
             {
                 //texto Forgot Password
                 Text(
@@ -152,7 +152,7 @@ fun InputPassword(
                 if(triggerMessageError)
                 {
                     Row(
-                        modifier = Modifier.align(Alignment.CenterStart).padding(vertical = 10.dp),
+                        modifier = Modifier.align(Alignment.CenterStart),
                     )
                     {
                         Icon(
@@ -164,7 +164,7 @@ fun InputPassword(
                             modifier = Modifier.padding(vertical = 5.dp, horizontal = 8.dp),
                             text = messageError,
                             style = TextStyle(
-                                fontSize = 10.sp
+                                fontSize = 15.sp
                             ),
                             color = Color.Red
                         )
