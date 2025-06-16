@@ -35,18 +35,19 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.homear.ui.component.NavBard
 import com.google.ar.core.Config
+import com.google.ar.core.Plane
+import com.google.ar.core.TrackingState
 import io.github.sceneview.ar.ARScene
+import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.isValid
-import io.github.sceneview.ar.getDescription
-import io.github.sceneview.ar.rememberARCameraNode
 import io.github.sceneview.rememberCollisionSystem
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberMaterialLoader
 import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberNodes
-import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberView
+import io.github.sceneview.rememberOnGestureListener
 import kotlin.math.sqrt
 
 @Composable
@@ -120,7 +121,6 @@ fun CameraScreen(
             val engine = rememberEngine()
             val modelLoader = rememberModelLoader(engine)
             val materialLoader = rememberMaterialLoader(engine)
-            val cameraNode = rememberARCameraNode(engine)
             val childNodes = rememberNodes()
             val view = rememberView(engine)
             val collisionSystem = rememberCollisionSystem(view)
@@ -131,6 +131,7 @@ fun CameraScreen(
                 engine = engine,
                 view = view,
                 modelLoader = modelLoader,
+                planeRenderer = viewModel.planeRenderer.value && !viewModel.isCoatingMode.value,
                 collisionSystem = collisionSystem,
                 sessionConfiguration = { session, config ->
                     config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
@@ -140,13 +141,50 @@ fun CameraScreen(
                     config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
                     config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                 },
-                cameraNode = cameraNode,
-                planeRenderer = viewModel.planeRenderer.value,
                 onTrackingFailureChanged = {
                     viewModel.trackingFailureReason.value = it
                 },
                 onSessionUpdated = { session, updatedFrame ->
                     viewModel.frame.value = updatedFrame
+                    
+                    // Colocación automática de revestimiento escalado en modo revestimiento
+                    if (viewModel.isCoatingMode.value) {
+                        updatedFrame.getUpdatedTrackables(Plane::class.java).forEach { plane ->
+                            if (plane.trackingState == TrackingState.TRACKING && 
+                                plane.type == Plane.Type.HORIZONTAL_UPWARD_FACING) {
+                                
+                                // Verificar si ya hemos colocado revestimiento en este plano
+                                val planeId = plane.hashCode()
+                                if (!viewModel.processedPlanes.contains(planeId)) {
+                                    viewModel.processedPlanes.add(planeId)
+                                    
+                                    // Obtener las dimensiones del plano detectado
+                                    val planeExtentX = plane.extentX
+                                    val planeExtentZ = plane.extentZ
+                                    
+                                    // Crear anchor en el centro del plano
+                                    val centerPose = plane.centerPose
+                                    val anchor = session.createAnchor(centerPose)
+                                    
+                                    // Crear revestimiento con baldosas distribuidas uniformemente
+                                    val coatingNodes = viewModel.createTiledCoatingNode(
+                                        engine = engine,
+                                        modelLoader = modelLoader,
+                                        materialLoader = materialLoader,
+                                        anchor = anchor,
+                                        planeExtentX = planeExtentX,
+                                        planeExtentZ = planeExtentZ,
+                                        session = session
+                                    )
+                                    
+                                    // Añadir todas las baldosas a la escena
+                                    childNodes.addAll(coatingNodes)
+                                    
+                                    Log.d("AR_DEBUG", "Revestimiento aplicado a plano de ${planeExtentX}m x ${planeExtentZ}m")
+                                }
+                            }
+                        }
+                    }
                 },
                 onGestureListener = rememberOnGestureListener(
                     onSingleTapConfirmed = { motionEvent, node ->
@@ -157,6 +195,12 @@ fun CameraScreen(
                             }?.createAnchorOrNull()?.let { anchor ->
                                 if (viewModel.isMeasuring.value) {
                                     if (viewModel.firstAnchor.value == null) {
+                                        // Limpiar mediciones anteriores al iniciar nueva medición
+                                        viewModel.measuredDistance.value = null
+                                        viewModel.measuredArea.value = null
+                                        viewModel.sideDistance1.value = null
+                                        viewModel.sideDistance2.value = null
+                                        
                                         viewModel.firstAnchor.value = anchor
                                         // Crear y agregar punto visual para el primer anclaje
                                         val pointNode = viewModel.createMeasurementPointNode(
@@ -166,7 +210,7 @@ fun CameraScreen(
                                         )
                                         childNodes += pointNode
                                         viewModel.measurementPoints.add(pointNode)
-                                    } else {
+                                    } else if (viewModel.secondAnchor.value == null) {
                                         viewModel.secondAnchor.value = anchor
                                         // Crear y agregar punto visual para el segundo anclaje
                                         val pointNode = viewModel.createMeasurementPointNode(
@@ -177,16 +221,42 @@ fun CameraScreen(
                                         childNodes += pointNode
                                         viewModel.measurementPoints.add(pointNode)
 
+                                        // Calcular distancia entre primer y segundo punto
                                         val pose1 = viewModel.firstAnchor.value!!.pose
                                         val pose2 = viewModel.secondAnchor.value!!.pose
                                         val dx = pose1.tx() - pose2.tx()
                                         val dy = pose1.ty() - pose2.ty()
                                         val dz = pose1.tz() - pose2.tz()
                                         viewModel.measuredDistance.value = sqrt(dx * dx + dy * dy + dz * dz)
-                                        viewModel.measuredDistance.value?.let { viewModel.measurementHistory.add(it) }
+                                    } else {
+                                        // Tercer punto - calcular área
+                                        viewModel.thirdAnchor.value = anchor
+                                        // Crear y agregar punto visual para el tercer anclaje
+                                        val pointNode = viewModel.createMeasurementPointNode(
+                                            engine = engine,
+                                            materialLoader = materialLoader,
+                                            anchor = anchor
+                                        )
+                                        childNodes += pointNode
+                                        viewModel.measurementPoints.add(pointNode)
+
+                                        // Calcular área del rectángulo
+                                        viewModel.measuredArea.value = viewModel.calculateRectangleArea(
+                                            viewModel.firstAnchor.value!!,
+                                            viewModel.secondAnchor.value!!,
+                                            viewModel.thirdAnchor.value!!
+                                        )
+                                        
+                                        // Agregar área al historial y resetear puntos
+                                        viewModel.measuredArea.value?.let { viewModel.measurementHistory.add(it) }
                                         viewModel.firstAnchor.value = null
                                         viewModel.secondAnchor.value = null
+                                        viewModel.thirdAnchor.value = null
+                                        // Las distancias y área se mantienen para mostrar el resultado completo
                                     }
+                                } else if (viewModel.isCoatingMode.value) {
+                                    // El modo revestimiento se maneja automáticamente en onSessionUpdated
+                                    // No hacer nada en el tap manual cuando está en modo revestimiento
                                 } else {
                                     childNodes += viewModel.createAnchorNode(
                                         engine = engine,
@@ -201,29 +271,6 @@ fun CameraScreen(
                     })
             )
 
-            // Puntero visual en forma de cruz en el centro de la pantalla
-            val pointerColor = if (viewModel.isMeasuring.value) Color.Cyan else Color.Red
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(40.dp)
-                    .zIndex(2f),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .height(24.dp)
-                        .background(pointerColor)
-                )
-                Box(
-                    modifier = Modifier
-                        .height(2.dp)
-                        .width(24.dp)
-                        .background(pointerColor)
-                )
-            }
-
             Text(
                 modifier = Modifier
                     .systemBarsPadding()
@@ -233,11 +280,21 @@ fun CameraScreen(
                 textAlign = TextAlign.Center,
                 fontSize = 28.sp,
                 color = Color.White,
-                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?: if (childNodes.isEmpty()) {
-                    "Busque un plano horizontal o vertical"
-                } else {
-                    "Click para agregar"
-                }
+                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?: 
+                    if (viewModel.isCoatingMode.value) {
+                        "Modo Revestimiento: Detectando suelos..."
+                    } else if (viewModel.isMeasuring.value) {
+                        when {
+                            viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
+                            viewModel.secondAnchor.value == null -> "Modo Medición: Toque el SEGUNDO punto"
+                            viewModel.thirdAnchor.value == null -> "Distancia medida! Toque TERCER punto para calcular área rectangular"
+                            else -> "Calculando área rectangular..."
+                        }
+                    } else if (childNodes.isEmpty()) {
+                        "Busque un plano horizontal o vertical"
+                    } else {
+                        "Click para agregar"
+                    }
             )
 
             //Botón de screenshot
@@ -275,6 +332,39 @@ fun CameraScreen(
                 )
             }
 
+            viewModel.measuredArea.value?.let { area ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(top = 610.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    viewModel.sideDistance1.value?.let { side1 ->
+                        Text(
+                            text = "Lado 1: ${"%.2f".format(side1)} m",
+                            textAlign = TextAlign.Center,
+                            fontSize = 16.sp,
+                            color = Color.Cyan
+                        )
+                    }
+                    viewModel.sideDistance2.value?.let { side2 ->
+                        Text(
+                            text = "Lado 2: ${"%.2f".format(side2)} m",
+                            textAlign = TextAlign.Center,
+                            fontSize = 16.sp,
+                            color = Color.Cyan
+                        )
+                    }
+                    Text(
+                        text = "Área: ${"%.2f".format(area)} m²",
+                        textAlign = TextAlign.Center,
+                        fontSize = 18.sp,
+                        color = Color.Yellow
+                    )
+                }
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -296,7 +386,11 @@ fun CameraScreen(
                         viewModel.isMeasuring.value = !viewModel.isMeasuring.value
                         viewModel.firstAnchor.value = null
                         viewModel.secondAnchor.value = null
+                        viewModel.thirdAnchor.value = null
                         viewModel.measuredDistance.value = null
+                        viewModel.measuredArea.value = null
+                        viewModel.sideDistance1.value = null
+                        viewModel.sideDistance2.value = null
                         // Limpiar puntos de medición cuando se desactiva el modo
                         if (!viewModel.isMeasuring.value) {
                             viewModel.measurementPoints.forEach { point ->
@@ -309,7 +403,36 @@ fun CameraScreen(
                         containerColor = if (viewModel.isMeasuring.value) Color(0xFF64B5F6) else Color.Gray
                     )
                 ) {
-                    Text(text = if (viewModel.isMeasuring.value) "Modo Medicion: ON" else "Modo Medicion: OFF")
+                    Text(text = if (viewModel.isMeasuring.value) "Modo Medición: ON" else "Modo Medición: OFF")
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.isCoatingMode.value = !viewModel.isCoatingMode.value
+                        // Si se activa modo revestimiento, desactivar medición
+                        if (viewModel.isCoatingMode.value) {
+                            viewModel.isMeasuring.value = false
+                            viewModel.firstAnchor.value = null
+                            viewModel.secondAnchor.value = null
+                            viewModel.thirdAnchor.value = null
+                            viewModel.measuredDistance.value = null
+                            viewModel.measuredArea.value = null
+                            viewModel.sideDistance1.value = null
+                            viewModel.sideDistance2.value = null
+                            viewModel.measurementPoints.forEach { point ->
+                                childNodes.remove(point)
+                            }
+                            viewModel.measurementPoints.clear()
+                        } else {
+                            // Al desactivar modo revestimiento, limpiar planos procesados
+                            viewModel.processedPlanes.clear()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (viewModel.isCoatingMode.value) Color(0xFFFF9800) else Color.Gray
+                    )
+                ) {
+                    Text(text = if (viewModel.isCoatingMode.value) "Modo Revestimiento: ON" else "Modo Revestimiento: OFF")
                 }
             }
 
@@ -341,7 +464,7 @@ fun CameraScreen(
                                 ) {
                                     items(viewModel.measurementHistory) { dist ->
                                         Text(
-                                            text = "${"%.2f".format(dist)} m",
+                                            text = "${"%.2f".format(dist)} m²",
                                             color = Color.White,
                                             fontSize = 16.sp
                                         )
@@ -394,5 +517,3 @@ fun CameraScreen(
         )
     }
 }
-
-
