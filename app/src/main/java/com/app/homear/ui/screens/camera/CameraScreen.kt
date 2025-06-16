@@ -149,38 +149,50 @@ fun CameraScreen(
                     
                     // Colocación automática de revestimiento escalado en modo revestimiento
                     if (viewModel.isCoatingMode.value) {
-                        updatedFrame.getUpdatedTrackables(Plane::class.java).forEach { plane ->
-                            if (plane.trackingState == TrackingState.TRACKING && 
-                                plane.type == Plane.Type.HORIZONTAL_UPWARD_FACING) {
+                        // OPTIMIZACIÓN: Procesar planos con menos frecuencia
+                        val planesThisFrame = updatedFrame.getUpdatedTrackables(Plane::class.java)
+                        val validPlanes = planesThisFrame.filter { plane ->
+                            plane.trackingState == TrackingState.TRACKING && 
+                            plane.type == Plane.Type.HORIZONTAL_UPWARD_FACING &&
+                            plane.extentX > 0.5f && plane.extentZ > 0.5f // Mínimo 50cm x 50cm
+                        }
+                        
+                        validPlanes.forEach { plane ->
+                            val planeId = plane.hashCode()
+                            if (!viewModel.processedPlanes.contains(planeId)) {
+                                viewModel.processedPlanes.add(planeId)
                                 
-                                // Verificar si ya hemos colocado revestimiento en este plano
-                                val planeId = plane.hashCode()
-                                if (!viewModel.processedPlanes.contains(planeId)) {
-                                    viewModel.processedPlanes.add(planeId)
-                                    
-                                    // Obtener las dimensiones del plano detectado
-                                    val planeExtentX = plane.extentX
-                                    val planeExtentZ = plane.extentZ
-                                    
-                                    // Crear anchor en el centro del plano
-                                    val centerPose = plane.centerPose
-                                    val anchor = session.createAnchor(centerPose)
-                                    
-                                    // Crear revestimiento con baldosas distribuidas uniformemente
-                                    val coatingNodes = viewModel.createTiledCoatingNode(
-                                        engine = engine,
-                                        modelLoader = modelLoader,
-                                        materialLoader = materialLoader,
-                                        anchor = anchor,
-                                        planeExtentX = planeExtentX,
-                                        planeExtentZ = planeExtentZ,
-                                        session = session
-                                    )
-                                    
-                                    // Añadir todas las baldosas a la escena
-                                    childNodes.addAll(coatingNodes)
-                                    
-                                    Log.d("AR_DEBUG", "Revestimiento aplicado a plano de ${planeExtentX}m x ${planeExtentZ}m")
+                                Log.d("AR_DEBUG", "Procesando plano nuevo: ${plane.extentX}m x ${plane.extentZ}m")
+                                
+                                try {
+                                    // Verificar que el plano sea estable antes de crear baldosas
+                                    if (plane.extentX > 0.8f && plane.extentZ > 0.8f) {
+                                        val centerPose = plane.centerPose
+                                        val anchor = session.createAnchor(centerPose)
+                                        
+                                        // Crear revestimiento con baldosas distribuidas uniformemente
+                                        val coatingNodes = viewModel.createTiledCoatingNode(
+                                            engine = engine,
+                                            modelLoader = modelLoader,
+                                            materialLoader = materialLoader,
+                                            anchor = anchor,
+                                            planeExtentX = plane.extentX,
+                                            planeExtentZ = plane.extentZ,
+                                            session = session
+                                        )
+                                        
+                                        // Añadir todas las baldosas a la escena solo si se crearon exitosamente
+                                        if (coatingNodes.isNotEmpty()) {
+                                            childNodes.addAll(coatingNodes)
+                                            Log.d("AR_DEBUG", "Revestimiento aplicado exitosamente a plano de ${plane.extentX}m x ${plane.extentZ}m")
+                                        }
+                                    } else {
+                                        Log.d("AR_DEBUG", "Plano muy pequeño para revestimiento: ${plane.extentX}m x ${plane.extentZ}m")
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("AR_DEBUG", "Error aplicando revestimiento a plano: ${e.message}")
+                                    // Remover plano de procesados para permitir reintento
+                                    viewModel.processedPlanes.remove(planeId)
                                 }
                             }
                         }
@@ -282,7 +294,7 @@ fun CameraScreen(
                 color = Color.White,
                 text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?: 
                     if (viewModel.isCoatingMode.value) {
-                        "Modo Revestimiento: Detectando suelos..."
+                        "Modo Baldosa: Detectando suelos para colocar baldosa individual..."
                     } else if (viewModel.isMeasuring.value) {
                         when {
                             viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
@@ -384,6 +396,10 @@ fun CameraScreen(
                 Button(
                     onClick = {
                         viewModel.isMeasuring.value = !viewModel.isMeasuring.value
+                        if (viewModel.isMeasuring.value) {
+                            // Al activar modo medición, limpiar cualquier baldosa existente
+                            viewModel.removeAllTileNodes(childNodes)
+                        }
                         viewModel.firstAnchor.value = null
                         viewModel.secondAnchor.value = null
                         viewModel.thirdAnchor.value = null
@@ -424,15 +440,16 @@ fun CameraScreen(
                             }
                             viewModel.measurementPoints.clear()
                         } else {
-                            // Al desactivar modo revestimiento, limpiar planos procesados
-                            viewModel.processedPlanes.clear()
+                            // Al desactivar modo revestimiento, eliminar todas las baldosas y limpiar recursos
+                            viewModel.removeAllTileNodes(childNodes)
+                            Log.d("AR_DEBUG", "Modo revestimiento desactivado - todas las baldosas eliminadas")
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (viewModel.isCoatingMode.value) Color(0xFFFF9800) else Color.Gray
                     )
                 ) {
-                    Text(text = if (viewModel.isCoatingMode.value) "Modo Revestimiento: ON" else "Modo Revestimiento: OFF")
+                    Text(text = if (viewModel.isCoatingMode.value) "Modo Baldosa: ON" else "Modo Baldosa: OFF")
                 }
             }
 
