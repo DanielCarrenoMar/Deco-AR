@@ -6,13 +6,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 
-class UpdateFModelUseCase @Inject constructor(
+class UpdateFurnitureUseCase @Inject constructor(
     private val repository: LocalStorageRepository
 ) {
     operator fun invoke(fModelId: Int, name: String, description: String): Flow<Resource<Unit>> = channelFlow {
         try {
             send(Resource.Loading())
-            if (repository.updateFModelById(fModelId, name, description)){
+            if (repository.updateFurnitureById(fModelId, name, description)){
                 send(
                     Resource.Success(data = Unit)
                 )

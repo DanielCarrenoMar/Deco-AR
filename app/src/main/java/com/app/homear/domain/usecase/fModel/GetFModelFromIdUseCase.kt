@@ -1,19 +1,19 @@
 package com.app.homear.domain.usecase.fModel
 
-import com.app.homear.domain.model.FModelModel
+import com.app.homear.domain.model.FurnitureModel
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.repository.LocalStorageRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 
-class GetFModelFromIdUseCase @Inject constructor(
+class GetFurnitureFromIdUseCase @Inject constructor(
     private val repository: LocalStorageRepository
 ) {
-    operator fun invoke(fModelId: Int): Flow<Resource<FModelModel>> = channelFlow {
+    operator fun invoke(fModelId: Int): Flow<Resource<FurnitureModel>> = channelFlow {
         try {
             send(Resource.Loading())
-            val fModel = repository.getFModelById(fModelId)
+            val fModel = repository.getFurnitureById(fModelId)
             if (fModel != null){
                 send(
                     Resource.Success(fModel)

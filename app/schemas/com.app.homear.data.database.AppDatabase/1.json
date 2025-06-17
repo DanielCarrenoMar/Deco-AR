@@ -2,10 +2,10 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "eaae59a1e5c7166b08a27230bb1ed6f2",
+    "identityHash": "197eade2ef5302a7076d60c51d9cc959",
     "entities": [
       {
-        "tableName": "fmodel",
+        "tableName": "furniture",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `material` TEXT NOT NULL, `keywords` TEXT NOT NULL, `modelPath` TEXT NOT NULL, `imagePath` TEXT NOT NULL, `height` REAL NOT NULL, `width` REAL NOT NULL, `length` REAL NOT NULL, `superficie` TEXT NOT NULL)",
         "fields": [
           {
@@ -85,7 +85,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'eaae59a1e5c7166b08a27230bb1ed6f2')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '197eade2ef5302a7076d60c51d9cc959')"
     ]
   }
 }

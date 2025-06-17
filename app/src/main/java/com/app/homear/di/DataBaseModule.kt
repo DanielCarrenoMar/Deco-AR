@@ -20,12 +20,12 @@ class DataBaseModule {
     @Provides
     fun provideRoomDatabase(@ApplicationContext appContext: Context): AppDatabase {
         return Room.databaseBuilder(
-            appContext,
-            AppDatabase::class.java, "grader_database"
-        ).build()
+                appContext,
+                AppDatabase::class.java, "grader_database"
+            ).fallbackToDestructiveMigration(true).build()
     }
 
     @Singleton
     @Provides
-    fun provideCourseDao(db: AppDatabase) = db.getFModelDao()
+    fun provideCourseDao(db: AppDatabase) = db.getFurnitureDao()
 }

@@ -1,16 +1,14 @@
 package com.app.homear.data.database.entity
 
-import android.health.connect.datatypes.units.Length
-import android.icu.text.ListFormatter.Width
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.app.homear.domain.model.FModelModel
+import com.app.homear.domain.model.FurnitureModel
 import java.io.File
 import com.app.homear.domain.model.Superficie
 
-@Entity(tableName = "fmodel")
-data class FModelEntity (
+@Entity(tableName = "furniture")
+data class FurnitureEntity (
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id") val id: Int = 0,
     @ColumnInfo(name = "name") val name: String,
@@ -25,8 +23,8 @@ data class FModelEntity (
     @ColumnInfo(name = "superficie") val superficie: Superficie
 )
 
-fun FModelEntity.toFModelModel(): FModelModel{
-    return FModelModel(
+fun FurnitureEntity.toFurnitureModel(): FurnitureModel{
+    return FurnitureModel(
         name = this.name,
         description = this.description,
         material = HashSet(this.material.split(",")),

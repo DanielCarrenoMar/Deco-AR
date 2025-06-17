@@ -1,19 +1,19 @@
 package com.app.homear.domain.model
 
-import com.app.homear.data.database.entity.FModelEntity
+import com.app.homear.data.database.entity.FurnitureEntity
 import java.io.File
 
 /**
  * File Model Model contiene la informacion que se mostrara de los modelso 3D
  */
-public final enum class Superficie(){
+enum class Superficie(){
     PISO,
     TECHO,
     PARED,
     TODAS
 }
 
-data class FModelModel (
+data class FurnitureModel (
     val name: String,
     val description: String,
     val material: HashSet<String>,
@@ -26,7 +26,7 @@ data class FModelModel (
     val superficie: Superficie
     ){
     companion object {
-        val DEFAULT = FModelModel(
+        val DEFAULT = FurnitureModel(
             name = "Vacio",
             description = "Vacio",
             material = HashSet(),
@@ -41,8 +41,8 @@ data class FModelModel (
     }
 }
 
-fun FModelModel.toFModelEntity(): FModelEntity{
-    return FModelEntity(
+fun FurnitureModel.toFurnitureEntity(): FurnitureEntity{
+    return FurnitureEntity(
         name = this.name,
         description = this.description,
         material = this.material.joinToString(","),

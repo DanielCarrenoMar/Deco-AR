@@ -6,13 +6,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 
-class DeleteFModelFromIdUseCase @Inject constructor(
+class DeleteFurnitureFromIdUseCase @Inject constructor(
     private val repository: LocalStorageRepository
 ) {
     operator fun invoke(fModelId:Int): Flow<Resource<Unit>> = channelFlow {
         try {
             send(Resource.Loading())
-            if (repository.deleteFModelFromId(fModelId)){
+            if (repository.deleteFurnitureFromId(fModelId)){
                 send(
                     Resource.Success(Unit)
                 )

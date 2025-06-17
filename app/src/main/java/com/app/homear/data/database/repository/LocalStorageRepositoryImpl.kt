@@ -1,9 +1,9 @@
 package com.app.homear.data.database.repository
 
-import com.app.homear.data.database.dao.FModelDao
-import com.app.homear.data.database.entity.toFModelModel
-import com.app.homear.domain.model.FModelModel
-import com.app.homear.domain.model.toFModelEntity
+import com.app.homear.data.database.dao.FurnitureDao
+import com.app.homear.data.database.entity.toFurnitureModel
+import com.app.homear.domain.model.FurnitureModel
+import com.app.homear.domain.model.toFurnitureEntity
 import com.app.homear.domain.repository.LocalStorageRepository
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
@@ -13,7 +13,7 @@ import java.io.File
 import javax.inject.Inject
 
 class LocalStorageRepositoryImpl @Inject constructor(
-    private val fModelDao: FModelDao,
+    private val FurnitureDao: FurnitureDao,
     private val auth: FirebaseAuth
 ) : LocalStorageRepository {
 
@@ -35,38 +35,38 @@ class LocalStorageRepositoryImpl @Inject constructor(
         return files?.filter {it.isFile && it.name.endsWith(type, ignoreCase = true)} ?: emptyList()
     }
 
-    override suspend fun getAllFModels(): List<FModelModel> {
+    override suspend fun getAllFurnitures(): List<FurnitureModel> {
         try {
-            return fModelDao.getAllFModels().map { fModelEntity -> fModelEntity.toFModelModel() }
+            return FurnitureDao.getAllFurnitures().map { furnitureEntity -> furnitureEntity.toFurnitureModel() }
         } catch (e: Exception) {
             throw e
         }
     }
 
-    override suspend fun getFModelById(fModelId: Int): FModelModel? {
+    override suspend fun getFurnitureById(fModelId: Int): FurnitureModel? {
         try {
-            val courseEntity = fModelDao.getFModelFromId(fModelId) ?: return null
-            return courseEntity.toFModelModel()
+            val courseEntity = FurnitureDao.getFurnitureFromId(fModelId) ?: return null
+            return courseEntity.toFurnitureModel()
         } catch (e: Exception) {
             throw e
         }
     }
 
-    override suspend fun saveFModel(fModelModel: FModelModel): Long {
+    override suspend fun saveFurniture(furnitureModel: FurnitureModel): Long {
         try {
-            return fModelDao.insertFModel(fModelModel.toFModelEntity())
+            return FurnitureDao.insertFurniture(furnitureModel.toFurnitureEntity())
         } catch (e: Exception) {
             throw e
         }
     }
 
-    override suspend fun updateFModelById(
+    override suspend fun updateFurnitureById(
         fModelId: Int,
         name: String,
         description: String
     ): Boolean {
         try {
-            val result = fModelDao.updateFModelById(
+            val result = FurnitureDao.updateFurnitureById(
                 fModelId,
                 name,
                 description
@@ -77,18 +77,18 @@ class LocalStorageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteAllFModels(): Int {
+    override suspend fun deleteAllFurnitures(): Int {
         try {
-            fModelDao.resetIncremetalFModel()
-            return fModelDao.deleteAllFModels()
+            FurnitureDao.resetIncremetalFurniture()
+            return FurnitureDao.deleteAllFurnitures()
         } catch (e: Exception) {
             throw e
         }
     }
 
-    override suspend fun deleteFModelFromId(fModelId: Int): Boolean {
+    override suspend fun deleteFurnitureFromId(fModelId: Int): Boolean {
         try {
-            return fModelDao.deleteFModelFromId(fModelId) == 1
+            return FurnitureDao.deleteFurnitureFromId(fModelId) == 1
         } catch (e: Exception) {
             throw e
         }
