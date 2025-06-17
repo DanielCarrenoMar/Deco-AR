@@ -1,4 +1,4 @@
-package com.app.homear.domain.usecase.fModel
+package com.app.homear.domain.usecase.furniture
 
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.repository.LocalStorageRepository
@@ -6,17 +6,21 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 
-class DeleteAllFurnituresUseCase @Inject constructor(
+class DeleteFurnitureFromIdUseCase @Inject constructor(
     private val repository: LocalStorageRepository
 ) {
-    operator fun invoke(): Flow<Resource<Int>> = channelFlow {
+    operator fun invoke(fModelId:Int): Flow<Resource<Unit>> = channelFlow {
         try {
             send(Resource.Loading())
-            send(
-                Resource.Success(
-                    data = repository.deleteAllFurnitures()
+            if (repository.deleteFurnitureFromId(fModelId)){
+                send(
+                    Resource.Success(Unit)
                 )
-            )
+            }else{
+                send(
+                    Resource.Error("Delete fModel id: $fModelId Error")
+                )
+            }
         } catch (e: Exception) {
             send(
                 Resource.Error(e.message ?: "Unknown Error")

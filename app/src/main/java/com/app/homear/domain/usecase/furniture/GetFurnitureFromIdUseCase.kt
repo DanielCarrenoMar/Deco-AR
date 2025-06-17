@@ -1,4 +1,4 @@
-package com.app.homear.domain.usecase.fModel
+package com.app.homear.domain.usecase.furniture
 
 import com.app.homear.domain.model.FurnitureModel
 import com.app.homear.domain.model.Resource

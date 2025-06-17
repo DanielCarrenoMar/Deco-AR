@@ -1,4 +1,4 @@
-package com.app.homear.domain.usecase.fModel
+package com.app.homear.domain.usecase.furniture
 
 import android.util.Log
 import com.app.homear.domain.model.FurnitureModel
