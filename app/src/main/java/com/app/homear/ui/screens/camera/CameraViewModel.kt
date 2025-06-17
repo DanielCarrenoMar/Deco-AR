@@ -83,6 +83,21 @@ class CameraViewModel @Inject constructor(
     private val _processedPlanes = mutableStateListOf<Int>()
     val processedPlanes = _processedPlanes
 
+    // Cache para modelos de baldosa para evitar recargas
+    private val tileModelCache = mutableMapOf<String, List<ModelInstance>>()
+    private val coatingNodesCache = mutableListOf<AnchorNode>()
+    
+    // OPTIMIZACIÓN: Control de frecuencia de creación de baldosas
+    private var lastTileCreationTime = 0L
+    private val tileCreationCooldown = 500L // 500ms entre creaciones de baldosas
+    private var isCreatingTiles = false
+    
+    // OPTIMIZACIÓN: Validación de estado de tracking
+    private fun isTrackingValid(anchor: Anchor?): Boolean {
+        return anchor != null && 
+               anchor.trackingState == com.google.ar.core.TrackingState.TRACKING
+    }
+
     // Estado para el menú desplegable
     var isDropdownExpanded = mutableStateOf(false)
     var selectedModel = mutableStateOf<ARModel?>(null)
@@ -223,55 +238,326 @@ class CameraViewModel @Inject constructor(
         planeExtentZ: Float,
         session: com.google.ar.core.Session
     ): List<AnchorNode> {
-        Log.d("AR_DEBUG", "Creando baldosas distribuidas: ${planeExtentX}m x ${planeExtentZ}m")
+        Log.d("AR_DEBUG", "Creando baldosa individual en el centro del plano: ${planeExtentX}m x ${planeExtentZ}m")
         
-        val tileNodes = mutableListOf<AnchorNode>()
-        val tileSize = 0.5f
-        val tilesX = kotlin.math.ceil(planeExtentX / tileSize).toInt()
-        val tilesZ = kotlin.math.ceil(planeExtentZ / tileSize).toInt()
-        
-        Log.d("AR_DEBUG", "Distribuyendo ${tilesX}x${tilesZ} baldosas")
-        
-        val totalTiles = tilesX * tilesZ
-        val tileInstances = mutableListOf<ModelInstance>()
-        repeat(totalTiles) {
-            tileInstances.add(modelLoader.createInstancedModel("models/baldosa.glb", 1).first())
+        // OPTIMIZACIÓN: Control de frecuencia para evitar sobrecarga
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastTileCreationTime < tileCreationCooldown || isCreatingTiles) {
+            Log.d("AR_DEBUG", "Saltando creación de baldosa - muy frecuente o ya en proceso")
+            return emptyList()
         }
         
+        // OPTIMIZACIÓN: Validar estado de tracking antes de proceder
+        if (!isTrackingValid(anchor)) {
+            Log.w("AR_DEBUG", "Anchor no válido para crear baldosa - estado: ${anchor.trackingState}")
+            return emptyList()
+        }
+        
+        isCreatingTiles = true
+        lastTileCreationTime = currentTime
+        
+        val tileNodes = mutableListOf<AnchorNode>()
+        val tileSize = 0.6f // Tamaño real de baldosa en metros
+        
+        try {
+            Log.d("AR_DEBUG", "Creando una sola baldosa en el centro del plano")
+            
+            // MODIFICACIÓN: Crear solo una instancia de baldosa
+            val tileInstance = try {
+                modelLoader.createInstancedModel("models/baldosa.glb", 1).first()
+            } catch (e: Exception) {
+                Log.e("AR_DEBUG", "Error creando instancia de baldosa: ${e.message}")
+                return emptyList()
+            }
+            
+            // MODIFICACIÓN: Crear un solo anchor principal para la baldosa única
+            val mainAnchorNode = AnchorNode(engine = engine, anchor = anchor)
+            
+            // MODIFICACIÓN: Crear un solo nodo de modelo en el centro del plano (posición 0,0,0 relativa)
+            val modelNode = ModelNode(
+                modelInstance = tileInstance,
+                scaleToUnits = tileSize
+            ).apply {
+                isEditable = false
+                // Posición en el centro del plano (0,0,0 relativo al anchor)
+                worldPosition = dev.romainguy.kotlin.math.Float3(0f, 0f, 0f)
+            }
+            
+            // Añadir la baldosa única al anchor principal
+            mainAnchorNode.addChildNode(modelNode)
+            
+            tileNodes.add(mainAnchorNode)
+            coatingNodesCache.addAll(tileNodes)
+            
+            Log.d("AR_DEBUG", "Baldosa individual creada y anclada correctamente en el centro del plano")
+            
+        } catch (e: Exception) {
+            Log.e("AR_DEBUG", "Error en createTiledCoatingNode: ${e.message}")
+        } finally {
+            isCreatingTiles = false
+        }
+        
+        return tileNodes
+    }
+    
+    // OPTIMIZACIÓN: Obtener instancias de cache de forma segura
+    private fun getTileInstancesFromCache(
+        cacheKey: String, 
+        totalTiles: Int, 
+        maxTiles: Int, 
+        modelLoader: ModelLoader
+    ): List<ModelInstance> {
+        return if (tileModelCache.containsKey(cacheKey)) {
+            Log.d("AR_DEBUG", "Usando modelos en cache para $totalTiles baldosas")
+            tileModelCache[cacheKey]!!
+        } else {
+            Log.d("AR_DEBUG", "Creando nuevos modelos para cache: $totalTiles baldosas")
+            val instances = mutableListOf<ModelInstance>()
+            val instancesToCreate = totalTiles.coerceAtMost(maxTiles)
+            
+            repeat(instancesToCreate) {
+                try {
+                    instances.add(modelLoader.createInstancedModel("models/baldosa.glb", 1).first())
+                } catch (e: Exception) {
+                    Log.w("AR_DEBUG", "Error creando instancia de baldosa $it: ${e.message}")
+                }
+            }
+            
+            if (instances.isNotEmpty()) {
+                tileModelCache[cacheKey] = instances
+            }
+            instances
+        }
+    }
+    
+    // OPTIMIZACIÓN: Validar pose antes de crear anchors
+    private fun isPoseValid(pose: Pose): Boolean {
+        return try {
+            val translation = pose.translation
+            val rotation = pose.rotationQuaternion
+            
+            // Verificar que los valores no sean NaN o infinitos
+            !(translation.any { it.isNaN() || it.isInfinite() } ||
+              rotation.any { it.isNaN() || it.isInfinite() })
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    // OPTIMIZACIÓN: Determinar número óptimo de baldosas basado en rendimiento
+    private fun getOptimalTileCount(requestedTiles: Int): Int {
+        return when {
+            requestedTiles <= 25 -> requestedTiles  // Área pequeña: renderizar todas
+            requestedTiles <= 64 -> 40              // Área mediana: reducir moderadamente  
+            requestedTiles <= 144 -> 64             // Área grande: reducir significativamente
+            else -> 50                              // Área muy grande: límite conservador
+        }
+    }
+    
+    // OPTIMIZACIÓN: Calcular posiciones de baldosas de forma eficiente
+    private fun calculateTilePositions(
+        planeExtentX: Float, 
+        planeExtentZ: Float, 
+        tilesX: Int, 
+        tilesZ: Int, 
+        tileSize: Float
+    ): List<Float3> {
+        val positions = mutableListOf<Float3>()
         val startX = -planeExtentX / 2f + tileSize / 2f
         val startZ = -planeExtentZ / 2f + tileSize / 2f
         
-        var instanceIndex = 0
         for (x in 0 until tilesX) {
             for (z in 0 until tilesZ) {
-                if (instanceIndex < tileInstances.size) {
-                    val tileX = startX + (x * tileSize)
-                    val tileZ = startZ + (z * tileSize)
-                    
-                    val tilePose = anchor.pose.compose(
-                        com.google.ar.core.Pose.makeTranslation(tileX, 0f, tileZ)
-                    )
-                    
-                    val tileAnchor = session.createAnchor(tilePose)
-                    val anchorNode = AnchorNode(engine = engine, anchor = tileAnchor)
-                    val modelNode = ModelNode(
-                        modelInstance = tileInstances[instanceIndex],
-                        scaleToUnits = tileSize
-                    ).apply {
-                        isEditable = false
-                    }
-                    anchorNode.addChildNode(modelNode)
-                    tileNodes.add(anchorNode)
-                    
-                    Log.d("AR_DEBUG", "Baldosa creada en posición: ($tileX, 0, $tileZ)")
-                    instanceIndex++
-                }
+                val tileX = startX + (x * tileSize)
+                val tileZ = startZ + (z * tileSize)
+                positions.add(Float3(tileX, 0f, tileZ))
             }
         }
         
-        Log.d("AR_DEBUG", "Revestimiento con ${tileNodes.size} baldosas creado exitosamente")
+        return positions
+    }
+    
+    // OPTIMIZACIÓN: Frustum culling avanzado con priorización por proximidad
+    private fun performAdvancedFrustumCulling(
+        positions: List<Float3>,
+        cameraPose: Pose,
+        planeExtentX: Float,
+        planeExtentZ: Float
+    ): List<Float3> {
+        val maxDistance = (planeExtentX.coerceAtLeast(planeExtentZ) * 0.8f).coerceAtMost(12f)
+        val cameraPosition = Float3(cameraPose.tx(), cameraPose.ty(), cameraPose.tz())
+        
+        return positions
+            .asSequence()
+            .map { position ->
+                val worldPosition = Float3(
+                    cameraPose.tx() + position.x,
+                    cameraPose.ty() + position.y,
+                    cameraPose.tz() + position.z
+                )
+                
+                val dx = worldPosition.x - cameraPosition.x
+                val dy = worldPosition.y - cameraPosition.y  
+                val dz = worldPosition.z - cameraPosition.z
+                val distanceSquared = dx * dx + dy * dy + dz * dz
+                
+                Pair(position, distanceSquared)
+            }
+            .filter { it.second <= (maxDistance * maxDistance) }
+            .sortedBy { it.second } // Priorizar por proximidad
+            .take(getOptimalTileCount(positions.size)) // Limitar según rendimiento
+            .map { it.first }
+            .toList()
+    }
+    
+    // OPTIMIZACIÓN: Crear rejilla optimizada para áreas grandes
+    private fun createOptimizedCoatingGrid(
+        engine: Engine,
+        modelLoader: ModelLoader,
+        materialLoader: MaterialLoader,
+        anchor: Anchor,
+        planeExtentX: Float,
+        planeExtentZ: Float,
+        session: com.google.ar.core.Session,
+        maxTiles: Int
+    ): List<AnchorNode> {
+        Log.d("AR_DEBUG", "Creando rejilla optimizada con máximo $maxTiles baldosas")
+        
+        val tileNodes = mutableListOf<AnchorNode>()
+        val tileSize = 0.6f
+        
+        try {
+            // Calcular paso entre baldosas para distribuir uniformemente
+            val stepX = planeExtentX / kotlin.math.sqrt(maxTiles.toFloat())
+            val stepZ = planeExtentZ / kotlin.math.sqrt(maxTiles.toFloat())
+            
+            val tilesPerRow = kotlin.math.sqrt(maxTiles.toFloat()).toInt()
+            val actualTiles = tilesPerRow * tilesPerRow
+            
+            // Crear instancias
+            val tileInstances = mutableListOf<ModelInstance>()
+            repeat(actualTiles) {
+                try {
+                    tileInstances.add(modelLoader.createInstancedModel("models/baldosa.glb", 1).first())
+                } catch (e: Exception) {
+                    Log.w("AR_DEBUG", "Error creando instancia optimizada $it: ${e.message}")
+                }
+            }
+            
+            // CORRECCIÓN: Usar un solo anchor principal para la rejilla optimizada
+            val mainAnchorNode = AnchorNode(engine = engine, anchor = anchor)
+            val startX = -planeExtentX / 2f + stepX / 2f
+            val startZ = -planeExtentZ / 2f + stepZ / 2f
+            
+            var instanceIndex = 0
+            for (x in 0 until tilesPerRow) {
+                for (z in 0 until tilesPerRow) {
+                    if (instanceIndex < tileInstances.size) {
+                        try {
+                            val tileX = startX + (x * stepX)
+                            val tileZ = startZ + (z * stepZ)
+                            
+                            // CORRECCIÓN: Crear nodo de modelo directamente sin anchor adicional
+                            val modelNode = ModelNode(
+                                modelInstance = tileInstances[instanceIndex],
+                                scaleToUnits = tileSize
+                            ).apply {
+                                isEditable = false
+                            }
+                            
+                            // CORRECCIÓN: Establecer posición relativa fija
+                            modelNode.worldPosition = dev.romainguy.kotlin.math.Float3(tileX, 0f, tileZ)
+                            
+                            // Añadir directamente al anchor principal
+                            mainAnchorNode.addChildNode(modelNode)
+                            instanceIndex++
+                            
+                        } catch (e: Exception) {
+                            Log.w("AR_DEBUG", "Error creando baldosa optimizada en posición ($x,$z): ${e.message}")
+                        }
+                    }
+                }
+            }
+            
+            tileNodes.add(mainAnchorNode)
+            
+        } catch (e: Exception) {
+            Log.e("AR_DEBUG", "Error en createOptimizedCoatingGrid: ${e.message}")
+        }
+        
+        Log.d("AR_DEBUG", "Rejilla optimizada creada con anclaje fijo")
         return tileNodes
     }
-
-
+    
+    // OPTIMIZACIÓN: Frustum culling básico
+    private fun performFrustumCulling(
+        positions: List<Float3>,
+        cameraPose: Pose,
+        maxDistance: Float = 15f // Distancia máxima de renderizado optimizada
+    ): List<Float3> {
+        val cameraPosition = Float3(cameraPose.tx(), cameraPose.ty(), cameraPose.tz())
+        
+        return positions.filter { position ->
+            val worldPosition = Float3(
+                cameraPose.tx() + position.x,
+                cameraPose.ty() + position.y,
+                cameraPose.tz() + position.z
+            )
+            
+            // Cálculo de distancia optimizado
+            val dx = worldPosition.x - cameraPosition.x
+            val dy = worldPosition.y - cameraPosition.y  
+            val dz = worldPosition.z - cameraPosition.z
+            val distanceSquared = dx * dx + dy * dy + dz * dz
+            
+            distanceSquared <= (maxDistance * maxDistance)
+        }
+    }
+    
+    // OPTIMIZACIÓN: Limpiar recursos de revestimiento
+    fun clearCoatingResources() {
+        Log.d("AR_DEBUG", "Limpiando recursos de revestimiento: ${coatingNodesCache.size} nodos")
+        coatingNodesCache.clear()
+        // Limpiar cache cada cierto tiempo para evitar uso excesivo de memoria
+        if (tileModelCache.size > 10) {
+            tileModelCache.clear()
+            Log.d("AR_DEBUG", "Cache de modelos limpiado por límite de memoria")
+        }
+    }
+    
+    // NUEVO: Eliminar completamente todas las baldosas de la escena
+    fun removeAllTileNodes(childNodes: MutableList<io.github.sceneview.node.Node>) {
+        Log.d("AR_DEBUG", "Eliminando todas las baldosas de la escena (${coatingNodesCache.size} grupos de baldosas)")
+        
+        // Remover todos los nodos de baldosas almacenados en cache
+        val tilesToRemove = coatingNodesCache.toList()
+        childNodes.removeAll(tilesToRemove.toSet())
+        
+        // CORRECCIÓN: Desconectar solo los anchors principales (no hay anchors individuales por baldosa)
+        tilesToRemove.forEach { mainAnchorNode ->
+            try {
+                Log.d("AR_DEBUG", "Desconectando grupo de baldosas")
+                mainAnchorNode.anchor?.detach()
+            } catch (e: Exception) {
+                Log.w("AR_DEBUG", "Error al desconectar anchor principal: ${e.message}")
+            }
+        }
+        
+        // Limpiar todos los recursos de revestimiento
+        coatingNodesCache.clear()
+        tileModelCache.clear()
+        processedPlanes.clear()
+        
+        // Resetear estado de creación
+        resetTileCreationState()
+        
+        Log.d("AR_DEBUG", "Limpieza completa terminada. Nodos restantes en escena: ${childNodes.size}")
+    }
+    
+    // OPTIMIZACIÓN: Resetear estado de creación de baldosas
+    fun resetTileCreationState() {
+        isCreatingTiles = false
+        lastTileCreationTime = 0L
+        Log.d("AR_DEBUG", "Estado de creación de baldosas reseteado")
+    }
 }

@@ -80,17 +80,17 @@ fun LoginScreen()
                     InputData(
                         dataValue =  email, // Sincroniza el estado con la var
                         label =  "Correo electronico",
-                        placeHolder =  "ingrese su correo electronico"
+                        placeHolder =  "Ingrese su correo electronico"
                     )
 
                     //input Password
                     InputPassword(
                         dataValue =  password, // Sincroniza el estado con la var
                         label =  "Contraseña",
-                        placeHolder =  "ingrese su contraseña",
-                        messageError = "contraseña incorrecta",
+                        placeHolder =  "Ingrese su contraseña",
+                        messageError = "Contraseña incorrecta",
                         triggerMessageError = error,
-                        forgotPasswordMessage = "¿has olvidad tu contraseña?",
+                        forgotPasswordMessage = "¿Olvidó su contraseña?",
                         onClickForgotPassword = { Unit }
                     )
 
@@ -102,7 +102,7 @@ fun LoginScreen()
 
                             //si se quieren poner validaciones
                             //controla si se muestra el error
-                            //error = !error
+                            error = !error
 
                             //email.value tiene los valores que ingreso el usuario para el ViewModel
                             //Limpiar los Input
