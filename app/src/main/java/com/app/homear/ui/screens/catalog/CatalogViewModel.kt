@@ -21,6 +21,14 @@ class CatalogViewModel @Inject constructor(
     var furnitureItems by mutableStateOf<List<FurnitureItem>>(emptyList())
         private set
 
+    var searchQuery by mutableStateOf("")
+    var isGridView by mutableStateOf(true)
+    val filteredItems: List<FurnitureItem>
+        get() = furnitureItems.filter {
+            it.name.contains(searchQuery, ignoreCase = true) ||
+            it.description.contains(searchQuery, ignoreCase = true)
+        }
+
     init {
         // Inicializar con los modelos disponibles
         furnitureItems = listOf(

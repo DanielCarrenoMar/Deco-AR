@@ -45,7 +45,9 @@ class MainActivity : ComponentActivity() {
                             showSplash = false
                         }
                     } else {
-                        NavigationWrapper()
+                        Box(modifier = Modifier.systemBarsPadding()) {
+                            NavigationWrapper()
+                        }
                     }
                 }
             }

@@ -65,6 +65,7 @@ firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-fires
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
 material-icons-extended = "androidx.compose.material:material-icons-extended:1.7.8"
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
+coil-svg = { module = "io.coil-kt:coil-svg", version = "2.6.0" }
 
 
 [plugins]
