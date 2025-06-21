@@ -32,23 +32,25 @@ fun NavigationWrapper() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = Catalog, // En que pagina inicia
+        startDestination = Loading, // En que pagina inicia
         enterTransition = { fadeIn(animationSpec = tween(700)) }, // Animacion de entrada
         exitTransition = { fadeOut(animationSpec = tween(700)) }, // Animacion de salida
         popEnterTransition = {fadeIn(animationSpec = tween(0))}, // Animacion cuado se hace un navigatePop
     ) {
         composable<Loading> {
-            LoadingScreen ()
+            LoadingScreen(
+                onNavigateToLogin = { navController.navigatePop(Login) }
+            )
         }
 
         composable<Login> {
             LoginScreen(
-                { navController.navigatePop(Tutorial) },
+                onLoginSuccess = { navController.navigatePop(Tutorial) }
             )
         }
 
         composable<Register> {
-            RegisterScreen ()
+            RegisterScreen()
         }
 
         composable<Tutorial> {
