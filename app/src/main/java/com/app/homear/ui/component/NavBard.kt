@@ -22,6 +22,7 @@ import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 
 object NavBard {
     data class NavBarItem(
@@ -30,7 +31,7 @@ object NavBard {
         val onClick: (() -> Unit)?
     )
 }
-
+@Preview(showBackground = true)
 @Composable
 fun NavBard(
     modifier: Modifier = Modifier,
@@ -76,7 +77,7 @@ fun NavBard(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { onClick?.invoke() }
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 5.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
@@ -85,7 +86,7 @@ fun NavBard(
                             .decoderFactory(SvgDecoder.Factory())
                             .build(),
                         contentDescription = label,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(38.dp)
                     )
                 }
             }
