@@ -37,59 +37,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             HomeARTheme {
-                var showSplash by remember { mutableStateOf(true) }
-
-                Crossfade(targetState = showSplash) { isSplash ->
-                    if (isSplash) {
-                        SplashScreenWithZoom {
-                            showSplash = false
-                        }
-                    } else {
-                        NavigationWrapper()
-                    }
-                }
+                NavigationWrapper()
             }
         }
-    }
-}
-
-@Composable
-fun SplashScreenWithZoom(onSplashFinished: () -> Unit) {
-    val scale = remember { Animatable(1f) }
-
-    val pulseAnim by rememberInfiniteTransition().animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = EaseInOutCubic),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-
-    LaunchedEffect(Unit) {
-        delay(2000L)
-        scale.animateTo(
-            targetValue = 2f,
-            animationSpec = tween(500, easing = EaseInOut)
-        )
-        onSplashFinished()
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF7E1B75)),
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "Logo decorAR",
-            modifier = Modifier
-                .size(150.dp)
-                .graphicsLayer(
-                    scaleX = pulseAnim * scale.value,
-                    scaleY = pulseAnim * scale.value
-                )
-        )
     }
 }

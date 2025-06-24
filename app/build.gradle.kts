@@ -100,6 +100,7 @@ dependencies {
     implementation(libs.ar.core)
     implementation(libs.ar.sceneview)
     implementation(libs.coil.compose)
+    implementation(libs.coil.svg)
 
     implementation(platform(libs.firebase.bom))
 }
