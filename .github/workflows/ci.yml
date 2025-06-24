@@ -12,6 +12,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -22,12 +23,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - shell: bash
-        env:
-          API_GOOGLE_SERVICES: ${{ secrets.API_GOOGLE_SERVICES }}
-        run: |
-          echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
-          echo "API_GOOGLE_SERVICES=$API_GOOGLE_SERVICES" >> local.properties
+      - name: Set API key in local.properties
+        run: echo "API_GOOGLE_SERVICES=${{ secrets.API_GOOGLE_SERVICES }}" >> local.properties
 
       - name: Build with Gradle
         run: ./gradlew build

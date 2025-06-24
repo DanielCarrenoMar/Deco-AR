@@ -31,19 +31,22 @@ class LoginViewModel @Inject constructor(
     val error: LiveData<Boolean> = _error
 
     fun  loginUser(email:String, pass:String, onLoginSuccess: () -> Unit){
+        println("LoginViewModel: Starting login with email: $email")
         viewModelScope.launch {
             signInUseCase.invoke(email,pass).collect{
                     result ->
                 when(result){
                     is Resource.Success ->{
+                        println("LoginViewModel: Login successful")
                         _isLogged.value = true
                         onLoginSuccess()
 
                     }
                     is Resource.Loading ->{
-
+                        println("LoginViewModel: Login loading...")
                     }
                     is Resource.Error -> {
+                        println("LoginViewModel: Login error - ${result.message}")
                         Log.e("SingIn", "Error al iniciar Sesion, ${result.message}")
                         _error.value = true
                     }
