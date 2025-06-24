@@ -29,7 +29,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        val apiKey = project.findProperty("API_GOOGLE_SERVICES") as? String ?: properties.getProperty("API_GOOGLE_SERVICES")
+        val apiKey = properties.getProperty("API_GOOGLE_SERVICES") ?: ""
         buildConfigField("String", "API_GOOGLE_SERVICES", apiKey)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
