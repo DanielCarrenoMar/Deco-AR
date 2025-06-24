@@ -150,7 +150,7 @@ class CameraViewModel @Inject constructor(
     private val _capturedBitmap = mutableStateOf<Bitmap?>(null)
     val capturedBitmap = _capturedBitmap
 
-    public fun takeScreenshot(sceneView: ARSceneView?, context: Context) {
+    fun takeScreenshot(sceneView: ARSceneView?, context: Context) {
         if (sceneView == null) {
             Toast.makeText(context, "No se pudo encontrar la vista de la escena.", Toast.LENGTH_SHORT).show()
             return
@@ -167,7 +167,7 @@ class CameraViewModel @Inject constructor(
         }, Handler(Looper.getMainLooper()))
     }
 
-    public fun saveBitmapToGallery(context: Context, bitmap: Bitmap) {
+    fun saveBitmapToGallery(context: Context, bitmap: Bitmap) {
         val filename = "AR_Capture_${System.currentTimeMillis()}.jpg"
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
