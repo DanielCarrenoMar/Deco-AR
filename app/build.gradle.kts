@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.auth.ktx)
     implementation(libs.androidx.runtime.livedata)
+    implementation(libs.firebase.storage.ktx)
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.hilt.android)
