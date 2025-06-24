@@ -1,9 +1,20 @@
 package com.app.homear.ui.screens.camera
 
+import android.content.ContentValues
 import android.content.Context
+import android.graphics.Bitmap
+import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.provider.MediaStore
 import android.util.Log
+import android.view.PixelCopy
+import android.widget.Toast
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import com.google.android.filament.Engine
@@ -14,6 +25,7 @@ import com.google.ar.core.Pose
 import com.google.ar.core.TrackingFailureReason
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.romainguy.kotlin.math.Float3
+import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
@@ -133,6 +145,54 @@ class CameraViewModel @Inject constructor(
             modelPath = "models/baldosa.glb"
         )
     )
+
+    // Tomar foto y guardar en galería
+    private val _capturedBitmap = mutableStateOf<Bitmap?>(null)
+    val capturedBitmap = _capturedBitmap
+
+    public fun takeScreenshot(sceneView: ARSceneView?, context: Context) {
+        if (sceneView == null) {
+            Toast.makeText(context, "No se pudo encontrar la vista de la escena.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val bitmap = Bitmap.createBitmap(sceneView.width, sceneView.height, Bitmap.Config.ARGB_8888)
+        PixelCopy.request(sceneView, bitmap, { result ->
+            if (result == PixelCopy.SUCCESS) {
+                _capturedBitmap.value = bitmap
+            } else {
+                Log.e("CameraScreen", "Error al copiar los píxeles: $result")
+                Toast.makeText(context, "Error al tomar la captura.", Toast.LENGTH_SHORT).show()
+            }
+        }, Handler(Looper.getMainLooper()))
+    }
+
+    public fun saveBitmapToGallery(context: Context, bitmap: Bitmap) {
+        val filename = "AR_Capture_${System.currentTimeMillis()}.jpg"
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+        }
+
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+        if (uri != null) {
+            try {
+                resolver.openOutputStream(uri)?.use { outputStream ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                    Toast.makeText(context, "Imagen guardada en la galería", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("CameraScreen", "Error al guardar la imagen: ${e.message}")
+                Toast.makeText(context, "Error al guardar la imagen", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Log.e("CameraScreen", "No se pudo crear el archivo en MediaStore")
+            Toast.makeText(context, "Error al guardar la imagen", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     fun isArCoreSupported(context: Context): Boolean {
         val availability = ArCoreApk.getInstance().checkAvailability(context)

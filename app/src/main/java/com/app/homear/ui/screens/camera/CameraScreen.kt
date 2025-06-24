@@ -1,19 +1,8 @@
 package com.app.homear.ui.screens.camera
 
-import android.content.ContentValues
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.os.Environment
-import android.os.Handler
-import android.os.Looper
-import android.provider.MediaStore
 import android.util.Log
-import android.view.PixelCopy
-import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -37,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -65,33 +53,6 @@ import io.github.sceneview.rememberNodes
 import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberView
 import kotlin.math.sqrt
-
-private fun saveBitmapToGallery(context: Context, bitmap: Bitmap) {
-    val filename = "AR_Capture_${System.currentTimeMillis()}.jpg"
-    val contentValues = ContentValues().apply {
-        put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-        put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-    }
-
-    val resolver = context.contentResolver
-    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-
-    if (uri != null) {
-        try {
-            resolver.openOutputStream(uri)?.use { outputStream ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                Toast.makeText(context, "Imagen guardada en la galería", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            Log.e("CameraScreen", "Error al guardar la imagen: ${e.message}")
-            Toast.makeText(context, "Error al guardar la imagen", Toast.LENGTH_SHORT).show()
-        }
-    } else {
-        Log.e("CameraScreen", "No se pudo crear el archivo en MediaStore")
-        Toast.makeText(context, "Error al guardar la imagen", Toast.LENGTH_SHORT).show()
-    }
-}
 
 fun View.findARSceneView(): ARSceneView? {
     if (this is ARSceneView) {
@@ -172,32 +133,13 @@ fun CameraScreen(
 ) {
     val context = LocalContext.current
     val haveAr by remember { mutableStateOf(viewModel.isArCoreSupported(context)) }
-    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     val engine = rememberEngine()
     val view = rememberView(engine)
     val currentView = LocalView.current
 
-    fun takeScreenshot() {
-        val sceneView = currentView.findARSceneView()
-        if (sceneView == null) {
-            Toast.makeText(context, "No se pudo encontrar la vista de la escena.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val bitmap = Bitmap.createBitmap(sceneView.width, sceneView.height, Bitmap.Config.ARGB_8888)
-        PixelCopy.request(sceneView, bitmap, { result ->
-            if (result == PixelCopy.SUCCESS) {
-                capturedBitmap = bitmap
-            } else {
-                Log.e("CameraScreen", "Error al copiar los píxeles: $result")
-                Toast.makeText(context, "Error al tomar la captura.", Toast.LENGTH_SHORT).show()
-            }
-        }, Handler(Looper.getMainLooper()))
-    }
-
-    capturedBitmap?.let { bitmap ->
+    viewModel.capturedBitmap.value?.let { bitmap ->
         AlertDialog(
-            onDismissRequest = { capturedBitmap = null },
+            onDismissRequest = { viewModel.capturedBitmap.value = null },
             title = { Text("Vista Previa") },
             text = {
                 Image(
@@ -208,16 +150,16 @@ fun CameraScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    capturedBitmap?.let { bmp ->
-                        saveBitmapToGallery(context, bmp)
+                    viewModel.capturedBitmap.value?.let { bmp ->
+                        viewModel.saveBitmapToGallery(context, bmp)
                     }
-                    capturedBitmap = null
+                    viewModel.capturedBitmap.value = null
                 }) {
                     Text("Guardar")
                 }
             },
             dismissButton = {
-                Button(onClick = { capturedBitmap = null }) {
+                Button(onClick = { viewModel.capturedBitmap.value = null }) {
                     Text("Descartar")
                 }
             }
@@ -242,31 +184,17 @@ fun CameraScreen(
                 modelLoader = modelLoader,
                 collisionSystem = collisionSystem,
                 sessionConfiguration = { session, config ->
-                    // Configuración optimizada para mejor funcionamiento de la cámara
                     config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
 
-                    // Configuración de profundidad optimizada
                     config.depthMode = when {
                         session.isDepthModeSupported(Config.DepthMode.AUTOMATIC) -> Config.DepthMode.AUTOMATIC
                         session.isDepthModeSupported(Config.DepthMode.RAW_DEPTH_ONLY) -> Config.DepthMode.RAW_DEPTH_ONLY
                         else -> Config.DepthMode.DISABLED
                     }
 
-                    // Configuración de colocación instantánea
                     config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
-
-                    // Configuración de estimación de luz optimizada para correcciones automáticas
-                    // En ARCore 1.48.0, usar ENVIRONMENTAL_HDR directamente si está disponible
                     config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-
-                    // Configuración de seguimiento optimizada
                     config.updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
-
-                    // Configuración de resolución de cámara optimizada
-                    // En ARCore 1.48.0, la configuración de cámara se maneja automáticamente
-                    // No es necesario configurar cameraConfig manualmente
-
-                    Log.d("AR_DEBUG", "Configuración de ARCore optimizada aplicada")
                 },
                 cameraNode = cameraNode,
                 planeRenderer = viewModel.planeRenderer.value,
@@ -525,7 +453,7 @@ fun CameraScreen(
 
                     Button(
                         onClick = {
-                            takeScreenshot()
+                            viewModel.takeScreenshot(currentView.findARSceneView(), context)
                         },
                         modifier = Modifier.padding(top = 2.dp)
                     ) {
