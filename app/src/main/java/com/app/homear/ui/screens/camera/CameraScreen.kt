@@ -39,6 +39,8 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.homear.ui.component.NavBard
 import com.google.ar.core.Config
+import com.google.ar.core.Plane
+import com.google.ar.core.TrackingState
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.createAnchorOrNull
@@ -203,17 +205,69 @@ fun CameraScreen(
                 },
                 onSessionUpdated = { session, updatedFrame ->
                     viewModel.frame.value = updatedFrame
+                    val planesThisFrame = updatedFrame.getUpdatedTrackables(Plane::class.java)
+
+                    val validPlanes = planesThisFrame.filter { plane ->
+                        plane.trackingState == TrackingState.TRACKING &&
+                                plane.type == Plane.Type.HORIZONTAL_UPWARD_FACING &&
+                                plane.extentX > 0.5f && plane.extentZ > 0.5f // Mínimo 50cm x 50cm
+                    }
+
+                    validPlanes.forEach { plane ->
+                        val planeId = plane.hashCode()
+                        if (!viewModel.processedPlanes.contains(planeId)) {
+                            viewModel.processedPlanes.add(planeId)
+
+                            Log.d("AR_DEBUG", "Procesando plano nuevo: ${plane.extentX}m x ${plane.extentZ}m")
+
+                            try {
+                                // Verificar que el plano sea estable antes de crear baldosas
+                                if (plane.extentX > 0.8f && plane.extentZ > 0.8f) {
+                                    val centerPose = plane.centerPose
+                                    val anchor = session.createAnchor(centerPose)
+
+                                    // Crear revestimiento con baldosas distribuidas uniformemente
+                                    val coatingNodes = viewModel.createTiledCoatingNode(
+                                        engine = engine,
+                                        modelLoader = modelLoader,
+                                        materialLoader = materialLoader,
+                                        anchor = anchor,
+                                        planeExtentX = plane.extentX,
+                                        planeExtentZ = plane.extentZ,
+                                        session = session
+                                    )
+
+                                    // Añadir todas las baldosas a la escena solo si se crearon exitosamente
+                                    if (coatingNodes.isNotEmpty()) {
+                                        childNodes.addAll(coatingNodes)
+                                        Log.d("AR_DEBUG", "Revestimiento aplicado exitosamente a plano de ${plane.extentX}m x ${plane.extentZ}m")
+                                    }
+                                } else {
+                                    Log.d("AR_DEBUG", "Plano muy pequeño para revestimiento: ${plane.extentX}m x ${plane.extentZ}m")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("AR_DEBUG", "Error aplicando revestimiento a plano: ${e.message}")
+                                // Remover plano de procesados para permitir reintento
+                                viewModel.processedPlanes.remove(planeId)
+                            }
+                        }
+                    }
                 },
                 onGestureListener = rememberOnGestureListener(
                     onSingleTapConfirmed = { motionEvent, node ->
                         if (node == null) {
-                            val hitResults =
-                                viewModel.frame.value?.hitTest(motionEvent.x, motionEvent.y)
+                            val hitResults = viewModel.frame.value?.hitTest(motionEvent.x, motionEvent.y)
                             hitResults?.firstOrNull {
                                 it.isValid(depthPoint = true, point = true)
                             }?.createAnchorOrNull()?.let { anchor ->
                                 if (viewModel.isMeasuring.value) {
                                     if (viewModel.firstAnchor.value == null) {
+                                        // Limpiar mediciones anteriores al iniciar nueva medición
+                                        viewModel.measuredDistance.value = null
+                                        viewModel.measuredArea.value = null
+                                        viewModel.sideDistance1.value = null
+                                        viewModel.sideDistance2.value = null
+
                                         viewModel.firstAnchor.value = anchor
                                         // Crear y agregar punto visual para el primer anclaje
                                         val pointNode = viewModel.createMeasurementPointNode(
@@ -223,7 +277,7 @@ fun CameraScreen(
                                         )
                                         childNodes += pointNode
                                         viewModel.measurementPoints.add(pointNode)
-                                    } else {
+                                    } else if (viewModel.secondAnchor.value == null) {
                                         viewModel.secondAnchor.value = anchor
                                         // Crear y agregar punto visual para el segundo anclaje
                                         val pointNode = viewModel.createMeasurementPointNode(
@@ -234,21 +288,42 @@ fun CameraScreen(
                                         childNodes += pointNode
                                         viewModel.measurementPoints.add(pointNode)
 
+                                        // Calcular distancia entre primer y segundo punto
                                         val pose1 = viewModel.firstAnchor.value!!.pose
                                         val pose2 = viewModel.secondAnchor.value!!.pose
                                         val dx = pose1.tx() - pose2.tx()
                                         val dy = pose1.ty() - pose2.ty()
                                         val dz = pose1.tz() - pose2.tz()
-                                        viewModel.measuredDistance.value =
-                                            sqrt(dx * dx + dy * dy + dz * dz)
-                                        viewModel.measuredDistance.value?.let {
-                                            viewModel.measurementHistory.add(
-                                                it
-                                            )
-                                        }
+                                        viewModel.measuredDistance.value = sqrt(dx * dx + dy * dy + dz * dz)
+                                    } else {
+                                        // Tercer punto - calcular área
+                                        viewModel.thirdAnchor.value = anchor
+                                        // Crear y agregar punto visual para el tercer anclaje
+                                        val pointNode = viewModel.createMeasurementPointNode(
+                                            engine = engine,
+                                            materialLoader = materialLoader,
+                                            anchor = anchor
+                                        )
+                                        childNodes += pointNode
+                                        viewModel.measurementPoints.add(pointNode)
+
+                                        // Calcular área del rectángulo
+                                        viewModel.measuredArea.value = viewModel.calculateRectangleArea(
+                                            viewModel.firstAnchor.value!!,
+                                            viewModel.secondAnchor.value!!,
+                                            viewModel.thirdAnchor.value!!
+                                        )
+
+                                        // Agregar área al historial y resetear puntos
+                                        viewModel.measuredArea.value?.let { viewModel.measurementHistory.add(it) }
                                         viewModel.firstAnchor.value = null
                                         viewModel.secondAnchor.value = null
+                                        viewModel.thirdAnchor.value = null
+                                        // Las distancias y área se mantienen para mostrar el resultado completo
                                     }
+                                } else if (viewModel.isCoatingMode.value) {
+                                    // El modo revestimiento se maneja automáticamente en onSessionUpdated
+                                    // No hacer nada en el tap manual cuando está en modo revestimiento
                                 } else {
                                     childNodes += viewModel.createAnchorNode(
                                         engine = engine,
@@ -260,7 +335,8 @@ fun CameraScreen(
                                 }
                             }
                         }
-                    })
+                    }
+                )
             )
 
             // Puntero visual en forma de cruz en el centro de la pantalla
@@ -295,12 +371,21 @@ fun CameraScreen(
                 textAlign = TextAlign.Center,
                 fontSize = 28.sp,
                 color = Color.White,
-                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current)
-                    ?: if (childNodes.isEmpty()) {
-                        "Busque un plano horizontal o vertical"
-                    } else {
-                        "Click para agregar"
+                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?:
+                if (viewModel.isCoatingMode.value) {
+                    "Modo Baldosa: Detectando suelos para colocar baldosa individual..."
+                } else if (viewModel.isMeasuring.value) {
+                    when {
+                        viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
+                        viewModel.secondAnchor.value == null -> "Modo Medición: Toque el SEGUNDO punto"
+                        viewModel.thirdAnchor.value == null -> "Distancia medida! Toque TERCER punto para calcular área rectangular"
+                        else -> "Calculando área rectangular..."
                     }
+                } else if (childNodes.isEmpty()) {
+                    "Busque un plano horizontal o vertical"
+                } else {
+                    "Click para agregar"
+                }
             )
             /*
             // NUEVO: Indicador de estado de la cámara
@@ -356,6 +441,39 @@ fun CameraScreen(
                 )
             }
 
+            viewModel.measuredArea.value?.let { area ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(top = 610.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    viewModel.sideDistance1.value?.let { side1 ->
+                        Text(
+                            text = "Lado 1: ${"%.2f".format(side1)} m",
+                            textAlign = TextAlign.Center,
+                            fontSize = 16.sp,
+                            color = Color.Cyan
+                        )
+                    }
+                    viewModel.sideDistance2.value?.let { side2 ->
+                        Text(
+                            text = "Lado 2: ${"%.2f".format(side2)} m",
+                            textAlign = TextAlign.Center,
+                            fontSize = 16.sp,
+                            color = Color.Cyan
+                        )
+                    }
+                    Text(
+                        text = "Área: ${"%.2f".format(area)} m²",
+                        textAlign = TextAlign.Center,
+                        fontSize = 18.sp,
+                        color = Color.Yellow
+                    )
+                }
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -375,9 +493,17 @@ fun CameraScreen(
                 Button(
                     onClick = {
                         viewModel.isMeasuring.value = !viewModel.isMeasuring.value
+                        if (viewModel.isMeasuring.value) {
+                            // Al activar modo medición, limpiar cualquier baldosa existente
+                            viewModel.removeAllTileNodes(childNodes)
+                        }
                         viewModel.firstAnchor.value = null
                         viewModel.secondAnchor.value = null
+                        viewModel.thirdAnchor.value = null
                         viewModel.measuredDistance.value = null
+                        viewModel.measuredArea.value = null
+                        viewModel.sideDistance1.value = null
+                        viewModel.sideDistance2.value = null
                         // Limpiar puntos de medición cuando se desactiva el modo
                         if (!viewModel.isMeasuring.value) {
                             viewModel.measurementPoints.forEach { point ->
@@ -391,6 +517,36 @@ fun CameraScreen(
                     )
                 ) {
                     Text(text = if (viewModel.isMeasuring.value) "Modo Medicion: ON" else "Modo Medicion: OFF")
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.isCoatingMode.value = !viewModel.isCoatingMode.value
+                        // Si se activa modo revestimiento, desactivar medición
+                        if (viewModel.isCoatingMode.value) {
+                            viewModel.isMeasuring.value = false
+                            viewModel.firstAnchor.value = null
+                            viewModel.secondAnchor.value = null
+                            viewModel.thirdAnchor.value = null
+                            viewModel.measuredDistance.value = null
+                            viewModel.measuredArea.value = null
+                            viewModel.sideDistance1.value = null
+                            viewModel.sideDistance2.value = null
+                            viewModel.measurementPoints.forEach { point ->
+                                childNodes.remove(point)
+                            }
+                            viewModel.measurementPoints.clear()
+                        } else {
+                            // Al desactivar modo revestimiento, eliminar todas las baldosas y limpiar recursos
+                            viewModel.removeAllTileNodes(childNodes)
+                            Log.d("AR_DEBUG", "Modo revestimiento desactivado - todas las baldosas eliminadas")
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (viewModel.isCoatingMode.value) Color(0xFFFF9800) else Color.Gray
+                    )
+                ) {
+                    Text(text = if (viewModel.isCoatingMode.value) "Modo Baldosa: ON" else "Modo Baldosa: OFF")
                 }
             }
 
