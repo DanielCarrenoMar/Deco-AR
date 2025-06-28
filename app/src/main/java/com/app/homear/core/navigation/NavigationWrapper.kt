@@ -11,14 +11,13 @@ import androidx.navigation.compose.rememberNavController
 import com.app.homear.ui.screens.catalog.CatalogScreen
 import com.app.homear.ui.screens.camera.CameraScreen
 import com.app.homear.ui.screens.configuracion.ConfigurationScreen
-import com.app.homear.ui.screens.home.HomeScreen
 import com.app.homear.ui.screens.intro.IntroScreen
 import com.app.homear.ui.screens.loading.LoadingScreen
 import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
 import com.app.homear.ui.screens.register.RegisterScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
-
+import com.app.homear.ui.screens.start.StartScreen
 
 /**
  * Navega a una pantalla borrandola de la pila de pantallas
@@ -41,13 +40,19 @@ fun NavigationWrapper() {
     ) {
         composable<Intro> {
             IntroScreen(
-                onNavigatoNext = { navController.navigatePop(Tutorial) }
+                onNavigatoNext = { navController.navigatePop(Loading) }
             )
         }
 
         composable<Loading> {
             LoadingScreen(
-                onNavigateToLogin = { navController.navigatePop(Login) }
+                onNavigateToStart = { navController.navigatePop(Start) }
+            )
+        }
+        composable<Start> {
+            StartScreen(
+                onNavigateToLogin = { navController.navigatePop(Login) },
+                onNavigateToRegister = { navController.navigatePop(Register) }
             )
         }
 
@@ -63,6 +68,7 @@ fun NavigationWrapper() {
 
         composable<Tutorial> {
             TutorialScreen (
+                onHowItWorksClick = { /* Aquí puedes navegar a un tutorial o modal */ },
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
                 { navController.navigatePop(Profile) },
@@ -81,7 +87,6 @@ fun NavigationWrapper() {
 
         composable<Catalog> {
             CatalogScreen (
-                navigateToHome = { navController.navigatePop(Home) },
                 navigateToTutorial = { navController.navigatePop(Tutorial) },
                 navigateToCamera = { navController.navigatePop(Camera) },
                 navigateToProfile = { navController.navigatePop(Profile) },
@@ -104,16 +109,6 @@ fun NavigationWrapper() {
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
                 { navController.navigatePop(Profile) },
-            )
-        }
-
-        composable<Home> {
-            HomeScreen(
-                onHowItWorksClick = { /* Aquí puedes navegar a un tutorial o modal */ },
-                navigateToCatalog = { navController.navigatePop(Catalog) },
-                navigateToCamera = { navController.navigatePop(Camera) },
-                navigateToProfile = { navController.navigatePop(Profile) },
-                navigateToConfiguration = { navController.navigatePop(Configuration) },
             )
         }
     }

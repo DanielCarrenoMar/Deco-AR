@@ -31,4 +31,4 @@ object Profile
 object Configuration
 
 @Serializable
-object Home
+object Start

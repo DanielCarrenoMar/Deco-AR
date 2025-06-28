@@ -66,7 +66,6 @@ fun saveFileToMedia(context: Context, fileName: String, fileContent: ByteArray):
 
 @Composable
 fun CatalogScreen(
-    navigateToHome: () -> Unit,
     navigateToTutorial: () -> Unit,
     navigateToCamera: () -> Unit,
     navigateToProfile: () -> Unit,
@@ -235,7 +234,7 @@ fun CatalogScreen(
         ) {
             NavBard(
                 toCamera = navigateToCamera,
-                toTutorial = navigateToHome,
+                toTutorial = navigateToTutorial,
                 toCatalog = null,
                 toProfile = navigateToProfile,
                 toConfiguration = navigateToConfiguration,

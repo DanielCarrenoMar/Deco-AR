@@ -34,13 +34,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.homear.ui.component.NavBard
 import com.app.homear.ui.screens.profile.ProfileViewModel
@@ -59,38 +57,37 @@ fun ConfigurationScreen(
             .fillMaxSize()
             .padding(start = 20.dp, end = 20.dp)
         ,
-
     )
     {
         //column para que los elementos se posicionen uno debajo de otro
-        Column(verticalArrangement = Arrangement.spacedBy(5.dp))
+        Column()
         {
             //contenedor para el titulo
-            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp))
+            Box(modifier = Modifier.fillMaxWidth())
             {
                 //titulo de la pantalla
                 Text(
-                    text = "Configuración",
-                    fontSize = 45.sp,
+                    text = "Configuracion",
+                    fontSize = 40.sp,
                     fontWeight = FontWeight.W800,
-                    color = Color("#7E1B75".toColorInt()),
+                    color = Color.Magenta,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             }
 
             //Opciones de la pantalla
-            OptionConfiguracionCheck("NOTIFICACIONES", R.drawable.icono_toggle_on_fill, R.drawable.icono_toggle_off_fill, true, {}, {})
+            OptionConfiguracionCheck("NOTIFICACIONES", R.drawable.icono_toggle_on, R.drawable.icono_toggle_off, true)
+            OptionConfiguracionCheck("TEMA:CLARO", R.drawable.icono_light_mode, R.drawable.icono_light_mode, true)
 
             //crear lista de opciones dropmenu
             var idiomas = listOf<String>("ESPAÑOL", "INGLES", "FRANCES")
             //IDIOMA:ESPAÑOL es el valor por defecto
-            OptionConfiguracionDropMenu("IDIOMA: ESPAÑOL", R.drawable.icono_sms, idiomas)
+            OptionConfiguracionDropMenu("IDIOMA:ESPAÑOL", R.drawable.icono_sms, idiomas)
 
             //botones normales
-            OptionConfiguracion("EDITAR CUENTA", R.drawable.icono_person, {})
-            OptionConfiguracion("COMPARTIR APP", R.drawable.icono_share, {})
-            OptionConfiguracion("AYUDA", R.drawable.icono_help, {})
-            OptionConfiguracion("SOBRE NOSOTROS", R.drawable.icono_error, {})
+            OptionConfiguracion("COMPARTIR APP", R.drawable.icono_share)
+            OptionConfiguracion("AYUDA", R.drawable.icono_error)
+            OptionConfiguracion("SOBRE NOSOTROS", R.drawable.icono_group)
         }
 
     }
@@ -120,10 +117,9 @@ esta funcion composable define a las celdas de las opciones
 @param nombre: define el texto que va a tener la opcion
 @param idImagen: recibe la direccion de donde esta almacenado el icono de la opcion,
 dicha direccion la retorna el metodo R.drawable.nombreDelarchivo
- @param onclick es la funcion que se ejecuta cuando haces click
  */
 @Composable
-fun OptionConfiguracion(nombre: String, idImagen: Int, onCLick: () -> Unit)
+fun OptionConfiguracion(nombre: String, idImagen: Int)
 {
     // Configuración de la animación de escala
     val interactionSource = remember { MutableInteractionSource() }
@@ -152,8 +148,7 @@ fun OptionConfiguracion(nombre: String, idImagen: Int, onCLick: () -> Unit)
                     indication = null
                 )
                 {
-                    //codigo que reacione al click
-                    onCLick()
+                    //codigo que reaacione al click
                 }
 
 
@@ -166,15 +161,13 @@ fun OptionConfiguracion(nombre: String, idImagen: Int, onCLick: () -> Unit)
                     text = nombre,
                     modifier = Modifier.align(Alignment.CenterStart),
                     fontSize = 20.sp,
-                    color = Color("#3E3E3E".toColorInt()),
-                    fontWeight = FontWeight.Bold
                 )
                 // aqui se carga el icono
                 Icon(
                     painter = painterResource(idImagen),
                     contentDescription = "icono Favorito",
                     modifier = Modifier.align(Alignment.CenterEnd).size(40.dp),
-                    tint = Color("#7E1B75".toColorInt())
+                    tint = Color.Magenta,
 
                     )
             }
@@ -193,17 +186,14 @@ fun OptionConfiguracion(nombre: String, idImagen: Int, onCLick: () -> Unit)
  *                     dicha direccion la retorna el metodo R.drawable.nombreDelarchivo
  *    @param idImagenOff: recibe la direccion de donde esta almacenado el icono de la opcion,
  *                     dicha direccion la retorna el metodo R.drawable.nombreDelarchivo
- *    @param isActive: define el estado inicial del objeto
- *    @param active: es la funcion que se ejecuta cuando se activa
- *    @param disabled: es la funcion que se ejecuta cuando se desactiva
- *
+ *    @param active: define el estado inicial del objeto
  */
 
 @Composable
-fun OptionConfiguracionCheck(nombre: String, idImagenOn: Int, idImagenOff: Int ,isActive: Boolean, active:() -> Unit, disabled:() -> Unit,)
+fun OptionConfiguracionCheck(nombre: String, idImagenOn: Int, idImagenOff: Int ,active: Boolean)
 {
     var colorIcono by remember { mutableStateOf(Color.Magenta) }
-    var isActive by remember { mutableStateOf(isActive) }
+    var isActive by remember { mutableStateOf(active) }
     var idImagen by remember { mutableStateOf(idImagenOn) }
 
 
@@ -250,17 +240,12 @@ fun OptionConfiguracionCheck(nombre: String, idImagenOn: Int, idImagenOff: Int ,
                     indication = null
                 )
                 {
-                    if (isActive)
-                    {
+                    if (isActive) {
                         colorIcono = Color.Black
                         isActive = false
-                        disabled()
-                    }
-                    else
-                    {
+                    } else {
                         colorIcono = Color.Magenta
                         isActive = true
-                        active()
                     }
                 }
 
@@ -274,15 +259,13 @@ fun OptionConfiguracionCheck(nombre: String, idImagenOn: Int, idImagenOff: Int ,
                     text = nombre,
                     modifier = Modifier.align(Alignment.CenterStart),
                     fontSize = 20.sp,
-                    color = Color("#3E3E3E".toColorInt()),
-                    fontWeight = FontWeight.Bold
                 )
                 // aqui se carga el icono
                 Icon(
                     painter = painterResource(idImagen),
                     contentDescription = "icono Favorito",
                     modifier = Modifier.align(Alignment.CenterEnd).size(40.dp),
-                    tint = Color("#7E1B75".toColorInt()),
+                    tint = colorIcono,
 
                     )
             }
@@ -353,15 +336,13 @@ fun OptionConfiguracionDropMenu(nombre: String, idImagen: Int, opciones: List<St
                     text = name,
                     modifier = Modifier.align(Alignment.CenterStart),
                     fontSize = 20.sp,
-                    color = Color("#3E3E3E".toColorInt()),
-                    fontWeight = FontWeight.Bold
                 )
                 // aqui se carga el icono
                 Icon(
                     painter = painterResource(idImagen),
                     contentDescription = "icono Favorito",
                     modifier = Modifier.align(Alignment.CenterEnd).size(40.dp),
-                    tint = Color("#7E1B75".toColorInt()),
+                    tint = Color.Magenta,
 
                     )
             }
@@ -392,18 +373,3 @@ fun OptionConfiguracionDropMenu(nombre: String, idImagen: Int, opciones: List<St
     //este es el margin entre los elementos
     Spacer(modifier = Modifier.height(10.dp))
 }
-
-
-//composable para preview de la pantalla
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ConfigurationScreen(
-        navigateToCamera = {},
-        navigateToCatalog = {},
-        navigateToProfile = {},
-        navigateToTutorial = {}
-    )
-}
-
-
