@@ -63,6 +63,7 @@ fun NavigationWrapper() {
 
         composable<Tutorial> {
             TutorialScreen (
+                onHowItWorksClick = { /* Aquí puedes navegar a un tutorial o modal */ },
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
                 { navController.navigatePop(Profile) },
@@ -81,7 +82,6 @@ fun NavigationWrapper() {
 
         composable<Catalog> {
             CatalogScreen (
-                navigateToHome = { navController.navigatePop(Home) },
                 navigateToTutorial = { navController.navigatePop(Tutorial) },
                 navigateToCamera = { navController.navigatePop(Camera) },
                 navigateToProfile = { navController.navigatePop(Profile) },
@@ -104,16 +104,6 @@ fun NavigationWrapper() {
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
                 { navController.navigatePop(Profile) },
-            )
-        }
-
-        composable<Home> {
-            HomeScreen(
-                onHowItWorksClick = { /* Aquí puedes navegar a un tutorial o modal */ },
-                navigateToCatalog = { navController.navigatePop(Catalog) },
-                navigateToCamera = { navController.navigatePop(Camera) },
-                navigateToProfile = { navController.navigatePop(Profile) },
-                navigateToConfiguration = { navController.navigatePop(Configuration) },
             )
         }
     }

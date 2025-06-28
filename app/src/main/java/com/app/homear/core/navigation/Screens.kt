@@ -29,6 +29,3 @@ object Profile
 
 @Serializable
 object Configuration
-
-@Serializable
-object Home
