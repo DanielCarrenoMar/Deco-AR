@@ -55,6 +55,17 @@ android {
         compose = true
         buildConfig = true
     }
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/NOTICE",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE.txt"
+            )
+        }
+    }
 }
 
 dependencies {
@@ -102,4 +113,9 @@ dependencies {
     implementation(libs.coil.svg)
 
     implementation(platform(libs.firebase.bom))
+
+    // Google Drive API
+    implementation (libs.google.api.services.drive)
+    implementation(libs.retrofit)
+    implementation (libs.converter.gson)
 }

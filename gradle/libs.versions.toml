@@ -27,6 +27,9 @@ firebaseDatabase = "21.0.0"
 firebaseFirestoreKtx = "25.1.4"
 firebaseAuthKtx = "23.2.1"
 runtimeLivedata = "1.8.2"
+googleApiServicesDrive = "v3-rev20220815-2.0.0"
+retrofit = "2.9.0"
+converterGson = "2.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -66,6 +69,9 @@ firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx",
 material-icons-extended = "androidx.compose.material:material-icons-extended:1.7.8"
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 coil-svg = { module = "io.coil-kt:coil-svg", version = "2.6.0" }
+google-api-services-drive = { module = "com.google.apis:google-api-services-drive", version.ref = "googleApiServicesDrive" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 
 
 [plugins]
