@@ -17,7 +17,7 @@ import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
 import com.app.homear.ui.screens.register.RegisterScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
-
+import com.app.homear.ui.screens.start.StartScreen
 
 /**
  * Navega a una pantalla borrandola de la pila de pantallas
@@ -40,13 +40,19 @@ fun NavigationWrapper() {
     ) {
         composable<Intro> {
             IntroScreen(
-                onNavigatoNext = { navController.navigatePop(Tutorial) }
+                onNavigatoNext = { navController.navigatePop(Loading) }
             )
         }
 
         composable<Loading> {
             LoadingScreen(
-                onNavigateToLogin = { navController.navigatePop(Login) }
+                onNavigateToStart = { navController.navigatePop(Start) }
+            )
+        }
+        composable<Start> {
+            StartScreen(
+                onNavigateToLogin = { navController.navigatePop(Login) },
+                onNavigateToRegister = { navController.navigatePop(Register) }
             )
         }
 
