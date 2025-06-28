@@ -37,8 +37,9 @@ import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.app.homear.ui.component.NavBard
-import com.app.homear.ui.screens.home.CustomGreen
-import com.app.homear.ui.screens.home.CustomPurple
+
+val CustomPurple = Color(0xFF54124E)
+val CustomGreen = Color(0xFF00664B)
 
 @Composable
 fun TutorialScreen(
