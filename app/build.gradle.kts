@@ -18,10 +18,6 @@ android {
     val properties = Properties()
     properties.load(file.inputStream())
 
-    ksp {
-        arg("room.schemaLocation", "$projectDir/schemas")
-    }
-
     defaultConfig {
         applicationId = "com.app.homear"
         minSdk = 26
@@ -30,9 +26,13 @@ android {
         versionName = "1.0"
 
         val apiKey = properties.getProperty("API_GOOGLE_SERVICES") ?: ""
-        buildConfigField("String", "API_GOOGLE_SERVICES", apiKey)
+        buildConfigField("String", "API_GOOGLE_SERVICES", "$apiKey")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
 
     buildTypes {

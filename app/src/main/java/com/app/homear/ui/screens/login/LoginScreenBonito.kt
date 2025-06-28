@@ -15,9 +15,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,25 +25,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.graphics.toColorInt
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.app.homear.ui.component.InputPassword
-import com.app.homear.ui.component.InputData
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
+import com.app.homear.ui.component.InputPassword
+import com.app.homear.ui.component.InputData
 
 @Composable
-fun LoginScreen(
-    viewModel: LoginViewModel = hiltViewModel(),
-    onLoginSuccess: () -> Unit = {}
-) {
-    // Estados locales para los inputs
-    val localEmail = remember { mutableStateOf("") }
-    val localPassword = remember { mutableStateOf("") }
-    
-    // Observar estados del ViewModel
-    val error by viewModel.error.observeAsState(false)
-    val isLogged by viewModel.isLogged.observeAsState(false)
+fun LoginScreen()
+{
+    // Estados para los campos del formulario
+    var email = remember { mutableStateOf("") }
+    var password = remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier
         .background(Color("#006B4F".toColorInt()))
@@ -84,33 +78,37 @@ fun LoginScreen(
                 {
                     // Input Normal
                     InputData(
-                        dataValue = localEmail,
-                        label = "Correo electronico",
-                        placeHolder = "Ingrese su correo electronico"
+                        dataValue =  email, // Sincroniza el estado con la var
+                        label =  "Correo electronico",
+                        placeHolder =  "Ingrese su correo electronico"
                     )
 
                     //input Password
                     InputPassword(
-                        dataValue = localPassword,
-                        label = "Contraseña",
-                        placeHolder = "Ingrese su contraseña",
+                        dataValue =  password, // Sincroniza el estado con la var
+                        label =  "Contraseña",
+                        placeHolder =  "Ingrese su contraseña",
                         messageError = "Contraseña incorrecta",
                         triggerMessageError = error,
                         forgotPasswordMessage = "¿Olvidó su contraseña?",
-                        onClickForgotPassword = { 
-                            viewModel.onChangeError(false)
-                        }
+                        onClickForgotPassword = { Unit }
                     )
+
+
 
                     // Botón de enviar
                     TextButton(
                         onClick = {
-                            println("Login attempt with email: ${localEmail.value}, password: ${localPassword.value}")
-                            viewModel.loginUser(
-                                email = localEmail.value,
-                                pass = localPassword.value,
-                                onLoginSuccess = onLoginSuccess
-                            )
+
+                            //si se quieren poner validaciones
+                            //controla si se muestra el error
+                            error = !error
+
+                            //email.value tiene los valores que ingreso el usuario para el ViewModel
+                            //Limpiar los Input
+                            email.value= ""
+                            password.value = ""
+
                         },
                         modifier = Modifier
                             .fillMaxWidth()

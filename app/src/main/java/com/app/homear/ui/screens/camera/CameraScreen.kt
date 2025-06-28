@@ -1,9 +1,7 @@
 package com.app.homear.ui.screens.camera
 
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
-import androidx.compose.foundation.Image
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,9 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,35 +38,17 @@ import com.google.ar.core.Config
 import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
 import io.github.sceneview.ar.ARScene
-import io.github.sceneview.ar.ARSceneView
+import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.isValid
-import io.github.sceneview.ar.getDescription
-import io.github.sceneview.ar.rememberARCameraNode
 import io.github.sceneview.rememberCollisionSystem
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberMaterialLoader
 import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberNodes
-import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberView
+import io.github.sceneview.rememberOnGestureListener
 import kotlin.math.sqrt
-
-fun View.findARSceneView(): ARSceneView? {
-    if (this is ARSceneView) {
-        return this
-    }
-    if (this is ViewGroup) {
-        for (i in 0 until childCount) {
-            val child = getChildAt(i)
-            val arSceneView = child.findARSceneView()
-            if (arSceneView != null) {
-                return arSceneView
-            }
-        }
-    }
-    return null
-}
 
 @Composable
 private fun ModelSelector(
@@ -135,47 +113,16 @@ fun CameraScreen(
 ) {
     val context = LocalContext.current
     val haveAr by remember { mutableStateOf(viewModel.isArCoreSupported(context)) }
-    val engine = rememberEngine()
-    val view = rememberView(engine)
-    val currentView = LocalView.current
-
-    viewModel.capturedBitmap.value?.let { bitmap ->
-        AlertDialog(
-            onDismissRequest = { viewModel.capturedBitmap.value = null },
-            title = { Text("Vista Previa") },
-            text = {
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = "Captura de pantalla",
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    viewModel.capturedBitmap.value?.let { bmp ->
-                        viewModel.saveBitmapToGallery(context, bmp)
-                    }
-                    viewModel.capturedBitmap.value = null
-                }) {
-                    Text("Guardar")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { viewModel.capturedBitmap.value = null }) {
-                    Text("Descartar")
-                }
-            }
-        )
-    }
 
     if (haveAr) {
         Box(
             modifier = Modifier.fillMaxSize(),
         ) {
+            val engine = rememberEngine()
             val modelLoader = rememberModelLoader(engine)
             val materialLoader = rememberMaterialLoader(engine)
-            val cameraNode = rememberARCameraNode(engine)
             val childNodes = rememberNodes()
+            val view = rememberView(engine)
             val collisionSystem = rememberCollisionSystem(view)
 
             ARScene(
@@ -184,71 +131,69 @@ fun CameraScreen(
                 engine = engine,
                 view = view,
                 modelLoader = modelLoader,
+                planeRenderer = viewModel.planeRenderer.value && !viewModel.isCoatingMode.value,
                 collisionSystem = collisionSystem,
                 sessionConfiguration = { session, config ->
                     config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
-
-                    config.depthMode = when {
-                        session.isDepthModeSupported(Config.DepthMode.AUTOMATIC) -> Config.DepthMode.AUTOMATIC
-                        session.isDepthModeSupported(Config.DepthMode.RAW_DEPTH_ONLY) -> Config.DepthMode.RAW_DEPTH_ONLY
-                        else -> Config.DepthMode.DISABLED
-                    }
-
+                    config.depthMode =
+                        if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) Config.DepthMode.AUTOMATIC
+                        else Config.DepthMode.DISABLED
                     config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
                     config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-                    config.updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
                 },
-                cameraNode = cameraNode,
-                planeRenderer = viewModel.planeRenderer.value,
                 onTrackingFailureChanged = {
                     viewModel.trackingFailureReason.value = it
                 },
                 onSessionUpdated = { session, updatedFrame ->
                     viewModel.frame.value = updatedFrame
-                    val planesThisFrame = updatedFrame.getUpdatedTrackables(Plane::class.java)
-
-                    val validPlanes = planesThisFrame.filter { plane ->
-                        plane.trackingState == TrackingState.TRACKING &&
-                                plane.type == Plane.Type.HORIZONTAL_UPWARD_FACING &&
-                                plane.extentX > 0.5f && plane.extentZ > 0.5f // Mínimo 50cm x 50cm
-                    }
-
-                    validPlanes.forEach { plane ->
-                        val planeId = plane.hashCode()
-                        if (!viewModel.processedPlanes.contains(planeId)) {
-                            viewModel.processedPlanes.add(planeId)
-
-                            Log.d("AR_DEBUG", "Procesando plano nuevo: ${plane.extentX}m x ${plane.extentZ}m")
-
-                            try {
-                                // Verificar que el plano sea estable antes de crear baldosas
-                                if (plane.extentX > 0.8f && plane.extentZ > 0.8f) {
-                                    val centerPose = plane.centerPose
-                                    val anchor = session.createAnchor(centerPose)
-
-                                    // Crear revestimiento con baldosas distribuidas uniformemente
-                                    val coatingNodes = viewModel.createTiledCoatingNode(
-                                        engine = engine,
-                                        modelLoader = modelLoader,
-                                        materialLoader = materialLoader,
-                                        anchor = anchor,
-                                        planeExtentX = plane.extentX,
-                                        planeExtentZ = plane.extentZ,
-                                        session = session
-                                    )
-
-                                    // Añadir todas las baldosas a la escena solo si se crearon exitosamente
-                                    if (coatingNodes.isNotEmpty()) {
-                                        childNodes.addAll(coatingNodes)
-                                        Log.d("AR_DEBUG", "Revestimiento aplicado exitosamente a plano de ${plane.extentX}m x ${plane.extentZ}m")
+                    
+                    // Colocación automática de revestimiento escalado en modo revestimiento
+                    if (viewModel.isCoatingMode.value) {
+                        // OPTIMIZACIÓN: Procesar planos con menos frecuencia
+                        val planesThisFrame = updatedFrame.getUpdatedTrackables(Plane::class.java)
+                        val validPlanes = planesThisFrame.filter { plane ->
+                            plane.trackingState == TrackingState.TRACKING && 
+                            plane.type == Plane.Type.HORIZONTAL_UPWARD_FACING &&
+                            plane.extentX > 0.5f && plane.extentZ > 0.5f // Mínimo 50cm x 50cm
+                        }
+                        
+                        validPlanes.forEach { plane ->
+                            val planeId = plane.hashCode()
+                            if (!viewModel.processedPlanes.contains(planeId)) {
+                                viewModel.processedPlanes.add(planeId)
+                                
+                                Log.d("AR_DEBUG", "Procesando plano nuevo: ${plane.extentX}m x ${plane.extentZ}m")
+                                
+                                try {
+                                    // Verificar que el plano sea estable antes de crear baldosas
+                                    if (plane.extentX > 0.8f && plane.extentZ > 0.8f) {
+                                        val centerPose = plane.centerPose
+                                        val anchor = session.createAnchor(centerPose)
+                                        
+                                        // Crear revestimiento con baldosas distribuidas uniformemente
+                                        val coatingNodes = viewModel.createTiledCoatingNode(
+                                            engine = engine,
+                                            modelLoader = modelLoader,
+                                            materialLoader = materialLoader,
+                                            anchor = anchor,
+                                            planeExtentX = plane.extentX,
+                                            planeExtentZ = plane.extentZ,
+                                            session = session
+                                        )
+                                        
+                                        // Añadir todas las baldosas a la escena solo si se crearon exitosamente
+                                        if (coatingNodes.isNotEmpty()) {
+                                            childNodes.addAll(coatingNodes)
+                                            Log.d("AR_DEBUG", "Revestimiento aplicado exitosamente a plano de ${plane.extentX}m x ${plane.extentZ}m")
+                                        }
+                                    } else {
+                                        Log.d("AR_DEBUG", "Plano muy pequeño para revestimiento: ${plane.extentX}m x ${plane.extentZ}m")
                                     }
-                                } else {
-                                    Log.d("AR_DEBUG", "Plano muy pequeño para revestimiento: ${plane.extentX}m x ${plane.extentZ}m")
+                                } catch (e: Exception) {
+                                    Log.e("AR_DEBUG", "Error aplicando revestimiento a plano: ${e.message}")
+                                    // Remover plano de procesados para permitir reintento
+                                    viewModel.processedPlanes.remove(planeId)
                                 }
-                            } catch (e: Exception) {
-                                Log.e("AR_DEBUG", "Error aplicando revestimiento a plano: ${e.message}")
-                                // Remover plano de procesados para permitir reintento
-                                viewModel.processedPlanes.remove(planeId)
                             }
                         }
                     }
@@ -267,7 +212,7 @@ fun CameraScreen(
                                         viewModel.measuredArea.value = null
                                         viewModel.sideDistance1.value = null
                                         viewModel.sideDistance2.value = null
-
+                                        
                                         viewModel.firstAnchor.value = anchor
                                         // Crear y agregar punto visual para el primer anclaje
                                         val pointNode = viewModel.createMeasurementPointNode(
@@ -313,7 +258,7 @@ fun CameraScreen(
                                             viewModel.secondAnchor.value!!,
                                             viewModel.thirdAnchor.value!!
                                         )
-
+                                        
                                         // Agregar área al historial y resetear puntos
                                         viewModel.measuredArea.value?.let { viewModel.measurementHistory.add(it) }
                                         viewModel.firstAnchor.value = null
@@ -335,32 +280,8 @@ fun CameraScreen(
                                 }
                             }
                         }
-                    }
-                )
+                    })
             )
-
-            // Puntero visual en forma de cruz en el centro de la pantalla
-            val pointerColor = if (viewModel.isMeasuring.value) Color.Cyan else Color.Red
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(40.dp)
-                    .zIndex(2f),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .height(24.dp)
-                        .background(pointerColor)
-                )
-                Box(
-                    modifier = Modifier
-                        .height(2.dp)
-                        .width(24.dp)
-                        .background(pointerColor)
-                )
-            }
 
             Text(
                 modifier = Modifier
@@ -371,62 +292,44 @@ fun CameraScreen(
                 textAlign = TextAlign.Center,
                 fontSize = 28.sp,
                 color = Color.White,
-                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?:
-                if (viewModel.isCoatingMode.value) {
-                    "Modo Baldosa: Detectando suelos para colocar baldosa individual..."
-                } else if (viewModel.isMeasuring.value) {
-                    when {
-                        viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
-                        viewModel.secondAnchor.value == null -> "Modo Medición: Toque el SEGUNDO punto"
-                        viewModel.thirdAnchor.value == null -> "Distancia medida! Toque TERCER punto para calcular área rectangular"
-                        else -> "Calculando área rectangular..."
+                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?: 
+                    if (viewModel.isCoatingMode.value) {
+                        "Modo Baldosa: Detectando suelos para colocar baldosa individual..."
+                    } else if (viewModel.isMeasuring.value) {
+                        when {
+                            viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
+                            viewModel.secondAnchor.value == null -> "Modo Medición: Toque el SEGUNDO punto"
+                            viewModel.thirdAnchor.value == null -> "Distancia medida! Toque TERCER punto para calcular área rectangular"
+                            else -> "Calculando área rectangular..."
+                        }
+                    } else if (childNodes.isEmpty()) {
+                        "Busque un plano horizontal o vertical"
+                    } else {
+                        "Click para agregar"
                     }
-                } else if (childNodes.isEmpty()) {
-                    "Busque un plano horizontal o vertical"
-                } else {
-                    "Click para agregar"
-                }
             )
-            /*
-            // NUEVO: Indicador de estado de la cámara
+
+            //Botón de screenshot
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = 80.dp, start = 16.dp)
-                    .background(Color.Black.copy(alpha = 0.7f))
-                    .padding(8.dp)
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Column {
-                    // Estado de tracking
-                    val trackingStatus = viewModel.checkAndImproveTracking(viewModel.frame.value)
-                    Text(
-                        text = "Tracking: ${if (trackingStatus) "✅ Activo" else "❌ Inactivo"}",
-                        color = if (trackingStatus) Color.Green else Color.Red,
-                        fontSize = 12.sp
-                    )
-                    
-                    // Estado de iluminación
-                    val lightingStatus = viewModel.checkLightingConditions(viewModel.frame.value)
-                    Text(
-                        text = "Luz: $lightingStatus",
-                        color = when {
-                            lightingStatus.contains("buena") -> Color.Green
-                            lightingStatus.contains("moderada") -> Color.Yellow
-                            else -> Color.Red
-                        },
-                        fontSize = 12.sp
-                    )
-                    
-                    // Estado de estabilidad
-                    val stabilityStatus = viewModel.checkDeviceStability(viewModel.frame.value)
-                    Text(
-                        text = "Estabilidad: ${if (stabilityStatus) "✅ Estable" else "⚠️ Inestable"}",
-                        color = if (stabilityStatus) Color.Green else Color.Yellow,
-                        fontSize = 12.sp
-                    )
+                val context = LocalContext.current
+
+                Button(
+                    modifier = Modifier
+                        .align(Alignment.TopStart),
+                    onClick = {
+                        Toast.makeText(
+                            context,
+                            "Has tomado una foto",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                ) {
+                    Text(text = "Foto")
                 }
             }
-            */
 
             viewModel.measuredDistance.value?.let { distance ->
                 Text(
@@ -516,7 +419,7 @@ fun CameraScreen(
                         containerColor = if (viewModel.isMeasuring.value) Color(0xFF64B5F6) else Color.Gray
                     )
                 ) {
-                    Text(text = if (viewModel.isMeasuring.value) "Modo Medicion: ON" else "Modo Medicion: OFF")
+                    Text(text = if (viewModel.isMeasuring.value) "Modo Medición: ON" else "Modo Medición: OFF")
                 }
 
                 Button(
@@ -578,7 +481,7 @@ fun CameraScreen(
                                 ) {
                                     items(viewModel.measurementHistory) { dist ->
                                         Text(
-                                            text = "${"%.2f".format(dist)} m",
+                                            text = "${"%.2f".format(dist)} m²",
                                             color = Color.White,
                                             fontSize = 16.sp
                                         )
@@ -604,18 +507,7 @@ fun CameraScreen(
                     .padding(top = 48.dp, end = 16.dp)
                     .zIndex(2f)
             ) {
-                Column(horizontalAlignment = Alignment.End) {
-                    ModelSelector(viewModel = viewModel)
-
-                    Button(
-                        onClick = {
-                            viewModel.takeScreenshot(currentView.findARSceneView(), context)
-                        },
-                        modifier = Modifier.padding(top = 2.dp)
-                    ) {
-                        Text(text = "Foto")
-                    }
-                }
+                ModelSelector(viewModel = viewModel)
             }
         }
     } else {
@@ -642,5 +534,3 @@ fun CameraScreen(
         )
     }
 }
-
-

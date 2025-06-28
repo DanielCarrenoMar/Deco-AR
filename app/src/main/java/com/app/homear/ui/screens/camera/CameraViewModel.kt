@@ -1,20 +1,9 @@
 package com.app.homear.ui.screens.camera
 
-import android.content.ContentValues
 import android.content.Context
-import android.graphics.Bitmap
-import android.os.Environment
-import android.os.Handler
-import android.os.Looper
-import android.provider.MediaStore
 import android.util.Log
-import android.view.PixelCopy
-import android.widget.Toast
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import com.google.android.filament.Engine
@@ -25,7 +14,6 @@ import com.google.ar.core.Pose
 import com.google.ar.core.TrackingFailureReason
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.romainguy.kotlin.math.Float3
-import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
@@ -145,54 +133,6 @@ class CameraViewModel @Inject constructor(
             modelPath = "models/baldosa.glb"
         )
     )
-
-    // Tomar foto y guardar en galería
-    private val _capturedBitmap = mutableStateOf<Bitmap?>(null)
-    val capturedBitmap = _capturedBitmap
-
-    fun takeScreenshot(sceneView: ARSceneView?, context: Context) {
-        if (sceneView == null) {
-            Toast.makeText(context, "No se pudo encontrar la vista de la escena.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val bitmap = Bitmap.createBitmap(sceneView.width, sceneView.height, Bitmap.Config.ARGB_8888)
-        PixelCopy.request(sceneView, bitmap, { result ->
-            if (result == PixelCopy.SUCCESS) {
-                _capturedBitmap.value = bitmap
-            } else {
-                Log.e("CameraScreen", "Error al copiar los píxeles: $result")
-                Toast.makeText(context, "Error al tomar la captura.", Toast.LENGTH_SHORT).show()
-            }
-        }, Handler(Looper.getMainLooper()))
-    }
-
-    fun saveBitmapToGallery(context: Context, bitmap: Bitmap) {
-        val filename = "AR_Capture_${System.currentTimeMillis()}.jpg"
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-        }
-
-        val resolver = context.contentResolver
-        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-
-        if (uri != null) {
-            try {
-                resolver.openOutputStream(uri)?.use { outputStream ->
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                    Toast.makeText(context, "Imagen guardada en la galería", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Log.e("CameraScreen", "Error al guardar la imagen: ${e.message}")
-                Toast.makeText(context, "Error al guardar la imagen", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            Log.e("CameraScreen", "No se pudo crear el archivo en MediaStore")
-            Toast.makeText(context, "Error al guardar la imagen", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     fun isArCoreSupported(context: Context): Boolean {
         val availability = ArCoreApk.getInstance().checkAvailability(context)
@@ -619,99 +559,5 @@ class CameraViewModel @Inject constructor(
         isCreatingTiles = false
         lastTileCreationTime = 0L
         Log.d("AR_DEBUG", "Estado de creación de baldosas reseteado")
-    }
-    
-    // NUEVO: Función para verificar y mejorar el estado de tracking
-    fun checkAndImproveTracking(frame: Frame?): Boolean {
-        if (frame == null) return false
-        
-        val camera = frame.camera
-        val trackingState = camera.trackingState
-        
-        when (trackingState) {
-            com.google.ar.core.TrackingState.TRACKING -> {
-                // Tracking exitoso - verificar calidad
-                val pose = camera.pose
-                if (isPoseValid(pose)) {
-                    Log.d("AR_DEBUG", "Tracking exitoso - calidad buena")
-                    return true
-                } else {
-                    Log.w("AR_DEBUG", "Tracking activo pero pose inválida")
-                    return false
-                }
-            }
-            com.google.ar.core.TrackingState.PAUSED -> {
-                Log.w("AR_DEBUG", "Tracking pausado - esperando mejor condiciones")
-                return false
-            }
-            com.google.ar.core.TrackingState.STOPPED -> {
-                Log.e("AR_DEBUG", "Tracking detenido - reiniciando sesión")
-                return false
-            }
-        }
-    }
-    
-    // NUEVO: Función para optimizar configuración de cámara
-    fun optimizeCameraSettings(session: com.google.ar.core.Session): com.google.ar.core.CameraConfig? {
-        return try {
-            val supportedConfigs = session.getSupportedCameraConfigs()
-            
-            // Buscar la mejor configuración disponible
-            supportedConfigs.firstOrNull { config ->
-                config.imageSize.width >= 1920 && 
-                config.imageSize.height >= 1080 &&
-                config.fpsRange.upper >= 60
-            } ?: supportedConfigs.firstOrNull { config ->
-                config.imageSize.width >= 1280 && 
-                config.imageSize.height >= 720 &&
-                config.fpsRange.upper >= 30
-            } ?: supportedConfigs.firstOrNull()
-            
-        } catch (e: Exception) {
-            Log.e("AR_DEBUG", "Error optimizando configuración de cámara: ${e.message}")
-            null
-        }
-    }
-    
-    // NUEVO: Función para verificar condiciones de iluminación
-    fun checkLightingConditions(frame: Frame?): String {
-        if (frame == null) return "Sin información de iluminación"
-        
-        return try {
-            val lightEstimate = frame.lightEstimate
-            if (lightEstimate != null) {
-                // En ARCore 1.48.0, verificar si la estimación de luz está disponible
-                // Si lightEstimate no es null, significa que hay información de iluminación
-                "Iluminación detectada - condiciones óptimas"
-            } else {
-                "Estimación de luz no disponible"
-            }
-        } catch (e: Exception) {
-            "Error al verificar iluminación: ${e.message}"
-        }
-    }
-    
-    // NUEVO: Función para verificar estabilidad del dispositivo
-    fun checkDeviceStability(frame: Frame?): Boolean {
-        if (frame == null) return false
-        
-        return try {
-            val camera = frame.camera
-            val pose = camera.pose
-            
-            // Verificar que la pose sea estable (no hay cambios extremos)
-            val translation = pose.translation
-            val rotation = pose.rotationQuaternion
-            
-            // Verificar que los valores no sean extremos
-            val isTranslationStable = translation.all { it.isFinite() && kotlin.math.abs(it) < 1000f }
-            val isRotationStable = rotation.all { it.isFinite() && kotlin.math.abs(it) <= 1.0f }
-            
-            isTranslationStable && isRotationStable
-            
-        } catch (e: Exception) {
-            Log.w("AR_DEBUG", "Error verificando estabilidad: ${e.message}")
-            false
-        }
     }
 }

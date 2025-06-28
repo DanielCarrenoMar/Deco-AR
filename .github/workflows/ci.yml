@@ -28,5 +28,6 @@ jobs:
         run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
           echo "API_GOOGLE_SERVICES=$API_GOOGLE_SERVICES" >> local.properties
+
       - name: Build with Gradle
         run: ./gradlew build
