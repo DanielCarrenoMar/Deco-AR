@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
-fun LoginScreen(
+fun LoginScreenOld(
     navigateToTutorial: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
