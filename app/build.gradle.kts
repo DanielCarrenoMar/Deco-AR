@@ -28,6 +28,9 @@ android {
         val apiKey = properties.getProperty("API_GOOGLE_SERVICES") ?: ""
         buildConfigField("String", "API_GOOGLE_SERVICES", "$apiKey")
 
+        val apiKeyDrive = properties.getProperty("API_GOOGLE_DRIVE") ?: ""
+        buildConfigField("String", "API_GOOGLE_DRIVE", "$apiKeyDrive")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ksp {
