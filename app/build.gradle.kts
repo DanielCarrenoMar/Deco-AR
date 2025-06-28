@@ -101,6 +101,8 @@ dependencies {
     implementation(libs.ar.sceneview)
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)
-
+    implementation(libs.coroutines.core)
+    implementation(libs.coroutines.android)
+    implementation(libs.coroutines.play.services)
     implementation(platform(libs.firebase.bom))
 }

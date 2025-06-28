@@ -14,6 +14,7 @@ import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 import java.io.File
 import javax.inject.Inject
 
@@ -35,18 +36,17 @@ class LocalStorageRepositoryImpl @Inject constructor(
         return auth.currentUser
     }
 
-    override suspend fun getCollectionModel(collection: String): List<FurnitureEntity> {
-        val furnitureModels = mutableListOf<FurnitureEntity>()
-        firestore.collection(collection).get().addOnSuccessListener { result ->
-            for (document in result) {
-                val furnitureModel = document.toObject(FurnitureModel::class.java)
-                furnitureModels.add(furnitureModel.toFurnitureEntity())
+    override suspend fun getCollectionModel(): List<FurnitureModel> {
+        return try {
+            val snapshot = firestore.collection("models").get().await()
+            snapshot.documents.mapNotNull { document ->
+                val entity = document.toObject(FurnitureEntity::class.java)
+                entity?.toFurnitureModel()
             }
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al obtener la colección", e)
+            emptyList()
         }
-            .addOnFailureListener { exception ->
-                Log.w("TAG", "Error getting documents.", exception)
-            }
-        return furnitureModels
     }
 
     override suspend fun getAllFilesTypeFromDir(directory: String, type: String): List<File> {

@@ -22,5 +22,5 @@ interface LocalStorageRepository {
     suspend fun updateFurnitureById(fModelId: Int, name: String, description: String): Boolean
     suspend fun deleteAllFurnitures(): Int
     suspend fun deleteFurnitureFromId(fModelId: Int): Boolean
-    suspend fun getCollectionModel(collection: String): List<FurnitureEntity>
+    suspend fun getCollectionModel(): List<FurnitureModel>
 }

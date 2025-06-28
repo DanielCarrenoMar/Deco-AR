@@ -21,7 +21,9 @@ data class FurnitureEntity (
     @ColumnInfo(name = "width") val width: Float,
     @ColumnInfo(name = "length") val length: Float,
     @ColumnInfo(name = "superficie") val superficie: Superficie
-)
+){
+    constructor() : this(1, "", "", "", "", "", "", 0f, 0f, 0f, Superficie.TODAS)
+}
 
 fun FurnitureEntity.toFurnitureModel(): FurnitureModel{
     return FurnitureModel(
