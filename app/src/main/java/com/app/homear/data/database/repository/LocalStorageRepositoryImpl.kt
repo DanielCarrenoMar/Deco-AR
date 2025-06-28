@@ -13,7 +13,7 @@ import java.io.File
 import javax.inject.Inject
 
 class LocalStorageRepositoryImpl @Inject constructor(
-    private val FurnitureDao: FurnitureDao,
+    private val furnitureDao: FurnitureDao,
     private val auth: FirebaseAuth
 ) : LocalStorageRepository {
 
@@ -37,7 +37,7 @@ class LocalStorageRepositoryImpl @Inject constructor(
 
     override suspend fun getAllFurnitures(): List<FurnitureModel> {
         try {
-            return FurnitureDao.getAllFurnitures().map { furnitureEntity -> furnitureEntity.toFurnitureModel() }
+            return furnitureDao.getAllFurnitures().map { furnitureEntity -> furnitureEntity.toFurnitureModel() }
         } catch (e: Exception) {
             throw e
         }
@@ -45,7 +45,7 @@ class LocalStorageRepositoryImpl @Inject constructor(
 
     override suspend fun getFurnitureById(fModelId: Int): FurnitureModel? {
         try {
-            val courseEntity = FurnitureDao.getFurnitureFromId(fModelId) ?: return null
+            val courseEntity = furnitureDao.getFurnitureFromId(fModelId) ?: return null
             return courseEntity.toFurnitureModel()
         } catch (e: Exception) {
             throw e
@@ -54,7 +54,7 @@ class LocalStorageRepositoryImpl @Inject constructor(
 
     override suspend fun saveFurniture(furnitureModel: FurnitureModel): Long {
         try {
-            return FurnitureDao.insertFurniture(furnitureModel.toFurnitureEntity())
+            return furnitureDao.insertFurniture(furnitureModel.toFurnitureEntity())
         } catch (e: Exception) {
             throw e
         }
@@ -66,7 +66,7 @@ class LocalStorageRepositoryImpl @Inject constructor(
         description: String
     ): Boolean {
         try {
-            val result = FurnitureDao.updateFurnitureById(
+            val result = furnitureDao.updateFurnitureById(
                 fModelId,
                 name,
                 description
@@ -79,8 +79,8 @@ class LocalStorageRepositoryImpl @Inject constructor(
 
     override suspend fun deleteAllFurnitures(): Int {
         try {
-            FurnitureDao.resetIncremetalFurniture()
-            return FurnitureDao.deleteAllFurnitures()
+            furnitureDao.resetIncremetalFurniture()
+            return furnitureDao.deleteAllFurnitures()
         } catch (e: Exception) {
             throw e
         }
@@ -88,7 +88,7 @@ class LocalStorageRepositoryImpl @Inject constructor(
 
     override suspend fun deleteFurnitureFromId(fModelId: Int): Boolean {
         try {
-            return FurnitureDao.deleteFurnitureFromId(fModelId) == 1
+            return furnitureDao.deleteFurnitureFromId(fModelId) == 1
         } catch (e: Exception) {
             throw e
         }
