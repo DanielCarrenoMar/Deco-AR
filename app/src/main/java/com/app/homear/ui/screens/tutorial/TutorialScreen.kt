@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,7 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
-import com.app.homear.ui.component.NavBard
+import com.app.homear.ui.component.NavBar
 
 val CustomPurple = Color(0xFF54124E)
 val CustomGreen = Color(0xFF00664B)
@@ -56,7 +57,10 @@ fun TutorialScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFEEEEEE))
-            .padding(WindowInsets.statusBars.asPaddingValues())
+            .padding(
+                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            )
             .drawBehind {
                 // Tamaño proporcional del círculo decorativo
                 val radius = size.width * 0.6f
@@ -185,7 +189,7 @@ fun TutorialScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Bottom
         ) {
-            NavBard(
+            NavBar(
                 toCamera = navigateToCamera,
                 toTutorial = null,
                 toCatalog = navigateToCatalog,

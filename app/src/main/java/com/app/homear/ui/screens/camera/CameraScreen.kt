@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,10 +35,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.app.homear.ui.component.NavBard
+import com.app.homear.ui.component.NavBar
 import com.google.ar.core.Anchor
 import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
@@ -43,8 +45,8 @@ import com.google.ar.core.Session
 import com.google.ar.core.Config
 import io.github.sceneview.rememberCollisionSystem
 import io.github.sceneview.rememberEngine
-import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberMaterialLoader
+import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberNodes
 import io.github.sceneview.rememberView
 import io.github.sceneview.SceneView
@@ -53,6 +55,8 @@ import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.isValid
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.sceneview.rememberOnGestureListener
 import kotlinx.coroutines.delay
 import kotlin.math.sqrt
@@ -79,9 +83,9 @@ private fun ModelSelector(
                     modifier = Modifier.weight(3f)
                 )
                 Icon(
-                    imageVector = if (viewModel.isDropdownExpanded.value) 
-                        Icons.Default.KeyboardArrowUp 
-                    else 
+                    imageVector = if (viewModel.isDropdownExpanded.value)
+                        Icons.Default.KeyboardArrowUp
+                    else
                         Icons.Default.KeyboardArrowDown,
                     contentDescription = "Expandir menú"
                 )
@@ -220,6 +224,8 @@ fun CameraScreen(
                                         viewModel.thirdAnchor.value = null
                                         viewModel.measuredDistance.value = null
                                         viewModel.measuredArea.value = null
+                                        viewModel.sideDistance1.value = null
+                                        viewModel.sideDistance2.value = null
                                         viewModel.areaSideDistance1.value = null
                                         viewModel.areaSideDistance2.value = null
 
@@ -250,7 +256,7 @@ fun CameraScreen(
 
                             if (touchedModel != null) {
                                 // Se tocó un modelo existente - seleccionarlo
-                                viewModel.selectPlacedModel(touchedModel, engine, materialLoader)
+                                viewModel.selectModelForDeletion(touchedModel)
                                 Log.d("AR_DEBUG", "Modelo seleccionado: ${touchedModel.id}")
                             } else {
                                 // Lógica para crear modelos o baldosas
@@ -301,7 +307,7 @@ fun CameraScreen(
                                             anchor = anchor
                                         )
                                         // Deseleccionar cualquier modelo previamente seleccionado
-                                        viewModel.selectPlacedModel(null, engine, materialLoader)
+                                        viewModel.selectModelForDeletion(null)
                                     }
                                 }
                             }
@@ -324,6 +330,7 @@ fun CameraScreen(
                             }
                         }
                         childNodes.clear()
+                        viewModel.clearCustomPlaneNodes(childNodes)
                         Log.d("AR_DEBUG", "Recursos AR limpiados en ON_PAUSE")
                     }
                 }
@@ -338,6 +345,7 @@ fun CameraScreen(
                         }
                     }
                     childNodes.clear()
+                    viewModel.clearCustomPlaneNodes(childNodes)
                     Log.d("AR_DEBUG", "Recursos AR limpiados en onDispose")
                 }
             }
@@ -354,10 +362,15 @@ fun CameraScreen(
                 collisionSystem = collisionSystem,
                 sessionConfiguration = { session, config ->
                     config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
+                    // Configurar el modo de profundidad si es compatible
                     config.depthMode =
                         if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) Config.DepthMode.AUTOMATIC
                         else Config.DepthMode.DISABLED
+
+                    // Configurar el modo de colocación instantánea
                     config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
+
+                    // Configurar el modo de estimación de luz
                     config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                 },
                 onTrackingFailureChanged = {
@@ -369,6 +382,24 @@ fun CameraScreen(
                 }
             )
 
+            // NUEVO: Efecto para actualizar planos detectados y renderizar verticales
+            LaunchedEffect(viewModel.planeRenderer.value, viewModel.session.value) {
+                if (viewModel.planeRenderer.value && viewModel.session.value != null) {
+                    while (viewModel.planeRenderer.value) {
+                        viewModel.updateDetectedPlanes(
+                            session = viewModel.session.value,
+                            engine = engine,
+                            materialLoader = materialLoader,
+                            childNodes = childNodes
+                        )
+                        kotlinx.coroutines.delay(1000) // Actualizar cada segundo
+                    }
+                } else {
+                    // Si se desactiva el renderer, limpiar planos personalizados
+                    viewModel.clearCustomPlaneNodes(childNodes)
+                }
+            }
+
             // NUEVO: Efecto para colocar baldosa automáticamente al entrar al modo baldosa
             LaunchedEffect(viewModel.isCoatingMode.value) {
                 if (viewModel.isCoatingMode.value && viewModel.tileNode == null) {
@@ -379,18 +410,23 @@ fun CameraScreen(
 
                     // Intentar colocar baldosa automáticamente cada segundo hasta encontrar un plano
                     while (viewModel.isCoatingMode.value && viewModel.tileNode == null) {
-                        val autoTileNode = viewModel.tryAutoPlaceTile(
-                            engine = engine,
-                            modelLoader = modelLoader,
-                            materialLoader = materialLoader,
-                            session = viewModel.session.value,
-                            frame = viewModel.frame.value
-                        )
+                        val session = viewModel.session.value
+                        val frame = viewModel.frame.value
 
-                        if (autoTileNode != null) {
-                            childNodes += autoTileNode
-                            Log.d("AR_DEBUG", "Baldosa colocada automáticamente")
-                            break
+                        if (session != null && frame != null) {
+                            val autoTileNode = viewModel.tryAutoPlaceTile(
+                                engine = engine,
+                                modelLoader = modelLoader,
+                                materialLoader = materialLoader,
+                                session = session,
+                                frame = frame
+                            )
+
+                            if (autoTileNode != null) {
+                                childNodes += autoTileNode
+                                Log.d("AR_DEBUG", "Baldosa colocada automáticamente")
+                                break
+                            }
                         }
 
                         kotlinx.coroutines.delay(1000) // Esperar 1 segundo antes de intentar de nuevo
@@ -407,36 +443,36 @@ fun CameraScreen(
                 textAlign = TextAlign.Center,
                 fontSize = 28.sp,
                 color = Color.White,
-                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?: 
-                    if (viewModel.isCoatingMode.value) {
-                        "Modo Baldosa: Detectando suelos para colocar baldosa individual..."
-                    } else if (viewModel.isCalculatingArea.value) {
-                        when {
-                            viewModel.firstAnchor.value == null -> "Modo Área: Toque el PRIMER punto"
-                            viewModel.secondAnchor.value == null -> "Modo Área: Toque el SEGUNDO punto"
-                            viewModel.thirdAnchor.value == null -> "Modo Área: Toque el TERCER punto"
-                            else -> "Área calculada! Toque para reiniciar medición"
-                        }
-                    } else if (viewModel.isMeasuring.value) {
-                        when {
-                            viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
-                            viewModel.secondAnchor.value == null -> "Modo Medición: Toque el SEGUNDO punto"
-                            else -> "Distancia medida! Toque para reiniciar medición"
-                        }
-                    } else if (childNodes.isEmpty()) {
-                        "Busque un plano horizontal o vertical"
-                    } else {
-                        "Click para agregar"
+                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?:
+                if (viewModel.isCoatingMode.value) {
+                    "Modo Baldosa: Detectando suelos para colocar baldosa individual..."
+                } else if (viewModel.isCalculatingArea.value) {
+                    when {
+                        viewModel.firstAnchor.value == null -> "Modo Área: Toque el PRIMER punto"
+                        viewModel.secondAnchor.value == null -> "Modo Área: Toque el SEGUNDO punto"
+                        viewModel.thirdAnchor.value == null -> "Modo Área: Toque el TERCER punto"
+                        else -> "Área calculada! Toque para reiniciar medición"
                     }
+                } else if (viewModel.isMeasuring.value) {
+                    when {
+                        viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
+                        viewModel.secondAnchor.value == null -> "Modo Medición: Toque el SEGUNDO punto"
+                        else -> "Distancia medida! Toque para reiniciar medición"
+                    }
+                } else if (childNodes.isEmpty()) {
+                    "Busque un plano horizontal o vertical"
+                } else {
+                    "Click para agregar"
+                }
             )
 
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 16.dp, top = 16.dp),
+                contentAlignment = Alignment.TopStart
             ) {
                 Button(
-                    modifier = Modifier
-                        .align(Alignment.TopStart),
                     onClick = {
                         Toast.makeText(
                             context,
@@ -447,6 +483,15 @@ fun CameraScreen(
                 ) {
                     Text(text = "Foto")
                 }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 48.dp, end = 16.dp)
+                    .zIndex(2f)
+            ) {
+                ModelSelector(viewModel = viewModel)
             }
 
             viewModel.measuredDistance.value?.let { distance ->
@@ -669,13 +714,52 @@ fun CameraScreen(
                 }
             }
 
+            // NUEVO: Modal de confirmación para eliminar modelo
+            viewModel.selectedPlacedModel.value?.let { selectedModel ->
+                AlertDialog(
+                    onDismissRequest = { viewModel.cancelModelDeletion() },
+                    title = { Text("Eliminar Modelo") },
+                    text = { Text("¿Estás seguro de que quieres eliminar este modelo?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = { viewModel.confirmModelDeletion(childNodes) }
+                        ) {
+                            Text("Eliminar", color = Color.Red)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { viewModel.cancelModelDeletion() }
+                        ) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
+
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 48.dp, end = 16.dp)
-                    .zIndex(2f)
+                    .fillMaxSize()
+                    .padding(
+                        bottom = WindowInsets.navigationBars.asPaddingValues()
+                            .calculateBottomPadding()
+                    )
             ) {
-                ModelSelector(viewModel = viewModel)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .zIndex(1f),
+                    verticalArrangement = Arrangement.Bottom
+                ) {
+                    NavBar(
+                        toCamera = null,
+                        toTutorial = navigateToTutorial,
+                        toCatalog = navigateToCatalog,
+                        toProfile = navigateToProfile,
+                        toConfiguration = navigateToConfiguration,
+                    )
+                }
             }
         }
     } else {
@@ -685,20 +769,5 @@ fun CameraScreen(
         ) {
             Text(text = "ARCore no está soportado en este dispositivo.")
         }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(1f),
-        verticalArrangement = Arrangement.Bottom
-    ) {
-        NavBard(
-            toCamera = null,
-            toTutorial = navigateToTutorial,
-            toCatalog = navigateToCatalog,
-            toProfile = navigateToProfile,
-            toConfiguration = navigateToConfiguration,
-        )
     }
 }

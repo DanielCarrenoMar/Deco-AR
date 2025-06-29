@@ -9,36 +9,40 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.app.homear.ui.component.NavBard
+import com.app.homear.ui.component.NavBar
 import java.io.File
 import java.io.FileOutputStream
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
 import coil.ImageLoader
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import coil.compose.rememberAsyncImagePainter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.Composable
 import com.app.homear.ui.theme.Purple60
 
 /**
@@ -78,6 +82,10 @@ fun CatalogScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .padding(
+                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            )
     ) {
         Column(
             modifier = Modifier
@@ -193,13 +201,13 @@ fun CatalogScreen(
             Spacer(modifier = Modifier.height(8.dp))
             // Lista o grid de items
             if (viewModel.isGridView) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(bottom = 80.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.weight(1f)
-            ) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
                     items(viewModel.filteredItems) { item ->
                         FurnitureCard(
                             item = item,
@@ -215,12 +223,12 @@ fun CatalogScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     items(viewModel.filteredItems) { item ->
-                    FurnitureCard(
-                        item = item,
+                        FurnitureCard(
+                            item = item,
                             onItemClick = { /* TODO: Implementar navegación a detalle */ },
                             context = context,
                             isList = true
-                    )
+                        )
                     }
                 }
             }
@@ -232,7 +240,7 @@ fun CatalogScreen(
                 .zIndex(1f),
             verticalArrangement = Arrangement.Bottom
         ) {
-            NavBard(
+            NavBar(
                 toCamera = navigateToCamera,
                 toTutorial = navigateToTutorial,
                 toCatalog = null,
