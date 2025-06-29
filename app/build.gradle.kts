@@ -26,10 +26,10 @@ android {
         versionName = "1.0"
 
         val apiKey = properties.getProperty("API_GOOGLE_SERVICES") ?: ""
-        buildConfigField("String", "API_GOOGLE_SERVICES", "\"${apiKey}\"")
+        buildConfigField("String", "API_GOOGLE_SERVICES", "$apiKey")
 
         val apiKeyDrive = properties.getProperty("API_GOOGLE_DRIVE") ?: ""
-        buildConfigField("String", "API_GOOGLE_DRIVE", "\"${apiKeyDrive}\"")
+        buildConfigField("String", "API_GOOGLE_DRIVE", "$apiKeyDrive")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
