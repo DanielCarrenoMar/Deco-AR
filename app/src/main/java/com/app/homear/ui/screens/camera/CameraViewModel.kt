@@ -10,22 +10,30 @@ import com.google.android.filament.Engine
 import com.google.ar.core.Anchor
 import com.google.ar.core.ArCoreApk
 import com.google.ar.core.Frame
-import com.google.ar.core.Pose
 import com.google.ar.core.Plane
+import com.google.ar.core.Pose
 import com.google.ar.core.Session
 import com.google.ar.core.TrackingFailureReason
 import com.google.ar.core.TrackingState
-import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.romainguy.kotlin.math.Float3
+import dev.romainguy.kotlin.math.Mat4
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.sceneview.ar.node.AnchorNode
-import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
+import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.CubeNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
 import io.github.sceneview.node.SphereNode
 import javax.inject.Inject
+import kotlin.math.ceil
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.PI
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlin.math.cos
 
 data class ARModel(
     val name: String,
@@ -44,7 +52,61 @@ data class PlacedARModel(
 class CameraViewModel @Inject constructor(
 
 ): ViewModel(){
-    // Testing
+    // NUEVO: Lista de modelos disponibles (debe estar antes de selectedModel)
+    val availableModels = listOf(
+        ARModel(
+            name = "Mueble Moderno",
+            modelPath = "models/Mueble-1.glb"
+        ),
+        ARModel(
+            name = "BoomBox Retro",
+            modelPath = "models/BoomBox.glb"
+        ),
+        ARModel(
+            name = "Caja Decorativa",
+            modelPath = "models/Box.glb"
+        ),
+        ARModel(
+            name = "Decoración Apple",
+            modelPath = "models/apple.glb"
+        ),
+        ARModel(
+            name = "Pato Decorativo",
+            modelPath = "models/Duck.glb"
+        ),
+        ARModel(
+            name = "Baldosa",
+            modelPath = "models/baldosa.glb"
+        )
+    )
+
+    // NUEVO: Dimensiones de pantalla para proyección precisa
+    private var screenWidth = 800f
+    private var screenHeight = 600f
+
+    // NUEVO: Modelo seleccionado para colocación
+    var selectedModel = mutableStateOf<ARModel?>(availableModels.firstOrNull())
+        set(value) {
+            Log.d(
+                "AR_DEBUG",
+                "Cambiando modelo seleccionado a: ${value.value?.name}, path: ${value.value?.modelPath}"
+            )
+            field = value
+        }
+
+    // Estado para el menú desplegable
+    var isDropdownExpanded = mutableStateOf(false)
+
+    // NUEVO: Modelo AR seleccionado para confirmación de eliminación
+    private val _selectedPlacedModel = mutableStateOf<PlacedARModel?>(null)
+    val selectedPlacedModel = _selectedPlacedModel
+
+    // NUEVO: Lista para almacenar modelos colocados en la escena
+    private val _placedARModels = mutableStateListOf<PlacedARModel>()
+    val placedARModels = _placedARModels
+
+    // Renderizado de Muebles
+
     private val kModelFile: String
         get() {
             val path = selectedModel.value?.modelPath ?: "models/Mueble-1.glb"
@@ -52,14 +114,6 @@ class CameraViewModel @Inject constructor(
             return path
         }
     private val kMaxModelInstances = 10
-
-    // NUEVO: Dimensiones de pantalla para proyección precisa
-    var screenWidth = 800f
-        private set
-    var screenHeight = 600f
-        private set
-
-    // Renderizado de Muebles
 
     private val _planeRenderer = mutableStateOf(true)
     val planeRenderer = _planeRenderer
@@ -85,6 +139,7 @@ class CameraViewModel @Inject constructor(
     val firstAnchor = _firstAnchor
     private val _secondAnchor = mutableStateOf<Anchor?>(null)
     val secondAnchor = _secondAnchor
+
     private val _thirdAnchor = mutableStateOf<Anchor?>(null)
     val thirdAnchor = _thirdAnchor
 
@@ -135,59 +190,9 @@ class CameraViewModel @Inject constructor(
     val tileNode: Node?
         get() = _tileNode
 
-    // NUEVO: Lista para almacenar modelos colocados en la escena
-    private val _placedARModels = mutableStateListOf<PlacedARModel>()
-    val placedARModels = _placedARModels
-
-    // NUEVO: Modelo seleccionado para edición/eliminación
-    private val _selectedPlacedModel = mutableStateOf<PlacedARModel?>(null)
-    val selectedPlacedModel = _selectedPlacedModel
-
-    // NUEVO: Nodo 3D del botón de eliminar
-    private val _deleteButtonNode = mutableStateOf<SphereNode?>(null)
-    val deleteButtonNode = _deleteButtonNode
-
-    // NUEVO: Lista de modelos disponibles
-    val availableModels = listOf(
-        ARModel(
-            name = "Mueble Moderno",
-            modelPath = "models/Mueble-1.glb"
-        ),
-        ARModel(
-            name = "BoomBox Retro",
-            modelPath = "models/BoomBox.glb"
-        ),
-        ARModel(
-            name = "Caja Decorativa",
-            modelPath = "models/Box.glb"
-        ),
-        ARModel(
-            name = "Decoración Apple",
-            modelPath = "models/apple.glb"
-        ),
-        ARModel(
-            name = "Pato Decorativo",
-            modelPath = "models/Duck.glb"
-        ),
-        ARModel(
-            name = "Baldosa",
-            modelPath = "models/baldosa.glb"
-        )
-    )
-
-    // NUEVO: Modelo seleccionado para edición/eliminación
-    var selectedModel =
-        mutableStateOf<ARModel?>(availableModels.firstOrNull()) // Seleccionar el primer modelo por defecto
-        set(value) {
-            Log.d(
-                "AR_DEBUG",
-                "Cambiando modelo seleccionado a: ${value.value?.name}, path: ${value.value?.modelPath}"
-            )
-            field = value
-        }
-
-    // Estado para el menú desplegable
-    var isDropdownExpanded = mutableStateOf(false)
+    // NUEVO: Lista para almacenar nodos de planos verticales personalizados
+    private val _verticalPlaneNodes = mutableStateListOf<AnchorNode>()
+    val verticalPlaneNodes = _verticalPlaneNodes
 
     // Cache para modelos de baldosa para evitar recargas
     private val tileModelCache = mutableMapOf<String, List<ModelInstance>>()
@@ -197,6 +202,111 @@ class CameraViewModel @Inject constructor(
     private var lastTileCreationTime = 0L
     private val tileCreationCooldown = 500L // 500ms entre creaciones de baldosas
     private var isCreatingTiles = false
+
+    // Variables para frustum culling
+    private var cameraFrustum: Array<FloatArray>? = null
+    private var lastCameraUpdateTime = 0L
+    private val cameraUpdateInterval = 100L
+
+    // NUEVO: Variables para optimización temporal
+    private var lastLODUpdateTime = 0L
+    private val lodUpdateInterval = 200L
+    private var lastVisibilityUpdateTime = 0L
+    private val visibilityUpdateInterval = 150L
+
+    // NUEVO: Actualización optimizada de visibilidad con control temporal
+    fun updatePointVisibilityOptimized() {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastVisibilityUpdateTime < visibilityUpdateInterval) return
+
+        lastVisibilityUpdateTime = currentTime
+
+        try {
+            val frustum = cameraFrustum ?: return
+
+            var nodesVisible = 0
+            var nodesHidden = 0
+
+            // OPTIMIZACIÓN: Procesar solo cada 3er nodo para reducir carga
+            _verticalPlaneNodes.forEachIndexed { index, anchorNode ->
+                // SKIP: Procesar solo cada 3er plano para optimización
+                if (index % 3 != 0) return@forEachIndexed
+
+                anchorNode.childNodes.forEach { childNode ->
+                    // OPTIMIZACIÓN: Procesar solo cada 2do punto
+                    childNode.childNodes.forEachIndexed { pointIndex, pointNode ->
+                        if (pointIndex % 2 != 0) return@forEachIndexed
+
+                        val position = pointNode.worldPosition
+                        val isVisible = isPointInFrustum(position.x, position.y, position.z)
+
+                        if (pointNode.isVisible != isVisible) {
+                            pointNode.isVisible = isVisible
+                            if (isVisible) nodesVisible++ else nodesHidden++
+                        }
+                    }
+                }
+            }
+
+            if (nodesVisible > 0 || nodesHidden > 0) {
+                Log.d(
+                    "AR_DEBUG",
+                    "Visibility optimizada: ${nodesVisible} mostrados, ${nodesHidden} ocultados"
+                )
+            }
+
+        } catch (e: Exception) {
+            Log.w("AR_DEBUG", "Error en visibility optimizada: ${e.message}")
+        }
+    }
+
+    // NUEVO: Actualización de LOD optimizada con control temporal
+    fun updateLODOptimized() {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastLODUpdateTime < lodUpdateInterval) return
+
+        lastLODUpdateTime = currentTime
+
+        try {
+            // OPTIMIZACIÓN: Actualizar LOD solo para nodos visibles
+            _verticalPlaneNodes.forEach { anchorNode ->
+                anchorNode.childNodes.forEach { childNode ->
+                    childNode.childNodes.forEach { pointNode ->
+                        if (!pointNode.isVisible) return@forEach // Skip nodos no visibles
+
+                        val position = pointNode.worldPosition
+                        val distanceFromCenter =
+                            sqrt(position.x * position.x + position.z * position.z)
+
+                        // ACTUALIZAR ESCALA DINÁMICAMENTE
+                        val newScale = when {
+                            distanceFromCenter < 1.0f -> Float3(1.0f, 0.1f, 1.0f)
+                            distanceFromCenter < 2.0f -> Float3(0.8f, 0.08f, 0.8f)
+                            else -> Float3(0.6f, 0.06f, 0.6f)
+                        }
+
+                        // Solo actualizar si ha cambiado significativamente
+                        val currentScale = pointNode.scale
+                        if (kotlin.math.abs(currentScale.x - newScale.x) > 0.1f) {
+                            pointNode.scale = newScale
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("AR_DEBUG", "Error en LOD optimizado: ${e.message}")
+        }
+    }
+
+    // Función combinada para actualizar cámara y visibilidad OPTIMIZADA
+    fun updateCameraAndVisibility(frame: Frame) {
+        // Actualizar frustum de la cámara
+        updateCameraFrustum(frame)
+
+        // NUEVO: Usar actualizaciones optimizadas en lugar de las costosas
+        updatePointVisibilityOptimized()
+        updateLODOptimized()
+    }
 
     fun isArCoreSupported(context: Context): Boolean {
         val availability = ArCoreApk.getInstance().checkAvailability(context)
@@ -266,8 +376,6 @@ class CameraViewModel @Inject constructor(
         return anchorNode
     }
 
-
-
     fun createMeasurementPointNode(
         engine: Engine,
         materialLoader: MaterialLoader,
@@ -288,29 +396,29 @@ class CameraViewModel @Inject constructor(
         val p1 = anchor1.pose
         val p2 = anchor2.pose
         val p3 = anchor3.pose
-        
+
         // Calcular las distancias para formar un rectángulo
         // Distancia del punto 1 al punto 2 (primer lado)
-        val distanceP1P2 = kotlin.math.sqrt(
-            (p1.tx() - p2.tx()).let { it * it } +
-            (p1.ty() - p2.ty()).let { it * it } +
-            (p1.tz() - p2.tz()).let { it * it }
+        val distanceP1P2 = sqrt(
+            (p1.tx() - p2.tx()) * (p1.tx() - p2.tz()) +
+                    (p1.ty() - p3.ty()) * (p1.ty() - p3.ty()) +
+                    (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
         )
-        
+
         // Distancia del punto 2 al punto 3 (segundo lado)
-        val distanceP2P3 = kotlin.math.sqrt(
-            (p2.tx() - p3.tx()).let { it * it } +
-            (p2.ty() - p3.ty()).let { it * it } +
-            (p2.tz() - p3.tz()).let { it * it }
+        val distanceP2P3 = sqrt(
+            (p2.tx() - p3.tx()) * (p2.tx() - p3.tz()) +
+                    (p2.ty() - p3.ty()) * (p2.ty() - p3.ty()) +
+                    (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
         )
-        
+
         // Para un rectángulo: área = lado1 × lado2
         val area = distanceP1P2 * distanceP2P3
 
         // Almacenar las distancias para mostrarlas en la UI (usar areaSideDistance para área)
         _areaSideDistance1.value = distanceP1P2
         _areaSideDistance2.value = distanceP2P3
-        
+
         Log.d("AR_DEBUG", "Área rectangular calculada: ${area}m² con lados: ${distanceP1P2}m x ${distanceP2P3}m")
         return area
     }
@@ -325,28 +433,28 @@ class CameraViewModel @Inject constructor(
         session: Session
     ): AnchorNode? {
         Log.d("AR_DEBUG", "Creando baldosa individual en el centro del plano: ${planeExtentX}m x ${planeExtentZ}m")
-        
+
         // OPTIMIZACIÓN: Control de frecuencia para evitar sobrecarga
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastTileCreationTime < tileCreationCooldown || isCreatingTiles) {
             Log.d("AR_DEBUG", "Saltando creación de baldosa - muy frecuente o ya en proceso")
             return null
         }
-        
+
         // OPTIMIZACIÓN: Validar estado de tracking antes de proceder
         if (!isTrackingValid(anchor)) {
             Log.w("AR_DEBUG", "Anchor no válido para crear baldosa - estado: ${anchor.trackingState}")
             return null
         }
-        
+
         isCreatingTiles = true
         lastTileCreationTime = currentTime
-        
+
         val tileSize = 0.6f // Tamaño real de baldosa en metros
-        
+
         try {
             Log.d("AR_DEBUG", "Creando una sola baldosa en el centro del plano")
-            
+
             // MODIFICACIÓN: Crear solo una instancia de baldosa
             val tileInstance = try {
                 modelLoader.createInstancedModel("models/baldosa.glb", 1).first()
@@ -354,26 +462,29 @@ class CameraViewModel @Inject constructor(
                 Log.e("AR_DEBUG", "Error creando instancia de baldosa: ${e.message}")
                 return null
             }
-            
+
             // MODIFICACIÓN: Crear un solo anchor principal para la baldosa única
             val mainAnchorNode = AnchorNode(engine = engine, anchor = anchor)
-            
+
             // MODIFICACIÓN: Crear un solo nodo de modelo en el centro del plano (posición 0,0,0 relativa)
             val modelNode = ModelNode(
                 modelInstance = tileInstance,
                 scaleToUnits = tileSize
             ).apply {
                 isEditable = false
-                // Posición en el centro del plano (0,0,0 relativo al anchor)
+                // Posición en el centro del plano (0,0,0 relativa)
                 worldPosition = Float3(0f, 0f, 0f)
             }
-            
+
             // Añadir la baldosa única al anchor principal
             mainAnchorNode.addChildNode(modelNode)
 
+            // NUEVO: Agregar el nodo al cache de nodos de revestimiento
+            coatingNodesCache.add(mainAnchorNode)
+
             // NUEVO: Asignar el nodo de baldosa a la propiedad tileNode
             _tileNode = mainAnchorNode
-            
+
             Log.d("AR_DEBUG", "Baldosa individual creada y anclada correctamente en el centro del plano")
 
             return mainAnchorNode
@@ -386,10 +497,129 @@ class CameraViewModel @Inject constructor(
         }
     }
 
-    // NUEVO: Función para resetear el nodo de baldosa
-    fun resetTileNode() {
-        _tileNode = null
-        Log.d("AR_DEBUG", "TileNode reseteado")
+    // ACTUALIZADO: Función para actualizar planos detectados y crear círculos 2D sobre planos verticales
+    fun updateDetectedPlanes(
+        session: Session?,
+        engine: Engine,
+        materialLoader: MaterialLoader,
+        childNodes: MutableList<Node>
+    ) {
+        if (session == null || !planeRenderer.value) return
+
+        try {
+            val planes = session.getAllTrackables(Plane::class.java)
+            val activePlanes = planes.filter { it.trackingState == TrackingState.TRACKING }
+
+            // Limpiar nodos de planos verticales anteriores
+            _verticalPlaneNodes.forEach { node ->
+                childNodes.remove(node)
+                // Desconectar el anchor si existe
+                node.anchor?.detach()
+            }
+            _verticalPlaneNodes.clear()
+
+            // Crear nodos solo para planos verticales con círculos 2D
+            activePlanes.forEach { plane ->
+                when (plane.type) {
+                    Plane.Type.VERTICAL -> {
+                        try {
+                            val verticalPlaneNode = createVerticalPlaneWithCircles(
+                                engine = engine,
+                                materialLoader = materialLoader,
+                                plane = plane,
+                                session = session
+                            )
+
+                            if (verticalPlaneNode != null) {
+                                childNodes.add(verticalPlaneNode)
+                                _verticalPlaneNodes.add(verticalPlaneNode)
+                                Log.d(
+                                    "AR_DEBUG",
+                                    "Plano vertical con círculos agregado: ${plane.extentX}x${plane.extentZ}"
+                                )
+                            }
+                        } catch (e: Exception) {
+                            Log.w(
+                                "AR_DEBUG",
+                                "Error creando plano vertical con círculos: ${e.message}"
+                            )
+                        }
+                    }
+
+                    else -> {
+                        // Los planos horizontales los maneja SceneView automáticamente
+                    }
+                }
+            }
+
+            Log.d(
+                "AR_DEBUG",
+                "Planes actualizados. Total: ${activePlanes.size}, Verticales con círculos: ${_verticalPlaneNodes.size}"
+            )
+        } catch (e: Exception) {
+            Log.e("AR_DEBUG", "Error actualizando planos detectados: ${e.message}")
+        }
+    }
+
+    // NUEVO: Función para crear planos verticales con círculos 2D adheridos
+    fun createVerticalPlaneWithCircles(
+        engine: Engine,
+        materialLoader: MaterialLoader,
+        plane: Plane,
+        session: Session
+    ): AnchorNode? {
+        return try {
+            Log.d(
+                "AR_DEBUG",
+                "Creando plano vertical optimizado con malla única"
+            )
+
+            val anchor = session.createAnchor(plane.centerPose)
+            val anchorNode = AnchorNode(engine = engine, anchor = anchor)
+
+            // CONFIGURACIÓN DINÁMICA: Calcular puntos necesarios según tamaño real
+            val spacing =
+                0.18f // Espaciado optimizado (18cm entre puntos) - Aumentado para reducir cantidad de círculos
+            val planeWidth = plane.extentX
+            val planeHeight = plane.extentZ
+            val pointsX = ceil(planeWidth / spacing).toInt().coerceAtLeast(1)
+            val pointsZ = ceil(planeHeight / spacing).toInt().coerceAtLeast(1)
+            val totalPoints = pointsX * pointsZ
+
+            Log.d(
+                "AR_DEBUG",
+                "Malla DINÁMICA calculada: ${pointsX}x${pointsZ} puntos (${totalPoints} total) para llenar ${planeWidth}x${planeHeight}m con spacing ${spacing}m"
+            )
+
+            // GENERAR: Vertex buffer e índices para todos los puntos calculados
+            val vertices = generateVertexBuffer(planeWidth, plane.extentZ, pointsX, pointsZ)
+            val indices = generateIndexBuffer(pointsX, pointsZ)
+
+            // CREAR: Geometría completa sin limitaciones artificiales
+            val circlePatternNode = createCompletePlaneGeometry(
+                engine = engine,
+                materialLoader = materialLoader,
+                vertices = vertices,
+                indices = indices,
+                totalPoints = totalPoints,
+                pointsX = pointsX,
+                pointsZ = pointsZ
+            )
+
+            if (circlePatternNode != null) {
+                anchorNode.addChildNode(circlePatternNode)
+                Log.d(
+                    "AR_DEBUG",
+                    "Malla dinámica completada: ${vertices.size / 3} vértices para ${totalPoints} círculos llenando completamente el plano"
+                )
+            }
+
+            anchorNode
+
+        } catch (e: Exception) {
+            Log.e("AR_DEBUG", "Error creando malla dinámica: ${e.message}")
+            null
+        }
     }
 
     // NUEVO: Función para colocar baldosa automáticamente en el primer plano horizontal encontrado
@@ -397,10 +627,10 @@ class CameraViewModel @Inject constructor(
         engine: Engine,
         modelLoader: ModelLoader,
         materialLoader: MaterialLoader,
-        session: Session?,
-        frame: Frame?
+        session: Session,
+        frame: Frame
     ): AnchorNode? {
-        if (_tileNode != null || session == null || frame == null) {
+        if (_tileNode != null) {
             return null
         }
 
@@ -440,33 +670,58 @@ class CameraViewModel @Inject constructor(
         return null
     }
 
-    // OPTIMIZACIÓN: Obtener instancias de cache de forma segura
-    private fun getTileInstancesFromCache(
-        cacheKey: String, 
-        totalTiles: Int, 
-        maxTiles: Int, 
-        modelLoader: ModelLoader
-    ): List<ModelInstance> {
-        return if (tileModelCache.containsKey(cacheKey)) {
-            Log.d("AR_DEBUG", "Usando modelos en cache para $totalTiles baldosas")
-            tileModelCache[cacheKey]!!
-        } else {
-            Log.d("AR_DEBUG", "Creando nuevos modelos para cache: $totalTiles baldosas")
-            val instances = mutableListOf<ModelInstance>()
-            val instancesToCreate = totalTiles.coerceAtMost(maxTiles)
-            
-            repeat(instancesToCreate) {
-                try {
-                    instances.add(modelLoader.createInstancedModel("models/baldosa.glb", 1).first())
-                } catch (e: Exception) {
-                    Log.w("AR_DEBUG", "Error creando instancia de baldosa $it: ${e.message}")
-                }
+    // NUEVO: Función para eliminar completamente todas las baldosas de la escena
+    fun removeAllTileNodes(childNodes: MutableList<Node>) {
+        Log.d(
+            "AR_DEBUG",
+            "Eliminando todas las baldosas de la escena (${coatingNodesCache.size} grupos de baldosas)"
+        )
+
+        // Remover todos los nodos de baldosas almacenados en cache
+        val tilesToRemove = coatingNodesCache.toList()
+        childNodes.removeAll(tilesToRemove.toSet())
+
+        // CORRECCIÓN: Desconectar solo los anchors principales (no hay anchors individuales por baldosa)
+        tilesToRemove.forEach { mainAnchorNode ->
+            try {
+                Log.d("AR_DEBUG", "Desconectando grupo de baldosas")
+                mainAnchorNode.anchor?.detach()
+            } catch (e: Exception) {
+                Log.w("AR_DEBUG", "Error al desconectar anchor principal: ${e.message}")
             }
-            
-            if (instances.isNotEmpty()) {
-                tileModelCache[cacheKey] = instances
-            }
-            instances
+        }
+
+        // Limpiar todos los recursos de revestimiento
+        coatingNodesCache.clear()
+        tileModelCache.clear()
+        processedPlanes.clear()
+
+        // Resetear estado de creación
+        resetTileCreationState()
+
+        Log.d(
+            "AR_DEBUG",
+            "Limpieza completa terminada. Nodos restantes en escena: ${childNodes.size}"
+        )
+    }
+
+    // NUEVO: Función para resetear el nodo de baldosa
+    fun resetTileNode() {
+        _tileNode = null
+        Log.d("AR_DEBUG", "TileNode reseteado")
+    }
+
+    // NUEVO: Función para actualizar dimensiones de pantalla
+    fun updateScreenDimensions(width: Float, height: Float) {
+        screenWidth = width
+        screenHeight = height
+        Log.d("AR_DEBUG", "Dimensiones de pantalla actualizadas: ${width}x${height}")
+    }
+
+    // NUEVO: Función para actualizar la posición del modelo seleccionado
+    fun updateSelectedModelPosition() {
+        _selectedPlacedModel.value?.let { placedModel ->
+            // Función updateSelectedModelScreenPosition eliminada
         }
     }
 
@@ -480,77 +735,166 @@ class CameraViewModel @Inject constructor(
         return try {
             val translation = pose.translation
             val rotation = pose.rotationQuaternion
-            
+
             // Verificar que los valores no sean NaN o infinitos
             !(translation.any { it.isNaN() || it.isInfinite() } ||
-              rotation.any { it.isNaN() || it.isInfinite() })
+                    rotation.any { it.isNaN() || it.isInfinite() })
         } catch (e: Exception) {
             false
         }
     }
-    
-    // OPTIMIZACIÓN: Determinar número óptimo de baldosas basado en rendimiento
-    private fun getOptimalTileCount(requestedTiles: Int): Int {
-        return when {
-            requestedTiles <= 25 -> requestedTiles  // Área pequeña: renderizar todas
-            requestedTiles <= 64 -> 40              // Área mediana: reducir moderadamente  
-            requestedTiles <= 144 -> 64             // Área grande: reducir significativamente
-            else -> 50                              // Área muy grande: límite conservador
-        }
-    }
-    
-    // OPTIMIZACIÓN: Calcular posiciones de baldosas de forma eficiente
-    private fun calculateTilePositions(
-        planeExtentX: Float, 
-        planeExtentZ: Float, 
-        tilesX: Int, 
-        tilesZ: Int, 
-        tileSize: Float
-    ): List<Float3> {
-        val positions = mutableListOf<Float3>()
-        val startX = -planeExtentX / 2f + tileSize / 2f
-        val startZ = -planeExtentZ / 2f + tileSize / 2f
-        
-        for (x in 0 until tilesX) {
-            for (z in 0 until tilesZ) {
-                val tileX = startX + (x * tileSize)
-                val tileZ = startZ + (z * tileSize)
-                positions.add(Float3(tileX, 0f, tileZ))
+
+    // OPTIMIZACIÓN 1: Generar vertex buffer con todas las posiciones
+    private fun generateVertexBuffer(
+        width: Float,
+        height: Float,
+        pointsX: Int,
+        pointsZ: Int
+    ): FloatArray {
+        val verticesPerCircle = 6 // Hexágono simple para cada círculo
+        val vertexArray =
+            FloatArray(pointsX * pointsZ * verticesPerCircle * 3) // x, y, z por vértice
+
+        val startX = -width / 2f
+        val startZ = -height / 2f
+        val stepX = if (pointsX > 1) width / (pointsX - 1) else 0f
+        val stepZ = if (pointsZ > 1) height / (pointsZ - 1) else 0f
+
+        var vertexIndex = 0
+
+        // Generar vértices para cada círculo
+        for (x in 0 until pointsX) {
+            for (z in 0 until pointsZ) {
+                val centerX = startX + (x * stepX)
+                val centerZ = startZ + (z * stepZ)
+
+                // Crear hexágono simple para cada punto circular
+                for (i in 0 until verticesPerCircle) {
+                    val angle = (i * 2 * PI / verticesPerCircle).toFloat()
+                    val offsetX = 0.01f * cos(angle)
+                    val offsetZ = 0.01f * sin(angle)
+
+                    // Posición del vértice
+                    vertexArray[vertexIndex++] = centerX + offsetX
+                    vertexArray[vertexIndex++] = 0f // Y en el plano
+                    vertexArray[vertexIndex++] = centerZ + offsetZ
+                }
             }
         }
-        
-        return positions
+
+        return vertexArray
     }
 
-    // NUEVO: Eliminar completamente todas las baldosas de la escena
-    fun removeAllTileNodes(childNodes: MutableList<Node>) {
-        Log.d("AR_DEBUG", "Eliminando todas las baldosas de la escena (${coatingNodesCache.size} grupos de baldosas)")
-        
-        // Remover todos los nodos de baldosas almacenados en cache
-        val tilesToRemove = coatingNodesCache.toList()
-        childNodes.removeAll(tilesToRemove.toSet())
-        
-        // CORRECCIÓN: Desconectar solo los anchors principales (no hay anchors individuales por baldosa)
-        tilesToRemove.forEach { mainAnchorNode ->
-            try {
-                Log.d("AR_DEBUG", "Desconectando grupo de baldosas")
-                mainAnchorNode.anchor?.detach()
-            } catch (e: Exception) {
-                Log.w("AR_DEBUG", "Error al desconectar anchor principal: ${e.message}")
+    // NUEVO: Función para crear geometría completa con LOD (Level of Detail) para máximo rendimiento
+    private fun createCompletePlaneGeometry(
+        engine: Engine,
+        materialLoader: MaterialLoader,
+        vertices: FloatArray,
+        indices: IntArray,
+        totalPoints: Int,
+        pointsX: Int,
+        pointsZ: Int
+    ): Node? {
+        return try {
+            val parentNode = Node(engine)
+
+            // MATERIAL OPTIMIZADO: Sin transparencia para máximo rendimiento GPU
+            val solidMaterial = materialLoader.createColorInstance(
+                Color.White // Sin alpha para evitar transparencia y cálculos adicionales
+            )
+
+            // RENDERIZADO CON LOD: Geometría adaptativa según distancia
+            val verticesPerCircle = 6
+
+            Log.d(
+                "AR_DEBUG",
+                "Iniciando renderizado con LOD de ${totalPoints} puntos calculados"
+            )
+
+            var pointsCreated = 0
+            var vertexIndex = 0
+
+            // BUCLE CON LOD: Optimizar geometría según distancia estimada del centro
+            while (vertexIndex < vertices.size && pointsCreated < totalPoints) {
+                val x = vertices[vertexIndex]
+                val y = vertices[vertexIndex + 1]
+                val z = vertices[vertexIndex + 2]
+
+                // LOD: Determinar complejidad según distancia estimada del centro
+                val distanceFromCenter = sqrt(x * x + z * z)
+
+                // OPTIMIZACIÓN MÁXIMA: Todos los círculos con mínimo detalle para proteger la GPU
+                val (circleRadius, scale) = when {
+                    distanceFromCenter < 1.0f -> {
+                        // CERCA: Mínimo detalle
+                        Pair(0.008f, Float3(0.6f, 0.06f, 0.6f))
+                    }
+
+                    distanceFromCenter < 2.0f -> {
+                        // MEDIO: Mínimo detalle
+                        Pair(0.008f, Float3(0.6f, 0.06f, 0.6f))
+                    }
+
+                    else -> {
+                        // LEJOS: Mínimo detalle
+                        Pair(0.008f, Float3(0.6f, 0.06f, 0.6f))
+                    }
+                }
+
+                val circleNode = SphereNode(
+                    engine = engine,
+                    radius = circleRadius,
+                    materialInstance = solidMaterial
+                ).apply {
+                    position = Float3(x, y, z)
+                    // ESCALA MÍNIMA para proteger GPU
+                    this.scale = scale
+                }
+
+                parentNode.addChildNode(circleNode)
+                pointsCreated++
+
+                // AVANZAR: Al siguiente círculo
+                vertexIndex += (verticesPerCircle * 3)
             }
+
+            Log.d(
+                "AR_DEBUG",
+                "LOD completado: ${pointsCreated} puntos renderizados con mínimo detalle para proteger GPU"
+            )
+
+            parentNode
+
+        } catch (e: Exception) {
+            Log.e("AR_DEBUG", "Error creando geometría con LOD: ${e.message}")
+            null
         }
-        
-        // Limpiar todos los recursos de revestimiento
-        coatingNodesCache.clear()
-        tileModelCache.clear()
-        processedPlanes.clear()
-        
-        // Resetear estado de creación
-        resetTileCreationState()
-        
-        Log.d("AR_DEBUG", "Limpieza completa terminada. Nodos restantes en escena: ${childNodes.size}")
     }
-    
+
+    // OPTIMIZACIÓN 2: Generar índices para triangulación eficiente
+    private fun generateIndexBuffer(pointsX: Int, pointsZ: Int): IntArray {
+        val verticesPerCircle = 6
+        val trianglesPerCircle = verticesPerCircle // Fan triangulation
+        val totalTriangles = pointsX * pointsZ * trianglesPerCircle
+        val indices = IntArray(totalTriangles * 3)
+
+        var indexPos = 0
+        var baseVertex = 0
+
+        // Generar índices para triangulación en abanico de cada círculo
+        for (circle in 0 until (pointsX * pointsZ)) {
+            for (tri in 0 until trianglesPerCircle) {
+                // Triángulo en abanico desde el centro virtual
+                indices[indexPos++] = baseVertex // Centro del círculo
+                indices[indexPos++] = baseVertex + (tri % verticesPerCircle)
+                indices[indexPos++] = baseVertex + ((tri + 1) % verticesPerCircle)
+            }
+            baseVertex += verticesPerCircle
+        }
+
+        return indices
+    }
+
     // OPTIMIZACIÓN: Resetear estado de creación de baldosas
     fun resetTileCreationState() {
         isCreatingTiles = false
@@ -558,79 +902,28 @@ class CameraViewModel @Inject constructor(
         Log.d("AR_DEBUG", "Estado de creación de baldosas reseteado")
     }
 
-    // NUEVO: Función para seleccionar un modelo AR con botón 3D
-    fun selectPlacedModel(
-        placedModel: PlacedARModel?,
-        engine: Engine,
-        materialLoader: MaterialLoader
-    ) {
-        // Limpiar botón anterior si existe
-        _selectedPlacedModel.value?.let { previousModel ->
-            removeDelete3DButton(previousModel)
-        }
-
+    // NUEVO: Función para seleccionar modelo para confirmación de eliminación mediante modal
+    fun selectModelForDeletion(placedModel: PlacedARModel?) {
         _selectedPlacedModel.value = placedModel
-
         if (placedModel != null) {
-            // Crear botón 3D para el nuevo modelo seleccionado
-            createDelete3DButton(engine, materialLoader, placedModel)
-            Log.d("AR_DEBUG", "Modelo seleccionado con botón 3D: ${placedModel.id}")
+            Log.d("AR_DEBUG", "Modelo seleccionado para eliminación: ${placedModel.id}")
         } else {
-            Log.d("AR_DEBUG", "Modelo deseleccionado")
+            Log.d("AR_DEBUG", "Selección de modelo cancelada")
         }
     }
 
-    // NUEVO: Función para eliminar el botón de eliminación 3D
-    private fun removeDelete3DButton(placedModel: PlacedARModel) {
-        try {
-            _deleteButtonNode.value?.let { buttonNode ->
-                placedModel.anchorNode.removeChildNode(buttonNode)
-                _deleteButtonNode.value = null
-                Log.d("AR_DEBUG", "Botón 3D removido del modelo")
-            }
-        } catch (e: Exception) {
-            Log.e("AR_DEBUG", "Error removiendo botón 3D: ${e.message}")
+    // NUEVO: Función para confirmar eliminación desde modal
+    fun confirmModelDeletion(childNodes: MutableList<Node>) {
+        _selectedPlacedModel.value?.let { selectedModel ->
+            removePlacedModel(selectedModel, childNodes)
+            _selectedPlacedModel.value = null
         }
     }
 
-    // NUEVO: Función para crear un botón de eliminación 3D
-    private fun createDelete3DButton(
-        engine: Engine,
-        materialLoader: MaterialLoader,
-        placedModel: PlacedARModel
-    ) {
-        try {
-            val modelNode = placedModel.modelNode
-            val anchorNode = placedModel.anchorNode
-
-            // Calcular posición 3D del botón basada en las dimensiones del modelo
-            val modelExtents = modelNode.extents
-            val modelScale = modelNode.worldScale
-            val modelHeight = modelExtents.y * modelScale.y
-
-            // Crear un botón esférico 3D rojo
-            val deleteButton = SphereNode(
-                engine = engine,
-                radius = 0.03f, // 3cm de radio
-                materialInstance = materialLoader.createColorInstance(Color.Red.copy(alpha = 0.8f))
-            ).apply {
-                // Posicionar el botón directamente encima del modelo en 3D
-                position = Float3(0f, modelHeight + 0.05f, 0f)
-                isVisible = true
-            }
-
-            // Agregar el botón como hijo directo del anchor del modelo
-            anchorNode.addChildNode(deleteButton)
-            _deleteButtonNode.value = deleteButton
-
-            Log.d(
-                "AR_DEBUG",
-                "Botón 3D creado y agregado al modelo en posición Y: ${modelHeight + 0.05f}"
-            )
-
-        } catch (e: Exception) {
-            Log.e("AR_DEBUG", "Error creando botón 3D: ${e.message}")
-        }
+    // NUEVO: Función para cancelar eliminación desde modal
+    fun cancelModelDeletion() {
+        _selectedPlacedModel.value = null
+        Log.d("AR_DEBUG", "Eliminación de modelo cancelada")
     }
 
     // NUEVO: Función para encontrar un modelo por su nodo
@@ -642,13 +935,17 @@ class CameraViewModel @Inject constructor(
 
     // NUEVO: Función para verificar si se tocó el botón de eliminar
     fun isDeleteButtonNode(node: Node): Boolean {
-        return _deleteButtonNode.value == node
+        return _selectedPlacedModel.value?.let {
+            // Eliminado el uso de _deleteButtonNode
+            false
+        } ?: false
     }
 
     // NUEVO: Función para manejar el toque del botón de eliminar
     fun handleDeleteButtonTouch(childNodes: MutableList<Node>) {
         _selectedPlacedModel.value?.let { selectedModel ->
             removePlacedModel(selectedModel, childNodes)
+            _selectedPlacedModel.value = null
         }
     }
 
@@ -670,25 +967,19 @@ class CameraViewModel @Inject constructor(
 
             Log.d("AR_DEBUG", "Iniciando limpieza completa del modelo")
 
-            // 1. Limpiar selección si era el modelo seleccionado
-            if (_selectedPlacedModel.value == placedModel) {
-                _selectedPlacedModel.value = null
-                Log.d("AR_DEBUG", "Modelo deseleccionado")
-            }
-
-            // 2. Remover todos los nodos hijos del modelo
+            // 1. Remover todos los nodos hijos del modelo
             modelNode.removeChildNode(boundingBoxNode)
 
             anchorNode.removeChildNode(modelNode)
 
             Log.d("AR_DEBUG", "Nodos hijos eliminados")
 
-            // 3. Remover de la escena
+            // 2. Remover de la escena
             childNodes.remove(anchorNode)
 
             Log.d("AR_DEBUG", "AnchorNode removido de la escena")
 
-            // 4. Desconectar y limpiar el anchor de AR Core
+            // 3. Desconectar y limpiar el anchor de AR Core
             if (anchor != null) {
                 try {
                     anchor.detach()
@@ -698,7 +989,7 @@ class CameraViewModel @Inject constructor(
                 }
             }
 
-            // 5. Devolver la instancia del modelo al pool correcto para reutilización
+            // 4. Devolver la instancia del modelo al pool correcto para reutilización
             val modelInstance = modelNode.modelInstance
 
             val modelPath = kModelFile // Obtener el path del modelo actual
@@ -711,7 +1002,7 @@ class CameraViewModel @Inject constructor(
                 }
             }
 
-            // 6. Remover de la lista de modelos colocados
+            // 5. Remover de la lista de modelos colocados
             _placedARModels.remove(placedModel)
 
             Log.d(
@@ -723,101 +1014,35 @@ class CameraViewModel @Inject constructor(
         }
     }
 
-    // NUEVO: Función auxiliar para multiplicar matriz 4x4 por vector 4D
-    private fun multiplyMatrixVector(matrix: FloatArray, vector: FloatArray, result: FloatArray) {
-        result[0] =
-            matrix[0] * vector[0] + matrix[4] * vector[1] + matrix[8] * vector[2] + matrix[12] * vector[3]
-
-        result[1] =
-            matrix[1] * vector[0] + matrix[5] * vector[1] + matrix[9] * vector[2] + matrix[13] * vector[3]
-
-        result[2] =
-            matrix[2] * vector[0] + matrix[6] * vector[1] + matrix[10] * vector[2] + matrix[14] * vector[3]
-
-        result[3] =
-            matrix[3] * vector[0] + matrix[7] * vector[1] + matrix[11] * vector[2] + matrix[15] * vector[3]
-    }
-
-    // NUEVO: Función para proyectar coordenadas del mundo a coordenadas de pantalla
-    private fun projectWorldToScreen(
-        worldX: Float,
-        worldY: Float,
-        worldZ: Float,
-        viewMatrix: FloatArray,
-        projectionMatrix: FloatArray,
-        screenWidth: Float,
-        screenHeight: Float
-    ): Pair<Float, Float> {
-        // Vector de posición mundial en coordenadas homogéneas
-        val worldPos = floatArrayOf(worldX, worldY, worldZ, 1.0f)
-
-        val viewPos = FloatArray(4)
-
-        val clipPos = FloatArray(4)
-
-        // Multiplicar por matriz de vista primero
-        multiplyMatrixVector(viewMatrix, worldPos, viewPos)
-
-        // Luego multiplicar por matriz de proyección
-        multiplyMatrixVector(projectionMatrix, viewPos, clipPos)
-
-        // Dividir por w para obtener coordenadas de dispositivo normalizadas (NDC)
-        if (clipPos[3] != 0.0f && clipPos[3] > 0.0f) { // Verificar que esté frente a la cámara
-            val ndcX = clipPos[0] / clipPos[3]
-
-            val ndcY = clipPos[1] / clipPos[3]
-
-            // Convertir NDC (-1 a 1) a coordenadas de pantalla (0 a width/height)
-            val screenX = (ndcX + 1.0f) * 0.5f * screenWidth
-
-            val screenY =
-                (1.0f - ndcY) * 0.5f * screenHeight  // Invertir Y porque en pantalla Y=0 está arriba
-
-            return Pair(screenX, screenY)
+    // NUEVO: Función para limpiar todos los nodos de planos personalizados
+    fun clearCustomPlaneNodes(childNodes: MutableList<Node>) {
+        // Limpiar planos verticales personalizados
+        _verticalPlaneNodes.forEach { node ->
+            childNodes.remove(node)
+            // Desconectar el anchor si existe
+            node.anchor?.detach()
         }
-
-        // Si el punto está detrás de la cámara o la proyección falla, retornar fuera de pantalla
-        return Pair(-100f, -100f)
+        _verticalPlaneNodes.clear()
+        Log.d("AR_DEBUG", "Nodos de planos verticales limpiados")
     }
 
-    // NUEVO: Función para obtener la distancia del modelo seleccionado a la cámara (para escalar el botón)
-    fun getSelectedModelDistanceToCamera(): Float? {
-        return try {
-            val placedModel = _selectedPlacedModel.value ?: return null
+    // Función temporal para isPointInFrustum (frustum culling deshabilitado)
+    private fun isPointInFrustum(x: Float, y: Float, z: Float): Boolean {
+        return true
+    }
 
-            val anchor = placedModel.anchorNode.anchor ?: return null
+    // Función para actualizar el frustum de la cámara (simplificado)
+    private fun updateCameraFrustum(frame: Frame) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastCameraUpdateTime < cameraUpdateInterval) return
 
-            val frame = _frame.value ?: return null
+        lastCameraUpdateTime = currentTime
 
-            val anchorPose = anchor.pose
-
-            val cameraPos = frame.camera.pose
-
-            kotlin.math.sqrt(
-                (anchorPose.tx() - cameraPos.tx()).let { it * it } +
-                        (anchorPose.ty() - cameraPos.ty()).let { it * it } +
-                        (anchorPose.tz() - cameraPos.tz()).let { it * it }
-            )
+        try {
+            // Simplificado: Solo actualizar el tiempo para la optimización
+            Log.d("AR_DEBUG", "Frustum actualizado (simplificado)")
         } catch (e: Exception) {
-            Log.w("AR_DEBUG", "Error calculando distancia a cámara: ${e.message}")
-
-            null
-        }
-    }
-
-    // NUEVO: Función para actualizar dimensiones de pantalla
-    fun updateScreenDimensions(width: Float, height: Float) {
-        screenWidth = width
-
-        screenHeight = height
-
-        Log.d("AR_DEBUG", "Dimensiones de pantalla actualizadas: ${width}x${height}")
-    }
-
-    // NUEVO: Función para actualizar la posición del botón durante el frame
-    fun updateSelectedModelPosition() {
-        _selectedPlacedModel.value?.let { placedModel ->
-            // Función updateSelectedModelScreenPosition eliminada
+            Log.e("AR_DEBUG", "Error actualizando frustum: ${e.message}")
         }
     }
 }

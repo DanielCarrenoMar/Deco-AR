@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import com.app.homear.R
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,6 +17,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -28,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,13 +39,14 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.app.homear.ui.component.NavBard
+import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.screens.profile.ProfileViewModel
+import com.app.homear.R
+import kotlinx.coroutines.launch
 
 @Composable
 fun ConfigurationScreen(
@@ -52,64 +57,76 @@ fun ConfigurationScreen(
     viewModel: ConfigurationViewModel = hiltViewModel()
 ) {
     Box(
-        contentAlignment = Alignment.TopCenter,
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 20.dp, end = 20.dp)
-        ,
-    )
-    {
-        //column para que los elementos se posicionen uno debajo de otro
-        Column()
-        {
-            //contenedor para el titulo
-            Box(modifier = Modifier.fillMaxWidth())
-            {
-                //titulo de la pantalla
-                Text(
-                    text = "Configuracion",
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.W800,
-                    color = Color.Magenta,
-                    modifier = Modifier.align(Alignment.TopCenter)
+            .padding(
+                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            )
+    ) {
+        Box(
+            contentAlignment = Alignment.TopCenter,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 20.dp, end = 20.dp),
+        ) {
+            //column para que los elementos se posicionen uno debajo de otro
+            Column() {
+                //contenedor para el titulo
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    //titulo de la pantalla
+                    Text(
+                        text = "Configuracion",
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.W800,
+                        color = Color.Magenta,
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
+                }
+
+                //Opciones de la pantalla
+                OptionConfiguracionCheck(
+                    "NOTIFICACIONES",
+                    R.drawable.icono_toggle_on,
+                    R.drawable.icono_toggle_off,
+                    true
                 )
+                OptionConfiguracionCheck(
+                    "TEMA:CLARO",
+                    R.drawable.icono_light_mode,
+                    R.drawable.icono_light_mode,
+                    true
+                )
+
+                //crear lista de opciones dropmenu
+                var idiomas = listOf<String>("ESPAÑOL", "INGLES", "FRANCES")
+                //IDIOMA:ESPAÑOL es el valor por defecto
+                OptionConfiguracionDropMenu("IDIOMA:ESPAÑOL", R.drawable.icono_sms, idiomas)
+
+                //botones normales
+                OptionConfiguracion("COMPARTIR APP", R.drawable.icono_share)
+                OptionConfiguracion("AYUDA", R.drawable.icono_error)
+                OptionConfiguracion("SOBRE NOSOTROS", R.drawable.icono_group)
             }
-
-            //Opciones de la pantalla
-            OptionConfiguracionCheck("NOTIFICACIONES", R.drawable.icono_toggle_on, R.drawable.icono_toggle_off, true)
-            OptionConfiguracionCheck("TEMA:CLARO", R.drawable.icono_light_mode, R.drawable.icono_light_mode, true)
-
-            //crear lista de opciones dropmenu
-            var idiomas = listOf<String>("ESPAÑOL", "INGLES", "FRANCES")
-            //IDIOMA:ESPAÑOL es el valor por defecto
-            OptionConfiguracionDropMenu("IDIOMA:ESPAÑOL", R.drawable.icono_sms, idiomas)
-
-            //botones normales
-            OptionConfiguracion("COMPARTIR APP", R.drawable.icono_share)
-            OptionConfiguracion("AYUDA", R.drawable.icono_error)
-            OptionConfiguracion("SOBRE NOSOTROS", R.drawable.icono_group)
         }
 
-    }
-
-    // Barra de navegación en la parte inferior
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(1f),
-        verticalArrangement = Arrangement.Bottom
-    )
-    {
-        NavBard(
-            toCamera = navigateToCamera,
-            toTutorial = navigateToTutorial,
-            toCatalog = navigateToCatalog,
-            toProfile = navigateToProfile,
-            toConfiguration = null,
-        )
+        // Barra de navegación en la parte inferior
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .zIndex(1f)
+        ) {
+            NavBar(
+                toCamera = navigateToCamera,
+                toTutorial = navigateToTutorial,
+                toCatalog = navigateToCatalog,
+                toProfile = navigateToProfile,
+                toConfiguration = null,
+            )
+        }
     }
 }
-
 
 /**
  * Esta funcion es para celdas estaticas
@@ -133,7 +150,9 @@ fun OptionConfiguracion(nombre: String, idImagen: Int)
         label = "scaleAnimation"
     )
 
-    Box(modifier = Modifier.scale(scale).fillMaxWidth())
+    Box(modifier = Modifier
+        .scale(scale)
+        .fillMaxWidth())
     {
 
         Row(
@@ -164,9 +183,11 @@ fun OptionConfiguracion(nombre: String, idImagen: Int)
                 )
                 // aqui se carga el icono
                 Icon(
-                    painter = painterResource(idImagen),
+                    painter = painterResource(id = idImagen),
                     contentDescription = "icono Favorito",
-                    modifier = Modifier.align(Alignment.CenterEnd).size(40.dp),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(40.dp),
                     tint = Color.Magenta,
 
                     )
@@ -195,7 +216,7 @@ fun OptionConfiguracionCheck(nombre: String, idImagenOn: Int, idImagenOff: Int ,
     var colorIcono by remember { mutableStateOf(Color.Magenta) }
     var isActive by remember { mutableStateOf(active) }
     var idImagen by remember { mutableStateOf(idImagenOn) }
-
+    val scope = rememberCoroutineScope()
 
     // Configuración de la animación de escala
     val interactionSource = remember { MutableInteractionSource() }
@@ -224,7 +245,9 @@ fun OptionConfiguracionCheck(nombre: String, idImagenOn: Int, idImagenOff: Int ,
 
 
     Box(
-        modifier = Modifier.scale(scale).fillMaxWidth()
+        modifier = Modifier
+            .scale(scale)
+            .fillMaxWidth()
     )
     {
 
@@ -240,12 +263,14 @@ fun OptionConfiguracionCheck(nombre: String, idImagenOn: Int, idImagenOff: Int ,
                     indication = null
                 )
                 {
-                    if (isActive) {
-                        colorIcono = Color.Black
-                        isActive = false
-                    } else {
-                        colorIcono = Color.Magenta
-                        isActive = true
+                    scope.launch {
+                        if (isActive) {
+                            colorIcono = Color.Black
+                            isActive = false
+                        } else {
+                            colorIcono = Color.Magenta
+                            isActive = true
+                        }
                     }
                 }
 
@@ -262,9 +287,11 @@ fun OptionConfiguracionCheck(nombre: String, idImagenOn: Int, idImagenOff: Int ,
                 )
                 // aqui se carga el icono
                 Icon(
-                    painter = painterResource(idImagen),
+                    painter = painterResource(id = idImagen),
                     contentDescription = "icono Favorito",
-                    modifier = Modifier.align(Alignment.CenterEnd).size(40.dp),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(40.dp),
                     tint = colorIcono,
 
                     )
@@ -307,7 +334,9 @@ fun OptionConfiguracionDropMenu(nombre: String, idImagen: Int, opciones: List<St
     //lista de opciones para el dropMenu
     val menuItems = opciones
 
-    Box(modifier = Modifier.scale(scale).fillMaxWidth())
+    Box(modifier = Modifier
+        .scale(scale)
+        .fillMaxWidth())
     {
 
         Row(
@@ -339,9 +368,11 @@ fun OptionConfiguracionDropMenu(nombre: String, idImagen: Int, opciones: List<St
                 )
                 // aqui se carga el icono
                 Icon(
-                    painter = painterResource(idImagen),
+                    painter = painterResource(id = idImagen),
                     contentDescription = "icono Favorito",
-                    modifier = Modifier.align(Alignment.CenterEnd).size(40.dp),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(40.dp),
                     tint = Color.Magenta,
 
                     )
