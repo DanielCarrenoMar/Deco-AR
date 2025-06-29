@@ -28,6 +28,9 @@ android {
         val apiKey = properties.getProperty("API_GOOGLE_SERVICES") ?: ""
         buildConfigField("String", "API_GOOGLE_SERVICES", "$apiKey")
 
+        val apiKeyDrive = properties.getProperty("API_GOOGLE_DRIVE") ?: ""
+        buildConfigField("String", "API_GOOGLE_DRIVE", "$apiKeyDrive")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ksp {
@@ -54,6 +57,17 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/NOTICE",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE.txt"
+            )
+        }
     }
 }
 
@@ -105,4 +119,9 @@ dependencies {
     implementation(libs.coroutines.android)
     implementation(libs.coroutines.play.services)
     implementation(platform(libs.firebase.bom))
+
+    // Google Drive API
+    implementation (libs.google.api.services.drive)
+    implementation(libs.retrofit)
+    implementation (libs.converter.gson)
 }
