@@ -9,9 +9,7 @@ import com.google.firebase.auth.FirebaseUser
 import java.io.File
 
 interface LocalStorageRepository {
-    suspend fun signIn(email: String, password: String): Task<AuthResult>
-    suspend fun signUp(email: String, password: String): Task<AuthResult>
-    suspend fun currentUser(): FirebaseUser?
+
     /**
      * Obtiene la direccion de todos los archivos de un directorio
      */
@@ -23,8 +21,5 @@ interface LocalStorageRepository {
     suspend fun updateFurnitureById(fModelId: Int, name: String, description: String): Boolean
     suspend fun deleteAllFurnitures(): Int
     suspend fun deleteFurnitureFromId(fModelId: Int): Boolean
-    suspend fun getCollectionModel(): List<FurnitureModel>
-    suspend fun getCollectionModelByProvider(provider: String): List<FurnitureModel>
 
-    suspend fun updateUser(user: UserModel): Boolean
 }
