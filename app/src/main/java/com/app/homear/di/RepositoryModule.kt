@@ -2,8 +2,10 @@ package com.app.homear.di
 
 import com.app.homear.data.database.repository.LocalStorageRepositoryImpl
 import com.app.homear.data.firebase.FirebaseStorageRepositoryImpl
+import com.app.homear.data.remote.RemoteStorageRepositoryImpl
 import com.app.homear.domain.repository.FirebaseStorageRepository
 import com.app.homear.domain.repository.LocalStorageRepository
+import com.app.homear.domain.repository.RemoteStorageRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -24,5 +26,12 @@ abstract class RepositoryModule {
     abstract fun bindFirebaseStoreRepository(
         firebaseStorageRepositoryImpl: FirebaseStorageRepositoryImpl
     ): FirebaseStorageRepository
+
+    @Singleton
+    @Binds
+    abstract fun bindRemoteStorageRepository(
+        remoteStorageRepositoryImpl: RemoteStorageRepositoryImpl
+    ): RemoteStorageRepository
+
 
 }
