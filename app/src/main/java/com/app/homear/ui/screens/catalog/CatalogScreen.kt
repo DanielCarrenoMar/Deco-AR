@@ -76,6 +76,7 @@ fun CatalogScreen(
     navigateToConfiguration: () -> Unit,
     viewModel: CatalogViewModel = hiltViewModel(),
 ) {
+
     val context = LocalContext.current
     Box(
         modifier = Modifier

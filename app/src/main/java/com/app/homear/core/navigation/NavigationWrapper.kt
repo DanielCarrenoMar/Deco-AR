@@ -17,7 +17,7 @@ import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
 import com.app.homear.ui.screens.register.RegisterScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
-
+import com.app.homear.ui.screens.start.StartScreen
 
 /**
  * Navega a una pantalla borrandola de la pila de pantallas
@@ -33,20 +33,26 @@ fun NavigationWrapper() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = Intro, // En que pagina inicia
+        startDestination = Tutorial, // En que pagina inicia
         enterTransition = { fadeIn(animationSpec = tween(700)) }, // Animacion de entrada
         exitTransition = { fadeOut(animationSpec = tween(700)) }, // Animacion de salida
         popEnterTransition = {fadeIn(animationSpec = tween(0))}, // Animacion cuado se hace un navigatePop
     ) {
         composable<Intro> {
             IntroScreen(
-                onNavigatoNext = { navController.navigatePop(Tutorial) }
+                onNavigatoNext = { navController.navigatePop(Loading) }
             )
         }
 
         composable<Loading> {
             LoadingScreen(
-                onNavigateToLogin = { navController.navigatePop(Login) }
+                onNavigateToStart = { navController.navigatePop(Start) }
+            )
+        }
+        composable<Start> {
+            StartScreen(
+                onNavigateToLogin = { navController.navigatePop(Login) },
+                onNavigateToRegister = { navController.navigatePop(Register) }
             )
         }
 

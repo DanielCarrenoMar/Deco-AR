@@ -18,12 +18,12 @@ import kotlinx.coroutines.delay
 @Composable
 fun LoadingScreen(
     viewModel: LoadingViewModel = hiltViewModel(),
-    onNavigateToLogin: () -> Unit = {}
+    onNavigateToStart: () -> Unit = {}
 ) {
     // Simular carga y navegar al login después de 2 segundos
     LaunchedEffect(Unit) {
         delay(2000)
-        onNavigateToLogin()
+        onNavigateToStart()
     }
 
     Box(

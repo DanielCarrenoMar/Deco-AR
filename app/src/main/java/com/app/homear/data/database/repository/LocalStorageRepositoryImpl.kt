@@ -1,33 +1,20 @@
 package com.app.homear.data.database.repository
 
+
 import com.app.homear.data.database.dao.FurnitureDao
 import com.app.homear.data.database.entity.toFurnitureModel
 import com.app.homear.domain.model.FurnitureModel
+
 import com.app.homear.domain.model.toFurnitureEntity
 import com.app.homear.domain.repository.LocalStorageRepository
-import com.google.android.gms.tasks.Task
-import com.google.firebase.auth.AuthResult
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
+
 import java.io.File
 import javax.inject.Inject
 
 class LocalStorageRepositoryImpl @Inject constructor(
     private val FurnitureDao: FurnitureDao,
-    private val auth: FirebaseAuth
 ) : LocalStorageRepository {
 
-    override suspend fun signIn(email: String, password: String): Task<AuthResult> {
-        return auth.signInWithEmailAndPassword(email, password)
-    }
-
-    override suspend fun signUp(email: String, password: String): Task<AuthResult> {
-        return auth.createUserWithEmailAndPassword(email, password)
-    }
-
-    override suspend fun currentUser(): FirebaseUser? {
-        return auth.currentUser
-    }
 
     override suspend fun getAllFilesTypeFromDir(directory: String, type: String): List<File> {
         val dir = File(directory)
@@ -93,6 +80,5 @@ class LocalStorageRepositoryImpl @Inject constructor(
             throw e
         }
     }
-
 
 }
