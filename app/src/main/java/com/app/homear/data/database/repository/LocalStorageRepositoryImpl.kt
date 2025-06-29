@@ -6,6 +6,7 @@ import com.app.homear.data.database.dao.FurnitureDao
 import com.app.homear.data.database.entity.FurnitureEntity
 import com.app.homear.data.database.entity.toFurnitureModel
 import com.app.homear.domain.model.FurnitureModel
+import com.app.homear.domain.model.UserModel
 import com.app.homear.domain.model.toFurnitureEntity
 import com.app.homear.domain.repository.LocalStorageRepository
 import com.google.android.gms.tasks.Task
@@ -114,5 +115,30 @@ class LocalStorageRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCollectionModelByProvider(provider: String): List<FurnitureModel> {
+        try{
+            val snapshot = firestore.collection("models").whereEqualTo("storeProvider", provider).get().await()
+            return snapshot.documents.mapNotNull { document ->
+                val entity = document.toObject(FurnitureEntity::class.java)
+                entity?.toFurnitureModel()
+            }
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al obtener la colección", e)
+            return emptyList()
+        }
+
+    }
+
+    override suspend fun updateUser(user: UserModel): Boolean {
+        try {
+            val authUser = currentUser()
+            firestore.collection("users").document(authUser?.uid ?: "").set(user).await()
+            return true
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al obtener la colección", e)
+            return false
+
+        }
+    }
 
 }

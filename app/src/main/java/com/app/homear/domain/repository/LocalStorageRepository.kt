@@ -2,6 +2,7 @@ package com.app.homear.domain.repository
 
 import com.app.homear.data.database.entity.FurnitureEntity
 import com.app.homear.domain.model.FurnitureModel
+import com.app.homear.domain.model.UserModel
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseUser
@@ -23,4 +24,7 @@ interface LocalStorageRepository {
     suspend fun deleteAllFurnitures(): Int
     suspend fun deleteFurnitureFromId(fModelId: Int): Boolean
     suspend fun getCollectionModel(): List<FurnitureModel>
+    suspend fun getCollectionModelByProvider(provider: String): List<FurnitureModel>
+
+    suspend fun updateUser(user: UserModel): Boolean
 }
