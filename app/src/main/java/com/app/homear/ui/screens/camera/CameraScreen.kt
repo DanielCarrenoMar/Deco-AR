@@ -1,12 +1,26 @@
 package com.app.homear.ui.screens.camera
 
+import android.content.ContentValues
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.provider.MediaStore
 import android.util.Log
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,8 +43,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +67,7 @@ import io.github.sceneview.rememberNodes
 import io.github.sceneview.rememberView
 import io.github.sceneview.SceneView
 import io.github.sceneview.ar.ARScene
+import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.ar.arcore.createAnchorOrNull
@@ -60,6 +77,105 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.sceneview.rememberOnGestureListener
 import kotlinx.coroutines.delay
 import kotlin.math.sqrt
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
+import android.view.SurfaceView
+import android.view.PixelCopy
+import android.app.Activity
+
+// Función para encontrar la vista ARSceneView
+fun View.findARSceneView(): ARSceneView? {
+    if (this is ARSceneView) {
+        return this
+    }
+    if (this is ViewGroup) {
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            val arSceneView = child.findARSceneView()
+            if (arSceneView != null) {
+                return arSceneView
+            }
+        }
+    }
+    return null
+}
+
+// Función para encontrar la SurfaceView
+fun View.findSurfaceView(): SurfaceView? {
+    if (this is SurfaceView) return this
+    if (this is ViewGroup) {
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            val result = child.findSurfaceView()
+            if (result != null) return result
+        }
+    }
+    return null
+}
+
+// Función para capturar AR con PixelCopy
+fun captureARWithPixelCopy(
+    activity: Activity,
+    arSceneView: ARSceneView,
+    onResult: (Bitmap?) -> Unit
+) {
+    val surfaceView = arSceneView.findSurfaceView()
+    if (surfaceView == null) {
+        Log.e("CameraScreen", "No se encontró SurfaceView en ARSceneView")
+        onResult(null)
+        return
+    }
+
+    Log.d("CameraScreen", "SurfaceView encontrada: ${surfaceView.width}x${surfaceView.height}")
+    
+    if (surfaceView.width <= 0 || surfaceView.height <= 0) {
+        Log.e("CameraScreen", "SurfaceView no tiene dimensiones válidas")
+        onResult(null)
+        return
+    }
+
+    val bitmap = Bitmap.createBitmap(surfaceView.width, surfaceView.height, Bitmap.Config.ARGB_8888)
+    
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        PixelCopy.request(
+            surfaceView,
+            bitmap,
+            { copyResult ->
+                when (copyResult) {
+                    PixelCopy.SUCCESS -> {
+                        Log.d("CameraScreen", "PixelCopy exitoso: ${bitmap.width}x${bitmap.height}")
+                        onResult(bitmap)
+                    }
+                    1 -> { // ERROR_SOURCE_NOT_IN_VISIBLE_REGION
+                        Log.e("CameraScreen", "Error: fuente no en región visible")
+                        onResult(null)
+                    }
+                    2 -> { // ERROR_SOURCE_INVALID
+                        Log.e("CameraScreen", "Error: fuente inválida")
+                        onResult(null)
+                    }
+                    3 -> { // ERROR_DESTINATION_INVALID
+                        Log.e("CameraScreen", "Error: destino inválido")
+                        onResult(null)
+                    }
+                    4 -> { // ERROR_TIMEOUT
+                        Log.e("CameraScreen", "Error: timeout")
+                        onResult(null)
+                    }
+                    else -> {
+                        Log.e("CameraScreen", "Error desconocido en PixelCopy: $copyResult")
+                        onResult(null)
+                    }
+                }
+            },
+            Handler(Looper.getMainLooper())
+        )
+    } else {
+        Log.e("CameraScreen", "PixelCopy requiere Android 7.0+ (API 24)")
+        onResult(null)
+    }
+}
 
 @Composable
 private fun ModelSelector(
@@ -123,17 +239,199 @@ fun CameraScreen(
 ) {
     val context = LocalContext.current
     val haveAr by remember { mutableStateOf(viewModel.isArCoreSupported(context)) }
+    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val engine = rememberEngine()
+    val view = rememberView(engine)
+    val currentView = LocalView.current
+
+    // Función para recortar el bitmap y excluir elementos de UI
+    fun cropBitmapToARContent(originalBitmap: Bitmap, rootView: View): Bitmap {
+        try {
+            Log.d("CameraScreen", "Recortando bitmap original: ${originalBitmap.width}x${originalBitmap.height}")
+            
+            // Calcular las dimensiones de recorte basadas en el tamaño de la pantalla
+            val screenWidth = originalBitmap.width
+            val screenHeight = originalBitmap.height
+            
+            // Definir las áreas a excluir (elementos de UI)
+            val statusBarHeight = (screenHeight * 0.05).toInt() // 5% de la altura para barra de estado
+            val topUIHeight = (screenHeight * 0.15).toInt() // 15% para elementos superiores
+            val bottomUIHeight = (screenHeight * 0.20).toInt() // 20% para elementos inferiores
+            val sideUIWidth = (screenWidth * 0.08).toInt() // 8% para elementos laterales
+            
+            val startX = sideUIWidth
+            val startY = statusBarHeight + topUIHeight
+            val endX = screenWidth - sideUIWidth
+            val endY = screenHeight - bottomUIHeight
+            
+            // Verificar que las dimensiones sean válidas
+            if (startX >= endX || startY >= endY) {
+                Log.w("CameraScreen", "Dimensiones de recorte inválidas, retornando bitmap original")
+                return originalBitmap
+            }
+            
+            // Verificar que el área de recorte no sea muy pequeña
+            val cropWidth = endX - startX
+            val cropHeight = endY - startY
+            if (cropWidth < 100 || cropHeight < 100) {
+                Log.w("CameraScreen", "Área de recorte muy pequeña, retornando bitmap original")
+                return originalBitmap
+            }
+            
+            // Crear el bitmap recortado
+            val croppedBitmap = Bitmap.createBitmap(
+                originalBitmap, 
+                startX, 
+                startY, 
+                cropWidth, 
+                cropHeight
+            )
+            
+            Log.d("CameraScreen", "Bitmap recortado: ${croppedBitmap.width}x${croppedBitmap.height}")
+            Log.d("CameraScreen", "Área de recorte: ($startX, $startY) a ($endX, $endY)")
+            return croppedBitmap
+            
+        } catch (e: Exception) {
+            Log.e("CameraScreen", "Error al recortar bitmap: ${e.message}", e)
+            return originalBitmap
+        }
+    }
+
+    fun takeScreenshot() {
+        try {
+            Log.d("CameraScreen", "Iniciando captura de pantalla con PixelCopy...")
+            
+            val activity = context as? Activity
+            if (activity == null) {
+                Toast.makeText(context, "No se pudo obtener la actividad", Toast.LENGTH_SHORT).show()
+                Log.e("CameraScreen", "Context no es una Activity")
+                return
+            }
+            
+            // Buscar la ARSceneView
+            val sceneView = currentView.findARSceneView()
+            if (sceneView == null) {
+                Toast.makeText(context, "No se pudo encontrar la vista AR", Toast.LENGTH_SHORT).show()
+                Log.e("CameraScreen", "ARSceneView no encontrada")
+                return
+            }
+            
+            Log.d("CameraScreen", "ARSceneView encontrada, iniciando PixelCopy...")
+            
+            // Usar PixelCopy para capturar la SurfaceView de ARCore
+            captureARWithPixelCopy(activity, sceneView) { bitmap ->
+                if (bitmap != null) {
+                    // Recortar la imagen para excluir elementos de UI
+                    val croppedBitmap = cropBitmapToARContent(bitmap, currentView.rootView)
+                    capturedBitmap = croppedBitmap
+                    Log.d("CameraScreen", "Captura con PixelCopy exitosa: ${croppedBitmap.width}x${croppedBitmap.height}")
+                    Toast.makeText(context, "Captura de pantalla tomada", Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.e("CameraScreen", "PixelCopy falló")
+                    Toast.makeText(context, "Error al capturar la pantalla", Toast.LENGTH_SHORT).show()
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e("CameraScreen", "Error al tomar la captura: ${e.message}", e)
+            Toast.makeText(context, "Error al tomar la captura: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    capturedBitmap?.let { bitmap ->
+        val context = LocalContext.current
+        val saveImageToGallery: (Bitmap) -> Unit = { bmp ->
+            try {
+                val filename = "AR_${System.currentTimeMillis()}.jpg"
+                val fos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val resolver = context.contentResolver
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                        put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/DecorAR")
+                    }
+                    val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    if (imageUri != null) {
+                        resolver.openOutputStream(imageUri)
+                    } else null
+                } else {
+                    val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + "/DecorAR"
+                    val file = File(imagesDir)
+                    if (!file.exists()) file.mkdirs()
+                    FileOutputStream(File(file, filename))
+                }
+                fos?.use {
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 100, it)
+                    Toast.makeText(context, "Imagen guardada en la galería", Toast.LENGTH_SHORT).show()
+                } ?: run {
+                    Toast.makeText(context, "No se pudo guardar la imagen", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error al guardar: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+        AlertDialog(
+            onDismissRequest = { capturedBitmap = null },
+            title = {
+                Column {
+                    Text("Vista Previa", fontSize = 18.sp)
+                    Text(
+                        text = "Tamaño: ${bitmap.width}x${bitmap.height}",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(400.dp)
+                            .background(Color.LightGray)
+                    ) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Captura de pantalla",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Imagen capturada correctamente",
+                        fontSize = 14.sp,
+                        color = Color.Green
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    saveImageToGallery(bitmap)
+                    capturedBitmap = null
+                }) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { capturedBitmap = null }) {
+                    Text("Eliminar")
+                }
+            }
+        )
+    }
 
     if (haveAr) {
         Box(
             modifier = Modifier.fillMaxSize(),
         ) {
             val lifecycleOwner = LocalLifecycleOwner.current
-            val engine = rememberEngine()
+            //val engine = rememberEngine()
             val modelLoader = rememberModelLoader(engine)
             val materialLoader = rememberMaterialLoader(engine)
             val childNodes = rememberNodes()
-            val view = rememberView(engine)
+            //val view = rememberView(engine)
             val collisionSystem = rememberCollisionSystem(view)
             val gestureListener = rememberOnGestureListener(
                 onSingleTapConfirmed = { motionEvent, node ->
@@ -472,17 +770,7 @@ fun CameraScreen(
                     .padding(start = 16.dp, top = 16.dp),
                 contentAlignment = Alignment.TopStart
             ) {
-                Button(
-                    onClick = {
-                        Toast.makeText(
-                            context,
-                            "Has tomado una foto",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                ) {
-                    Text(text = "Foto")
-                }
+                // Botón de fotos eliminado - ahora está debajo del selector de modelos
             }
 
             Box(
@@ -491,7 +779,25 @@ fun CameraScreen(
                     .padding(top = 48.dp, end = 16.dp)
                     .zIndex(2f)
             ) {
-                ModelSelector(viewModel = viewModel)
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    ModelSelector(viewModel = viewModel)
+                    
+                    // Botón de foto debajo del selector de modelos
+                    Button(
+                        onClick = {
+                            takeScreenshot()
+                        },
+                        modifier = Modifier.padding(top = 2.dp)
+                    ) {
+                        Text(
+                            text = "📸 Foto",
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
             }
 
             viewModel.measuredDistance.value?.let { distance ->
