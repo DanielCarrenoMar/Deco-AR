@@ -25,9 +25,11 @@ jobs:
       - shell: bash
         env:
           API_GOOGLE_SERVICES: ${{ secrets.API_GOOGLE_SERVICES }}
+          API_GOOGLE_DRIVE: ${{ secrets.API_GOOGLE_DRIVE }}
         run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
           echo "API_GOOGLE_SERVICES=$API_GOOGLE_SERVICES" >> local.properties
+          echo "API_GOOGLE_DRIVE=$API_GOOGLE_DRIVE" >> local.properties
 
       - name: Build with Gradle
         run: ./gradlew build
