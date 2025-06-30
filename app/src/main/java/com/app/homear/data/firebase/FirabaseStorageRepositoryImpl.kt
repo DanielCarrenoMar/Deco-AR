@@ -137,7 +137,7 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateUser(key: String, value: String): Boolean {
+    override suspend fun updateUserByKey(key: String, value: String): Boolean {
         try {
             val authUser = currentUser()
             firestore.collection("users").document(authUser?.uid ?: "").update(key, value).await()
