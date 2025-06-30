@@ -43,7 +43,7 @@ import coil.request.ImageRequest
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import com.app.homear.ui.theme.Purple60
+import com.app.homear.ui.theme.CorporatePurple
 
 /**
  * Guarda un archivo en la carpeta de medios de la aplicación.
@@ -95,7 +95,7 @@ fun CatalogScreen(
             // Título del catálogo
             Text(
                 text = "Catálogo",
-                color = Purple60,
+                color = CorporatePurple,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
@@ -264,7 +264,8 @@ fun FurnitureCard(
             .then(if (isList) Modifier.height(120.dp) else Modifier.aspectRatio(0.75f))
             .clickable(onClick = onItemClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
     ) {
         Box(
             modifier = Modifier.fillMaxSize()
@@ -301,17 +302,19 @@ fun FurnitureCard(
                         .weight(1f)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color.LightGray)
+                        .padding(top = 8.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
                 Text(
                     text = item.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = Color(0xFF222222)
                 )
             }
         }

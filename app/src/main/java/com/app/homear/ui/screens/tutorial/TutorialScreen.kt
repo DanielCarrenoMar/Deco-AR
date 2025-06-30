@@ -142,19 +142,21 @@ fun TutorialScreen(
             Text(
                 text = "Diseña tu espacio en segundos",
                 fontWeight = FontWeight.Bold,
-                fontSize = 32.sp,
+                fontSize = 28.sp,
                 color = Color(0xFF3E3E3E),
-                lineHeight = 38.sp,
-                textAlign = TextAlign.Start
+                lineHeight = 34.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Solo necesitas tu cámara para comenzar a visualizar.",
-                fontSize = 24.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF535353),
-                lineHeight = 28.sp,
-                textAlign = TextAlign.Start
+                lineHeight = 24.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(28.dp))
 
