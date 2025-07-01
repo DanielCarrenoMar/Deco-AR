@@ -6,6 +6,7 @@ import com.app.homear.data.database.entity.toFurnitureModel
 import com.app.homear.domain.model.FurnitureModel
 import com.app.homear.domain.model.ProviderModel
 import com.app.homear.domain.model.UserModel
+import com.app.homear.domain.model.Superficie
 import com.app.homear.domain.repository.FirebaseStorageRepository
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
@@ -15,7 +16,41 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 
 import kotlinx.coroutines.tasks.await
+import java.io.File
 import javax.inject.Inject
+
+// DTO específico para deserialización de Firestore
+data class FirestoreFurnitureEntity(
+    val name: String = "",
+    val description: String = "",
+    val material: List<String> = emptyList(), // ArrayList de Firestore
+    val keywords: List<String> = emptyList(), // ArrayList de Firestore
+    val modelPath: String = "",
+    val imagePath: String = "",
+    val height: Float = 0f,
+    val width: Float = 0f,
+    val length: Float = 0f,
+    val superficie: String = "TODAS" // String en lugar de enum
+) {
+    fun toFurnitureModel(): FurnitureModel {
+        return FurnitureModel(
+            name = this.name,
+            description = this.description,
+            material = this.material.toHashSet(),
+            keywords = this.keywords.toHashSet(),
+            modelFile = File(this.modelPath),
+            imageFile = File(this.imagePath),
+            height = this.height,
+            width = this.width,
+            length = this.length,
+            superficie = try {
+                Superficie.valueOf(this.superficie)
+            } catch (e: Exception) {
+                Superficie.TODAS
+            }
+        )
+    }
+}
 
 class FirebaseStorageRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
@@ -100,7 +135,7 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
         return try {
             val snapshot = firestore.collection("models").get().await()
             snapshot.documents.mapNotNull { document ->
-                val entity = document.toObject(FurnitureEntity::class.java)
+                val entity = document.toObject(FirestoreFurnitureEntity::class.java)
                 entity?.toFurnitureModel()
             }
         } catch (e: Exception) {
@@ -115,7 +150,7 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
                 firestore.collection("models").whereEqualTo("storeProvider", provider).get()
                     .await()
             return snapshot.documents.mapNotNull { document ->
-                val entity = document.toObject(FurnitureEntity::class.java)
+                val entity = document.toObject(FirestoreFurnitureEntity::class.java)
                 entity?.toFurnitureModel()
             }
         } catch (e: Exception) {
