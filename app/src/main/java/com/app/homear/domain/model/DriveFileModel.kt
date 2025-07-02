@@ -1,6 +1,6 @@
 package com.app.homear.domain.model
 
-data class FileDriveModel(
+data class DriveFileModel(
     val id: String,
     val name: String,
     val kind: String,

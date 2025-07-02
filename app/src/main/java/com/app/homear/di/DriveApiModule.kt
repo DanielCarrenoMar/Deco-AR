@@ -2,8 +2,6 @@ package com.app.homear.di
 
 import com.app.homear.BuildConfig
 import com.app.homear.data.remoteStorage.DriveApiService
-import com.app.homear.data.remoteStorage.RemoteStorageRepositoryImpl
-import com.app.homear.domain.repository.RemoteStorageRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,12 +31,4 @@ object DriveApiModule {
     @Singleton
     @Named("driveApiKey")
     fun provideDriveApiKey(): String = BuildConfig.API_GOOGLE_DRIVE
-
-    @Provides
-    @Singleton
-    fun provideRemoteStorageRepository(
-        driveApiService: DriveApiService,
-        @Named("driveApiKey") apiKey: String
-    ): RemoteStorageRepository =
-        RemoteStorageRepositoryImpl(driveApiService, apiKey)
 }

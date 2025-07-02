@@ -1,8 +1,6 @@
 package com.app.homear.data.firebase
 
 import android.util.Log
-import com.app.homear.data.database.entity.FurnitureEntity
-import com.app.homear.data.database.entity.toFurnitureModel
 import com.app.homear.domain.model.FurnitureModel
 import com.app.homear.domain.model.ProviderModel
 import com.app.homear.domain.model.UserModel

@@ -1,6 +1,6 @@
 package com.app.homear.data.remoteStorage
 
-import com.app.homear.domain.model.FileDriveModel
+import com.app.homear.domain.model.DriveFileModel
 import com.app.homear.domain.repository.RemoteStorageRepository
 import com.google.api.services.drive.model.File
 import javax.inject.Inject
@@ -13,7 +13,7 @@ class RemoteStorageRepositoryImpl @Inject constructor(
     private val folderModelsId = "1u9jww2TzTjTH1R3sGvSXfbbriSxjRIXw"
     private val folderImagesId = "1SMhZxlQAABvWxs2L_DrfqOVyR8w_4X-L"
 
-    override suspend fun getAllFurnituresFiles(): List<FileDriveModel> {
+    override suspend fun getAllFurnituresFiles(): List<DriveFileModel> {
         try {
             val response = driveApiService.listFiles(apiKey, "'$folderModelsId' in parents")
             return response.files
@@ -22,7 +22,7 @@ class RemoteStorageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getFurnitureFileByName(fileName: String): FileDriveModel? {
+    override suspend fun getFurnitureFileByName(fileName: String): DriveFileModel? {
         throw NotImplementedError("getFurnitureFileByName no implementado")
     }
 
@@ -38,7 +38,7 @@ class RemoteStorageRepositoryImpl @Inject constructor(
         throw NotImplementedError("downloadFurnitureFile no implementado")
     }
 
-    override suspend fun getAllImagesFiles(): List<FileDriveModel> {
+    override suspend fun getAllImagesFiles(): List<DriveFileModel> {
         try {
             val response = driveApiService.listFiles(apiKey, "'$folderImagesId' in parents")
             return response.files
@@ -47,7 +47,7 @@ class RemoteStorageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getImageFileByName(fileName: String): FileDriveModel? {
+    override suspend fun getImageFileByName(fileName: String): DriveFileModel? {
         throw NotImplementedError("getImageFileByName no implementado")
     }
 

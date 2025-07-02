@@ -51,17 +51,7 @@ fun CatalogScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        android.util.Log.d("CatalogScreen", "LaunchedEffect triggered")
-        // Habilitando carga de Firestore
         viewModel.loadFurnitureData()
-    }
-
-    LaunchedEffect(viewModel.furnitureItems.size) {
-        android.util.Log.d("CatalogScreen", "=== UI SUMMARY ===")
-        android.util.Log.d("CatalogScreen", "Total items: ${viewModel.furnitureItems.size}")
-        android.util.Log.d("CatalogScreen", "Filtered items: ${viewModel.filteredItems.size}")
-        android.util.Log.d("CatalogScreen", "Is loading: ${viewModel.isLoading}")
-        android.util.Log.d("CatalogScreen", "=== END SUMMARY ===")
     }
 
     Box(
