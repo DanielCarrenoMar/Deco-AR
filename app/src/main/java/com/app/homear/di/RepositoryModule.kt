@@ -2,7 +2,7 @@ package com.app.homear.di
 
 import com.app.homear.data.database.repository.LocalStorageRepositoryImpl
 import com.app.homear.data.firebase.FirebaseStorageRepositoryImpl
-import com.app.homear.data.remote.RemoteStorageRepositoryImpl
+import com.app.homear.data.remoteStorage.RemoteStorageRepositoryImpl
 import com.app.homear.domain.repository.FirebaseStorageRepository
 import com.app.homear.domain.repository.LocalStorageRepository
 import com.app.homear.domain.repository.RemoteStorageRepository

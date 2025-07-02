@@ -1,8 +1,8 @@
 package com.app.homear.di
 
 import com.app.homear.BuildConfig
-import com.app.homear.data.remote.DriveApiService
-import com.app.homear.data.remote.RemoteStorageRepositoryImpl
+import com.app.homear.data.remoteStorage.DriveApiService
+import com.app.homear.data.remoteStorage.RemoteStorageRepositoryImpl
 import com.app.homear.domain.repository.RemoteStorageRepository
 import dagger.Module
 import dagger.Provides

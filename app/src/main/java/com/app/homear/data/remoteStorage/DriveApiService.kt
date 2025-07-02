@@ -1,4 +1,4 @@
-package com.app.homear.data.remote
+package com.app.homear.data.remoteStorage
 
 import com.app.homear.domain.model.FileDriveModel
 import retrofit2.http.GET
