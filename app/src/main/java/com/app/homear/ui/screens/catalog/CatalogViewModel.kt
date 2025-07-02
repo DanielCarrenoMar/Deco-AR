@@ -10,7 +10,8 @@ import com.app.homear.domain.model.DriveFileModel
 import com.app.homear.domain.model.FurnitureModel
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.usecase.firestore.GetAllCollectionFurnitureUseCase
-import com.app.homear.domain.usecase.remoteStorage.GetAllFurnituresFromRemoteStorageUseCase
+import com.app.homear.domain.usecase.remoteStorage.DeleteFileFromRemoteByIdUseCase
+import com.app.homear.domain.usecase.remoteStorage.GetAllFurnituresFromRemoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,7 +27,8 @@ data class FurnitureItem(
 @HiltViewModel
 class CatalogViewModel @Inject constructor(
     private val getAllCollectionFurnitureUseCase: GetAllCollectionFurnitureUseCase,
-    private val getAllFurnituresFromRemoteStorageUseCase: GetAllFurnituresFromRemoteStorageUseCase
+    private val getAllFurnituresFromRemoteStorageUseCase: GetAllFurnituresFromRemoteUseCase,
+    private val deleteFileFromRemoteByIdUseCase: DeleteFileFromRemoteByIdUseCase
 ): ViewModel() {
     var furnitureItems by mutableStateOf<List<FurnitureItem>>(emptyList())
         private set
@@ -94,15 +96,11 @@ class CatalogViewModel @Inject constructor(
 
     public fun testRemoteFurnitureData() {
         viewModelScope.launch {
-            Log.i("DRIVE", "Loading remote furniture data")
-            getAllFurnituresFromRemoteStorageUseCase().collect{result ->
+            Log.i("DRIVE", "Haciendo peticion")
+            deleteFileFromRemoteByIdUseCase("1AeuMWLClpHvuX8K60JSthFHaJ_1M-Q55").collect{result ->
                 when (result) {
                     is Resource.Success -> {
-                        val remoteFiles: List<DriveFileModel> = result.data!!
-                        Log.i("DRIVE", "Remote furniture data loaded successfully")
-                        remoteFiles.forEach { file ->
-                            Log.d("DRIVE", "Remote file: ${file.name}, ID: ${file.id}")
-                        }
+                        Log.i("DRIVE", "Remote furniture response: ${result.data!!}")
                     }
 
                     is Resource.Loading -> {
