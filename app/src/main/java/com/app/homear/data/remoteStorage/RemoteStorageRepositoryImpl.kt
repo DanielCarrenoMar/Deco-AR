@@ -1,22 +1,22 @@
 package com.app.homear.data.remoteStorage
 
+import com.app.homear.data.remoteStorage.dao.FurnitureDriveDao
+import com.app.homear.data.remoteStorage.dao.ImageDriveDao
 import com.app.homear.domain.model.DriveFileModel
 import com.app.homear.domain.repository.RemoteStorageRepository
 import com.google.api.services.drive.model.File
 import javax.inject.Inject
-import javax.inject.Named
 
 class RemoteStorageRepositoryImpl @Inject constructor(
-    private val driveApiService: DriveApiService,
-    @Named("driveApiKey") private val apiKey: String
+    private val furnitureDriveDao: FurnitureDriveDao,
+    private val imageDriveDao: ImageDriveDao
 ) : RemoteStorageRepository {
-    private val folderModelsId = "1u9jww2TzTjTH1R3sGvSXfbbriSxjRIXw"
     private val folderImagesId = "1SMhZxlQAABvWxs2L_DrfqOVyR8w_4X-L"
 
     override suspend fun getAllFurnituresFiles(): List<DriveFileModel> {
         try {
-            val response = driveApiService.queryFiles("'$folderModelsId' in parents")
-            return response.files
+            val response = furnitureDriveDao.getAllFiles()
+            return response
         } catch (e: Exception) {
             throw e
         }
@@ -40,8 +40,8 @@ class RemoteStorageRepositoryImpl @Inject constructor(
 
     override suspend fun getAllImagesFiles(): List<DriveFileModel> {
         try {
-            val response = driveApiService.queryFiles("'$folderImagesId' in parents")
-            return response.files
+            val response = imageDriveDao.getAllFiles()
+            return response
         } catch (e: Exception) {
             throw e
         }
