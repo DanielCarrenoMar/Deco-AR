@@ -52,7 +52,6 @@ fun CatalogScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadFurnitureData()
-        viewModel.testRemoteFurnitureData()
     }
 
     Box(

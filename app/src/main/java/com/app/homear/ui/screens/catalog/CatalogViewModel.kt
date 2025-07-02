@@ -1,5 +1,7 @@
 package com.app.homear.ui.screens.catalog
 
+import android.content.Context
+import android.os.Environment
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,6 +13,7 @@ import com.app.homear.domain.model.FurnitureModel
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.usecase.firestore.GetAllCollectionFurnitureUseCase
 import com.app.homear.domain.usecase.remoteStorage.DeleteFileFromRemoteByIdUseCase
+import com.app.homear.domain.usecase.remoteStorage.DownloadFileFromRemoteByIdUseCase
 import com.app.homear.domain.usecase.remoteStorage.GetAllFurnituresFromRemoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -26,9 +29,7 @@ data class FurnitureItem(
 
 @HiltViewModel
 class CatalogViewModel @Inject constructor(
-    private val getAllCollectionFurnitureUseCase: GetAllCollectionFurnitureUseCase,
-    private val getAllFurnituresFromRemoteStorageUseCase: GetAllFurnituresFromRemoteUseCase,
-    private val deleteFileFromRemoteByIdUseCase: DeleteFileFromRemoteByIdUseCase
+    private val getAllCollectionFurnitureUseCase: GetAllCollectionFurnitureUseCase
 ): ViewModel() {
     var furnitureItems by mutableStateOf<List<FurnitureItem>>(emptyList())
         private set
@@ -88,29 +89,6 @@ class CatalogViewModel @Inject constructor(
                             )
                         )
                         isLoading = false
-                    }
-                }
-            }
-        }
-    }
-
-    public fun testRemoteFurnitureData() {
-        viewModelScope.launch {
-            Log.i("DRIVE", "Haciendo peticion")
-            deleteFileFromRemoteByIdUseCase("1AeuMWLClpHvuX8K60JSthFHaJ_1M-Q55").collect{result ->
-                when (result) {
-                    is Resource.Success -> {
-                        Log.i("DRIVE", "Remote furniture response: ${result.data!!}")
-                    }
-
-                    is Resource.Loading -> {
-                    }
-
-                    is Resource.Error<*> -> {
-                        Log.e(
-                            "CatalogViewModel",
-                            "Error loading remote furniture data: ${result.message}"
-                        )
                     }
                 }
             }

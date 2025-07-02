@@ -1,5 +1,6 @@
 package com.app.homear.data.remoteStorage
 
+import android.util.Log
 import com.app.homear.data.remoteStorage.dao.FurnitureDriveDao
 import com.app.homear.data.remoteStorage.dao.ImageDriveDao
 import com.app.homear.domain.model.DriveFileModel
@@ -14,6 +15,7 @@ class RemoteStorageRepositoryImpl @Inject constructor(
     override suspend fun getFileById(fileId: String): DriveFileModel? {
         try {
             val response = furnitureDriveDao.getFileById(fileId)
+            Log.i("DRIVE", "getFileById: $fileId")
             return response
         } catch (e: Exception) {
             throw e

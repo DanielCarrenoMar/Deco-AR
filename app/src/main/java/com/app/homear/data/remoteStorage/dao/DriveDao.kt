@@ -14,12 +14,22 @@ open class DriveDao (
 ) {
     suspend fun getAllFiles(): List<DriveFileModel> {
         val query = "'$folderId' in parents"
-        return driveApiService.queryFiles(query).files
+        val response = driveApiService.queryFiles(query)
+        if (!response.isSuccessful) {
+            val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+            Log.e("DRIVE","Error al mover al obtener files de capeta de id $folderId $errorMsg")
+        }
+        return response.body()?.files ?: emptyList()
     }
 
     suspend fun getFileById(fileId: String): DriveFileModel? {
-        val query = "id = '$fileId'"
-        return driveApiService.queryFiles(query).files.firstOrNull()
+        val response = driveApiService.getFileById(fileId)
+        if (!response.isSuccessful) {
+            val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+            Log.e("DRIVE","Error al mover al obtener file de id $fileId $errorMsg")
+            return null
+        }
+        return response.body()
     }
 
     suspend fun uploadFile(

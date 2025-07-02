@@ -26,7 +26,12 @@ interface DriveApiService {
     @GET("drive/v3/files")
     suspend fun queryFiles(
         @Query("q") query: String
-    ): DriveFilesResponse
+    ): Response<DriveFilesResponse>
+
+    @GET("drive/v3/files/{fileId}")
+    suspend fun getFileById(
+        @Path("fileId") fileId: String
+    ): Response<DriveFileModel>
 
     @Multipart
     @POST("upload/drive/v3/files?uploadType=multipart")
