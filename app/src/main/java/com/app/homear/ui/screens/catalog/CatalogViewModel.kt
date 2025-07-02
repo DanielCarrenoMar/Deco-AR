@@ -92,26 +92,20 @@ class CatalogViewModel @Inject constructor(
         }
     }
 
-    fun loadRemoteFurnitureData() {
+    public fun testRemoteFurnitureData() {
         viewModelScope.launch {
+            Log.i("DRIVE", "Loading remote furniture data")
             getAllFurnituresFromRemoteStorageUseCase().collect{result ->
                 when (result) {
                     is Resource.Success -> {
                         val remoteFiles: List<DriveFileModel> = result.data!!
-                        furnitureItems = remoteFiles.mapIndexed { index, file ->
-                            FurnitureItem(
-                                id = index + 1,
-                                name = file.name,
-                                description = "Modelo desde almacenamiento remoto",
-                                modelPath = file.id, // Usar ID como ruta del modelo
-                                colors = listOf("#8B4513", "#A0522D", "#D2691E")
-                            )
+                        Log.i("DRIVE", "Remote furniture data loaded successfully")
+                        remoteFiles.forEach { file ->
+                            Log.d("DRIVE", "Remote file: ${file.name}, ID: ${file.id}")
                         }
-                        isLoading = false
                     }
 
                     is Resource.Loading -> {
-                        isLoading = true
                     }
 
                     is Resource.Error<*> -> {
@@ -119,7 +113,6 @@ class CatalogViewModel @Inject constructor(
                             "CatalogViewModel",
                             "Error loading remote furniture data: ${result.message}"
                         )
-                        isLoading = false
                     }
                 }
             }

@@ -15,7 +15,7 @@ class RemoteStorageRepositoryImpl @Inject constructor(
 
     override suspend fun getAllFurnituresFiles(): List<DriveFileModel> {
         try {
-            val response = driveApiService.listFiles(apiKey, "'$folderModelsId' in parents")
+            val response = driveApiService.queryFiles("'$folderModelsId' in parents")
             return response.files
         } catch (e: Exception) {
             throw e
@@ -23,7 +23,7 @@ class RemoteStorageRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getFurnitureFileByName(fileName: String): DriveFileModel? {
-        throw NotImplementedError("getFurnitureFileByName no implementado")
+        throw NotImplementedError("uploadFurnitureFile no implementado")
     }
 
     override suspend fun uploadFurnitureFile(file: File): String {
@@ -40,7 +40,7 @@ class RemoteStorageRepositoryImpl @Inject constructor(
 
     override suspend fun getAllImagesFiles(): List<DriveFileModel> {
         try {
-            val response = driveApiService.listFiles(apiKey, "'$folderImagesId' in parents")
+            val response = driveApiService.queryFiles("'$folderImagesId' in parents")
             return response.files
         } catch (e: Exception) {
             throw e

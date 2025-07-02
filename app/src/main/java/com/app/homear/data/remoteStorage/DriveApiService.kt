@@ -12,8 +12,7 @@ data class DriveFilesResponse(
 
 interface DriveApiService {
     @GET("drive/v3/files")
-    suspend fun listFiles(
-        @Query("key") apiKey: String,
+    suspend fun queryFiles(
         @Query("q") query: String
     ): DriveFilesResponse
 }
