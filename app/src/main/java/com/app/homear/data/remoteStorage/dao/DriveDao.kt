@@ -1,5 +1,6 @@
 package com.app.homear.data.remoteStorage.dao
 
+import android.util.Log
 import com.app.homear.data.remoteStorage.DriveApiService
 import com.app.homear.domain.model.DriveFileModel
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -38,6 +39,10 @@ open class DriveDao (
 
     suspend fun moveFileToTrash(fileId: String): Boolean {
         val response = driveApiService.moveFileToTrash(fileId)
+        if (!response.isSuccessful) {
+            val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+            Log.e("DRIVE","Error al mover a la papelera: $errorMsg")
+        }
         return response.isSuccessful
     }
 }

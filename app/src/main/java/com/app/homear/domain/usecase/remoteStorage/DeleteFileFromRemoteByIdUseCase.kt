@@ -7,17 +7,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 
-class GetFileFromRemoteByIdUseCase @Inject constructor(
+class DeleteFileFromRemoteByIdUseCase @Inject constructor(
     private val repository: RemoteStorageRepository
 ){
-    operator fun invoke(fileId: String): Flow<Resource<DriveFileModel>> = channelFlow {
+    operator fun invoke(fileId: String): Flow<Resource<Boolean>> = channelFlow {
         try {
             send(Resource.Loading())
-            val responsive = repository.getFileById(fileId)
-                ?: throw Exception("File not found")
             send(
                 Resource.Success(
-                    data = responsive
+                    data = repository.deleteFileById(fileId)
                 )
             )
         } catch (e: Exception) {
