@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 
-class GetAllImagesFromRemoteStorageUseCase @Inject constructor(
+class GetFileFromRemoteByIdUseCase @Inject constructor(
     private val repository: RemoteStorageRepository
 ){
     operator fun invoke(): Flow<Resource<List<DriveFileModel>>> = channelFlow {

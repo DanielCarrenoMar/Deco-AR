@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 
-class GetAllFurnituresFromRemoteStorageUseCase @Inject constructor(
+class GetAllImagesFromRemoteUseCase @Inject constructor(
     private val repository: RemoteStorageRepository
 ){
     operator fun invoke(): Flow<Resource<List<DriveFileModel>>> = channelFlow {
@@ -15,7 +15,7 @@ class GetAllFurnituresFromRemoteStorageUseCase @Inject constructor(
             send(Resource.Loading())
             send(
                 Resource.Success(
-                    data = repository.getAllFurnituresFiles()
+                    data = repository.getAllImagesFiles()
                 )
             )
         } catch (e: Exception) {

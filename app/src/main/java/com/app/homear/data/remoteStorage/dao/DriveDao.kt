@@ -17,7 +17,7 @@ open class DriveDao (
     }
 
     suspend fun getFileById(fileId: String): DriveFileModel? {
-        val query = "'$folderId' in parents and id = '$fileId'"
+        val query = "id = '$fileId'"
         return driveApiService.queryFiles(query).files.firstOrNull()
     }
 
@@ -32,5 +32,12 @@ open class DriveDao (
         val fileBody = RequestBody.create(mimeType.toMediaTypeOrNull(), fileBytes)
         val filePart = MultipartBody.Part.createFormData("file", fileName, fileBody)
         return driveApiService.uploadFile(metadata, filePart)
+    }
+
+    suspend fun downloadFile(fileId: String) = driveApiService.downloadFile(fileId)
+
+    suspend fun moveFileToTrash(fileId: String): Boolean {
+        val response = driveApiService.moveFileToTrash(fileId)
+        return response.isSuccessful
     }
 }
