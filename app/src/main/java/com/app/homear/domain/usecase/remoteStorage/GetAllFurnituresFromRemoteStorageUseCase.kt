@@ -15,7 +15,7 @@ class GetAllFurnituresFromRemoteStorageUseCase @Inject constructor(
             send(Resource.Loading())
             send(
                 Resource.Success(
-                    data = repository.getAllFiles()
+                    data = repository.getAllFurnituresFiles()
                 )
             )
         } catch (e: Exception) {
