@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -166,7 +167,8 @@ fun TutorialScreen(
                 shape = RoundedCornerShape(50),
                 modifier = Modifier
                     .height(40.dp)
-                    .fillMaxWidth(0.6f)
+                    .fillMaxWidth(0.8f)
+
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
@@ -181,7 +183,7 @@ fun TutorialScreen(
                     text = "Cómo funciona",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
+                    fontSize = 12.sp
                 )
             }
         }
@@ -200,4 +202,12 @@ fun TutorialScreen(
             )
         }
     }
+}
+//composable para preview de la pantalla
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview2() {
+    TutorialScreen(
+        {},{},{},{},{}
+    )
 }
