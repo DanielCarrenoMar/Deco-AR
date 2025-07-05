@@ -22,6 +22,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -38,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
+import com.app.homear.ui.component.ModalTutorial
 import com.app.homear.ui.component.NavBar
 
 val CustomPurple = Color(0xFF54124E)
@@ -53,6 +58,7 @@ fun TutorialScreen(
     viewModel: TutorialViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    var isModalOpen by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -76,6 +82,12 @@ fun TutorialScreen(
                 )
             }
     ) {
+        //modal de tutorial
+        ModalTutorial(
+            isDialogOpen = isModalOpen,
+            onDismiss = {isModalOpen = false},
+        )
+
         // Título decorAR
         Box(
             modifier = Modifier
@@ -162,7 +174,10 @@ fun TutorialScreen(
             Spacer(modifier = Modifier.height(28.dp))
 
             Button(
-                onClick = onHowItWorksClick,
+                onClick = {
+                    onHowItWorksClick()
+                    isModalOpen = true
+                          },
                 colors = ButtonDefaults.buttonColors(containerColor = CustomPurple),
                 shape = RoundedCornerShape(50),
                 modifier = Modifier
