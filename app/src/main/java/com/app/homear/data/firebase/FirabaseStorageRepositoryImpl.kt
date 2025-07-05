@@ -158,10 +158,9 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
 
     }
 
-    override suspend fun updateUser(user: UserModel): Boolean {
+    override suspend fun updateUser(id: String,user: UserModel): Boolean {
         try {
-            val authUser = currentUser()
-            firestore.collection("users").document(authUser?.uid ?: "").set(user).await()
+            firestore.collection("users").document(id).set(user).await()
             return true
         } catch (e: Exception) {
             Log.e("FIRESTORE", "Error al obtener la colección", e)

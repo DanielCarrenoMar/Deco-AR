@@ -10,7 +10,7 @@ import com.google.firebase.auth.FirebaseUser
 interface FirebaseStorageRepository {
     suspend fun getCollectionModel(): List<FurnitureModel>
     suspend fun getCollectionModelByProvider(provider: String): List<FurnitureModel>
-    suspend fun updateUser(user: UserModel): Boolean
+    suspend fun updateUser(id : String,user: UserModel): Boolean
     suspend fun updateUserByKey( key: String, value: String): Boolean
     suspend fun signIn(email: String, password: String): Task<AuthResult>
     suspend fun signUp(email: String, password: String): Task<AuthResult>

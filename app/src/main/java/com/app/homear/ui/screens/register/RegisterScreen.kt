@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,12 +43,6 @@ fun RegisterScreen(
     //esta variable me va a decir si esta activado el apartado de cliente o no
     var isClientActive by remember { mutableStateOf(true) }
 
-    fun crearUsuarioCliente(nombre: String, email: String, password: String)
-    {}
-
-    fun crearUsuarioEmpresa(nombre: String, rif: String, password: String)
-    {}
-
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -73,14 +68,13 @@ fun RegisterScreen(
         if (isClientActive)
         {
             FormClient(
-                {nombre, email, password -> crearUsuarioCliente(nombre, email, password)}
-                , {}
+                viewModel,{}
             )
         }
         else
         {
             FormEmpresa(
-                {nombre, rif, password -> crearUsuarioEmpresa(nombre, rif, password)}
+                viewModel
                 , {}
             )
         }
@@ -91,16 +85,15 @@ fun RegisterScreen(
 //Composable para el formulario del Cliente
 @Composable
 fun FormClient(
-    crearUsuario: (nombre: String, email: String, password: String) -> Unit,
-    onclickText:()-> Unit
+    viewModel: RegisterViewModel,onclickText:()-> Unit
 )
 {
     //variables para captar datos
-    var nombre = remember { mutableStateOf("") }
-    var correoElectronico = remember { mutableStateOf("") }
-    var password = remember { mutableStateOf("") }
-    var confirmPassword = remember { mutableStateOf("") }
-    var error by remember { mutableStateOf(false) }
+    var name = remember { mutableStateOf("") }
+    var email = remember { mutableStateOf("") }
+    var pass = remember { mutableStateOf("") }
+    var rePass = remember { mutableStateOf("") }
+    var error = remember { mutableStateOf(false) }
 
     Column()
     {
@@ -115,21 +108,21 @@ fun FormClient(
         {
             //input de Nombre
             InputData(
-                dataValue = nombre,
+                dataValue = name,
                 label = "Nombre Completo",
                 placeHolder = "Ingrese su nombre completo"
             )
 
             //input email
             InputData(
-                dataValue = correoElectronico,
+                dataValue = email,
                 label = "Correo Electrónico",
                 placeHolder = "Ingrese su correo Electrónico"
             )
 
             //Input password
             InputPassword(
-                dataValue = password,
+                dataValue = pass,
                 label = "Contraseña",
                 placeHolder = "Ingrese su contraseña",
                 messageError = "",
@@ -151,11 +144,11 @@ fun FormClient(
         {
             //Input password confirmar
             InputPassword(
-                dataValue = confirmPassword,
+                dataValue = rePass,
                 label = "Confirmar contraseña",
                 placeHolder = "Ingrese su contraseña",
                 messageError = "Contraseña incorrecta",
-                triggerMessageError = error,
+                triggerMessageError = error.value,
                 forgotPasswordMessage = "",
                 onClickForgotPassword = {}
             )
@@ -167,21 +160,18 @@ fun FormClient(
         TextButton(
             onClick = {
 
-                if (password.value == confirmPassword.value)
+                if (pass.value == rePass.value)
                 {
-                    error = false
-                    crearUsuario(nombre.value, correoElectronico.value, password.value)
+                    error.value = false
+                    viewModel.registerUser(email.value, pass.value, name.value)
                     //Limpiar los Input
-                    nombre.value = ""
-                    correoElectronico.value = ""
-                    password.value = ""
-                    confirmPassword.value = ""
+
                 }
                 else
                 {
                     //controla si se muestra el error
-                    error = true
-                    confirmPassword.value =""
+                    error.value = true
+                    rePass.value =""
                 }
 
 
@@ -243,7 +233,7 @@ fun FormClient(
 //Composable para el formulario de la Empresa
 @Composable
 fun FormEmpresa(
-    crearUsuario: (nombre: String, rif: String, password: String) -> Unit,
+    viewModel: RegisterViewModel,
     onclickText:()-> Unit
 )
 {
@@ -321,12 +311,8 @@ fun FormEmpresa(
                 if (password.value == confirmPassword.value)
                 {
                     error = false
-                    crearUsuario(nombre.value, rif.value, password.value)
-                    //Limpiar los Input
-                    nombre.value = ""
-                    rif.value = ""
-                    password.value = ""
-                    confirmPassword.value = ""
+                    viewModel.registerProvider(rif.value, password.value, nombre.value)
+
                 }
                 else
                 {
