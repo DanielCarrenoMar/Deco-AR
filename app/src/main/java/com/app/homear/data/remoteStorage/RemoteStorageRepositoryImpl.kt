@@ -5,7 +5,6 @@ import com.app.homear.data.remoteStorage.dao.FurnitureDriveDao
 import com.app.homear.data.remoteStorage.dao.ImageDriveDao
 import com.app.homear.domain.model.DriveFileModel
 import com.app.homear.domain.repository.RemoteStorageRepository
-import com.google.api.services.drive.model.File
 import javax.inject.Inject
 
 class RemoteStorageRepositoryImpl @Inject constructor(
@@ -50,7 +49,11 @@ class RemoteStorageRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getFurnitureFileByName(fileName: String): DriveFileModel? {
-        throw NotImplementedError("uploadFurnitureFile no implementado")
+        try {
+            return furnitureDriveDao.getFileByName(fileName)
+        } catch (e: Exception) {
+            throw e
+        }
     }
 
     override suspend fun uploadFurnitureFile(fileName: String, fileBytes: ByteArray): String {
@@ -75,7 +78,11 @@ class RemoteStorageRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getImageFileByName(fileName: String): DriveFileModel? {
-        throw NotImplementedError("getImageFileByName no implementado")
+        try {
+            return imageDriveDao.getFileByName(fileName)
+        } catch (e: Exception) {
+            throw e
+        }
     }
 
     override suspend fun uploadImageFile(fileName: String, fileBytes: ByteArray): String {

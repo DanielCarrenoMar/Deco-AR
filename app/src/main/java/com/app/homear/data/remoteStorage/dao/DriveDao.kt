@@ -32,6 +32,17 @@ open class DriveDao (
         return response.body()
     }
 
+    suspend fun getFileByName(fileName: String): DriveFileModel? {
+        val query = "'$folderId' in parents and name = '$fileName'"
+        val response = driveApiService.queryFiles(query)
+        if (!response.isSuccessful) {
+            val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+            Log.e("DRIVE","Error al mover al obtener file de nombre $fileName $errorMsg")
+            return null
+        }
+        return response.body()?.files?.firstOrNull()
+    }
+
     suspend fun uploadFile(
         fileName: String,
         fileBytes: ByteArray,
