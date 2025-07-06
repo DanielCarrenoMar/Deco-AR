@@ -44,7 +44,7 @@ class RegisterViewModel @Inject constructor(
                     is Resource.Success -> {
                         val id = currentUserUseCase.invoke()?.uid
                         if (id != null) {
-                            updateUserUseCase.invoke(id, UserModel(name, email)).collect{
+                            updateUserUseCase.invoke(id, UserModel(name, email,"USER")).collect{
 
                                 _isLoading.value = false
                                 _error.value = false
@@ -80,10 +80,9 @@ class RegisterViewModel @Inject constructor(
                         val id = currentUserUseCase.invoke()?.uid
                         if (id != null) {
                             updateProviderUseCase.invoke(ProviderModel(name = name, email = email, id = rif, address = null, phone = null, image = null, description = null, state = null, city = null, country = null)).collect {
-                                _isLoading.value = false
-                                _error.value = false
-                                Log.e("SingIn", "Error al iniciar Sesion, ${result.data}")
+
                             }
+                            updateUserUseCase.invoke(id,UserModel(name = name, email = email, type = "PROVIDER")).collect {}
                         }
                     }
                     is Resource.Loading -> {
