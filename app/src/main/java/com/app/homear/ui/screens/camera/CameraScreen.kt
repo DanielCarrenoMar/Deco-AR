@@ -45,7 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -83,6 +83,21 @@ import java.io.OutputStream
 import android.view.SurfaceView
 import android.view.PixelCopy
 import android.app.Activity
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.painterResource
+import com.app.homear.R
+import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
+import coil.request.ImageRequest
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.graphicsLayer
 
 // Función para encontrar la vista ARSceneView
 fun View.findARSceneView(): ARSceneView? {
@@ -732,6 +747,47 @@ fun CameraScreen(
                 }
             }
 
+            // Botón de back en la esquina superior izquierda
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 20.dp, top = 48.dp)
+                    .zIndex(10f)
+            ) {
+                val interactionSourceBack = remember { MutableInteractionSource() }
+                val isPressedBack by interactionSourceBack.collectIsPressedAsState()
+                val scaleBack by animateFloatAsState(targetValue = if (isPressedBack) 0.92f else 1f, label = "scaleBack")
+                
+                Box(
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(80.dp)
+                        .graphicsLayer(
+                            scaleX = scaleBack,
+                            scaleY = scaleBack
+                        )
+                        .clickable(
+                            interactionSource = interactionSourceBack,
+                            indication = null
+                        ) {
+                            navigateToTutorial()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data("file:///android_asset/camara/back.svg")
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Icono back",
+                        modifier = Modifier
+                            .width(70.dp)
+                            .height(70.dp)
+                    )
+                }
+            }
+
             Text(
                 modifier = Modifier
                     .systemBarsPadding()
@@ -864,21 +920,184 @@ fun CameraScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(65.dp)
+                    .padding(32.dp)
                     .padding(bottom = 70.dp),
                 verticalArrangement = Arrangement.Bottom
             ) {
-                Button(
-                    onClick = { viewModel.planeRenderer.value = !viewModel.planeRenderer.value },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (viewModel.planeRenderer.value) Color.Green else Color.Red
-                    )
+                // Espaciado para bajar el bloque de botones
+                Spacer(modifier = Modifier.height(160.dp))
+                // Animación de desplazamiento vertical para el botón de medición
+                val offsetMedicion by animateDpAsState(
+                    targetValue = if (viewModel.isMeasuring.value) (-80).dp else 0.dp,
+                    label = "offsetMedicion"
+                )
+                // Animación de desplazamiento vertical para el botón de plano (ahora sube al activarse el modo medición)
+                val offsetPlano by animateDpAsState(
+                    targetValue = if (viewModel.isMeasuring.value) 0.dp else 80.dp,
+                    label = "offsetPlano"
+                )
+
+                // Espaciado para subir el botón de plano
+                Spacer(modifier = Modifier.height(32.dp))
+                // Botón cuadrado de Plano (activar/desactivar plano)
+                val interactionSourcePlano = remember { MutableInteractionSource() }
+                val isPressedPlano by interactionSourcePlano.collectIsPressedAsState()
+                val scalePlano by animateFloatAsState(targetValue = if (isPressedPlano) 0.92f else 1f, label = "scalePlano")
+                val alphaPlano by animateFloatAsState(targetValue = if (viewModel.planeRenderer.value) 1f else 0.7f, label = "alphaPlano")
+                Box(
+                    modifier = Modifier
+                        .width(65.dp)
+                        .height(65.dp)
+                        .offset(x = 0.dp, y = -55.dp + offsetPlano)
+                        .zIndex(2f)
+                        .graphicsLayer(
+                            scaleX = scalePlano,
+                            scaleY = scalePlano,
+                            alpha = alphaPlano
+                        )
+                        .background(
+                            color = Color.Transparent,
+                            shape = RoundedCornerShape(size = 20.dp)
+                        )
+                        .clickable(
+                            interactionSource = interactionSourcePlano,
+                            indication = null
+                        ) {
+                            viewModel.planeRenderer.value = !viewModel.planeRenderer.value
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = if (viewModel.planeRenderer.value) "Desactivar Plano" else "Activar Plano")
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(
+                                if (viewModel.planeRenderer.value)
+                                    "file:///android_asset/camara/bg-button-on.svg"
+                                else
+                                    "file:///android_asset/camara/bg-button-red.svg"
+                            )
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Fondo botón plano",
+                        modifier = Modifier
+                            .width(65.dp)
+                            .height(65.dp),
+                        contentScale = ContentScale.FillBounds
+                    )
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data("file:///android_asset/camara/flat.svg")
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Icono plano",
+                        modifier = Modifier
+                            .width(55.dp)
+                            .height(55.dp)
+                            .padding(vertical = 5.dp)
+                    )
                 }
 
-                Button(
-                    onClick = {
+                // Stack animado: botón de medición y área (sin offset vertical extra)
+                Box(
+                    modifier = Modifier
+                        .height(145.dp)
+                        .width(65.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Botón de área (detrás)
+                    val showArea = (viewModel.isMeasuring.value || offsetMedicion < 0.dp)
+                    if (showArea) {
+                        val interactionSourceArea = remember { MutableInteractionSource() }
+                        val isPressedArea by interactionSourceArea.collectIsPressedAsState()
+                        val scaleArea by animateFloatAsState(targetValue = if (isPressedArea) 0.92f else 1f, label = "scaleArea")
+                        val alphaArea by animateFloatAsState(targetValue = if (viewModel.isCalculatingArea.value) 1f else 0.7f, label = "alphaArea")
+                        Box(
+                            modifier = Modifier
+                                .width(65.dp)
+                                .height(65.dp)
+                                .zIndex(0f)
+                                .graphicsLayer(
+                                    scaleX = scaleArea,
+                                    scaleY = scaleArea,
+                                    alpha = alphaArea
+                                )
+                                .background(
+                                    color = Color.Transparent,
+                                    shape = RoundedCornerShape(size = 20.dp)
+                                )
+                                .clickable(
+                                    interactionSource = interactionSourceArea,
+                                    indication = null
+                                ) {
+                                    viewModel.isCalculatingArea.value = !viewModel.isCalculatingArea.value
+                                    if (!viewModel.isCalculatingArea.value) {
+                                        viewModel.thirdAnchor.value = null
+                                        viewModel.measuredArea.value = null
+                                        viewModel.areaSideDistance1.value = null
+                                        viewModel.areaSideDistance2.value = null
+                                        viewModel.measurementPoints.forEach { point ->
+                                            childNodes.remove(point)
+                                        }
+                                        viewModel.measurementPoints.clear()
+                                    }
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            val context = LocalContext.current
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(
+                                        if (viewModel.isCalculatingArea.value)
+                                            "file:///android_asset/camara/bg-button-on.svg"
+                                        else
+                                            "file:///android_asset/camara/bg-button-off.svg"
+                                    )
+                                    .decoderFactory(SvgDecoder.Factory())
+                                    .build(),
+                                contentDescription = "Fondo botón área",
+                                modifier = Modifier
+                                    .width(65.dp)
+                                    .height(65.dp),
+                                contentScale = ContentScale.FillBounds
+                            )
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data("file:///android_asset/camara/area.svg")
+                                    .decoderFactory(SvgDecoder.Factory())
+                                    .build(),
+                                contentDescription = "Icono área",
+                                modifier = Modifier
+                                    .width(55.dp)
+                                    .height(55.dp)
+                                    .padding(vertical = 5.dp)
+                            )
+                        }
+                    }
+
+                    // Botón cuadrado de Medición con animación
+                    val interactionSourceMedicion = remember { MutableInteractionSource() }
+                    val isPressedMedicion by interactionSourceMedicion.collectIsPressedAsState()
+                    val scaleMedicion by animateFloatAsState(targetValue = if (isPressedMedicion) 0.92f else 1f, label = "scaleMedicion")
+                    val alphaMedicion by animateFloatAsState(targetValue = if (viewModel.isMeasuring.value) 1f else 0.7f, label = "alphaMedicion")
+                    Box(
+                        modifier = Modifier
+                            .width(65.dp)
+                            .height(65.dp)
+                            .offset(y = offsetMedicion)
+                            .zIndex(1f)
+                            .graphicsLayer(
+                                scaleX = scaleMedicion,
+                                scaleY = scaleMedicion,
+                                alpha = alphaMedicion
+                            )
+                            .background(
+                                color = Color.Transparent,
+                                shape = RoundedCornerShape(size = 20.dp)
+                            )
+                            .clickable(
+                                interactionSource = interactionSourceMedicion,
+                                indication = null
+                            ) {
                         viewModel.isMeasuring.value = !viewModel.isMeasuring.value
                         if (viewModel.isMeasuring.value) {
                             viewModel.isCalculatingArea.value = false
@@ -899,53 +1118,68 @@ fun CameraScreen(
                         }
                         viewModel.measurementPoints.clear()
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (viewModel.isMeasuring.value) Color(0xFF64B5F6) else Color.Gray
-                    ),
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(text = if (viewModel.isMeasuring.value) "Modo Medición: ON" else "Modo Medición: OFF")
-                }
-
-                if (viewModel.isMeasuring.value) {
-                    Button(
-                        onClick = {
-                            viewModel.isCalculatingArea.value = !viewModel.isCalculatingArea.value
-                            if (!viewModel.isCalculatingArea.value) {
-                                viewModel.thirdAnchor.value = null
-                                viewModel.measuredArea.value = null
-                                viewModel.areaSideDistance1.value = null
-                                viewModel.areaSideDistance2.value = null
-                                viewModel.measurementPoints.forEach { point ->
-                                    childNodes.remove(point)
-                                }
-                                viewModel.measurementPoints.clear()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (viewModel.isCalculatingArea.value) Color(0xFF2196F3) else Color(
-                                0xFF4CAF50
-                            )
-                        ),
-                        modifier = Modifier.padding(top = 8.dp)
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(text = if (viewModel.isCalculatingArea.value) "Modo Área: ON" else "Modo Área: OFF")
+                        val context = LocalContext.current
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(
+                                    if (offsetMedicion == 0.dp)
+                                        "file:///android_asset/camara/bg-button-off.svg"
+                                    else
+                                        "file:///android_asset/camara/bg-button-on.svg"
+                                )
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Fondo botón medición",
+                            modifier = Modifier
+                                .width(65.dp)
+                                .height(65.dp),
+                            contentScale = ContentScale.FillBounds
+                        )
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data("file:///android_asset/camara/measure-ruler.svg")
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Regla de medición",
+                            modifier = Modifier
+                                .width(55.dp)
+                                .height(55.dp)
+                                .padding(vertical = 5.dp)
+                        )
                     }
                 }
 
-                Button(
-                    onClick = {
+                // Botón cuadrado de Modo Baldosa (estático, decorado igual que los otros)
+                val interactionSourceBaldosa = remember { MutableInteractionSource() }
+                val isPressedBaldosa by interactionSourceBaldosa.collectIsPressedAsState()
+                val scaleBaldosa by animateFloatAsState(targetValue = if (isPressedBaldosa) 0.92f else 1f, label = "scaleBaldosa")
+                val alphaBaldosa by animateFloatAsState(targetValue = if (viewModel.isCoatingMode.value) 1f else 0.7f, label = "alphaBaldosa")
+                Box(
+                    modifier = Modifier
+                        .width(65.dp)
+                        .height(65.dp)
+                        .offset(x = 0.dp, y = -25.dp)
+                        .graphicsLayer(
+                            scaleX = scaleBaldosa,
+                            scaleY = scaleBaldosa,
+                            alpha = alphaBaldosa
+                        )
+                        .background(
+                            color = Color.Transparent,
+                            shape = RoundedCornerShape(size = 20.dp)
+                        )
+                        .clickable(
+                            interactionSource = interactionSourceBaldosa,
+                            indication = null
+                        ) {
                         viewModel.isCoatingMode.value = !viewModel.isCoatingMode.value
                         if (!viewModel.isCoatingMode.value) {
-                            // Solo cuando salimos del modo baldosa: eliminar la baldosa si existe
                             if (viewModel.tileNode != null) {
                                 childNodes.remove(viewModel.tileNode)
                                 (viewModel.tileNode as? AnchorNode)?.anchor?.detach()
                                 viewModel.resetTileNode()
-                                Log.d(
-                                    "AR_DEBUG",
-                                    "Modo baldosa desactivado - baldosa eliminada"
-                                )
                             }
                         } else {
                             viewModel.isMeasuring.value = false
@@ -964,12 +1198,36 @@ fun CameraScreen(
                             viewModel.measurementPoints.clear()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (viewModel.isCoatingMode.value) Color(0xFFFF9800) else Color.Gray
-                    ),
-                    modifier = Modifier.padding(top = 8.dp)
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = if (viewModel.isCoatingMode.value) "Modo Baldosa: ON" else "Modo Baldosa: OFF")
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(
+                                if (viewModel.isCoatingMode.value)
+                                    "file:///android_asset/camara/bg-button-on.svg"
+                                else
+                                    "file:///android_asset/camara/bg-button-off.svg"
+                            )
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Fondo botón baldosa",
+                        modifier = Modifier
+                            .width(65.dp)
+                            .height(65.dp),
+                        contentScale = ContentScale.FillBounds
+                    )
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data("file:///android_asset/camara/tile.svg")
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Icono baldosa",
+                        modifier = Modifier
+                            .width(55.dp)
+                            .height(55.dp)
+                            .padding(vertical = 5.dp)
+                    )
                 }
             }
 
@@ -1043,6 +1301,20 @@ fun CameraScreen(
                 )
             }
 
+            // Animación de la NavBar deslizándose hacia abajo
+            var startNavBarAnimation by remember { mutableStateOf(false) }
+            val navBarOffset by animateDpAsState(
+                targetValue = if (startNavBarAnimation) 200.dp else 0.dp, // Se desliza hacia abajo y desaparece
+                animationSpec = androidx.compose.animation.core.tween(durationMillis = 800),
+                label = "navBarOffset"
+            )
+            
+            // Iniciar la animación cuando se carga la pantalla
+            LaunchedEffect(Unit) {
+                kotlinx.coroutines.delay(500) // Pequeña pausa antes de animar
+                startNavBarAnimation = true
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1055,6 +1327,7 @@ fun CameraScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
+                        .offset(y = navBarOffset)
                         .zIndex(1f),
                     verticalArrangement = Arrangement.Bottom
                 ) {
@@ -1067,6 +1340,7 @@ fun CameraScreen(
                     )
                 }
             }
+
         }
     } else {
         Column(
