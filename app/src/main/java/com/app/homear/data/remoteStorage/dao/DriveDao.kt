@@ -47,13 +47,29 @@ open class DriveDao (
         fileName: String,
         fileBytes: ByteArray,
         mimeType: String = "application/octet-stream"
-    ): Response<DriveFileModel> {
+    ): Boolean {
+        // 1. Metadatos en JSON
         val metadataJson = """
-            {\n  \"name\": \"$fileName\",\n  \"parents\": [\"$folderId\"]\n}"""
+        {
+            "name": "$fileName",
+            "parents": ["$folderId"]
+        }
+    """.trimIndent()
         val metadata = RequestBody.create("application/json; charset=utf-8".toMediaTypeOrNull(), metadataJson)
-        val fileBody = RequestBody.create(mimeType.toMediaTypeOrNull(), fileBytes)
-        val filePart = MultipartBody.Part.createFormData("file", fileName, fileBody)
-        return driveApiService.uploadFile(metadata, filePart)
+
+        // 2. Archivo como Multipart
+        val fileRequestBody = RequestBody.create(mimeType.toMediaTypeOrNull(), fileBytes)
+        val filePart = MultipartBody.Part.createFormData("file", fileName, fileRequestBody)
+
+        // 3. Llamada a la API
+        val response = driveApiService.uploadFile(metadata, filePart)
+        if (!response.isSuccessful) {
+            val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+            Log.e("DRIVE","Error al subir el archivo: $errorMsg")
+            return false
+        }
+        Log.i("DRIVE", "Archivo subido exitosamente: ${response.body()}")
+        return true
     }
 
     suspend fun downloadFile(fileId: String) = driveApiService.downloadFile(fileId)

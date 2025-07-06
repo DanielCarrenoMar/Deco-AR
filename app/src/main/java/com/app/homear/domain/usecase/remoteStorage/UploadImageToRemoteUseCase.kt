@@ -7,14 +7,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 
-class GetFirstFurnitureFromRemoteByNameUseCase @Inject constructor(
+class UploadImageToRemoteUseCase @Inject constructor(
     private val repository: RemoteStorageRepository
 ){
-    operator fun invoke(fileName: String): Flow<Resource<DriveFileModel>> = channelFlow {
+    operator fun invoke(fileName: String, fileBytes: ByteArray): Flow<Resource<String>> = channelFlow {
         try {
             send(Resource.Loading())
-            val responsive = repository.getFurnitureFileByName(fileName)
-                ?: throw Exception("File not found")
+            val responsive = repository.uploadImageFile(fileName, fileBytes)
             send(
                 Resource.Success(
                     data = responsive

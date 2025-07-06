@@ -86,7 +86,12 @@ class RemoteStorageRepositoryImpl @Inject constructor(
     }
 
     override suspend fun uploadImageFile(fileName: String, fileBytes: ByteArray): String {
-        TODO("Not yet implemented")
+        try {
+            imageDriveDao.uploadFile(fileName, fileBytes)
+            return "prueba"
+        } catch (e: Exception) {
+            throw e
+        }
     }
 
     override suspend fun deleteImageFile(fileId: String): Boolean {
