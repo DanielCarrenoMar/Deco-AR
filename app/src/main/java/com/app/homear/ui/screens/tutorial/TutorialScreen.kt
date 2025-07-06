@@ -22,6 +22,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -30,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -37,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
+import com.app.homear.ui.component.ModalTutorial
 import com.app.homear.ui.component.NavBar
 
 val CustomPurple = Color(0xFF54124E)
@@ -52,6 +58,7 @@ fun TutorialScreen(
     viewModel: TutorialViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    var isModalOpen by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -75,6 +82,12 @@ fun TutorialScreen(
                 )
             }
     ) {
+        //modal de tutorial
+        ModalTutorial(
+            isDialogOpen = isModalOpen,
+            onDismiss = {isModalOpen = false},
+        )
+
         // Título decorAR
         Box(
             modifier = Modifier
@@ -161,12 +174,16 @@ fun TutorialScreen(
             Spacer(modifier = Modifier.height(28.dp))
 
             Button(
-                onClick = onHowItWorksClick,
+                onClick = {
+                    onHowItWorksClick()
+                    isModalOpen = true
+                          },
                 colors = ButtonDefaults.buttonColors(containerColor = CustomPurple),
                 shape = RoundedCornerShape(50),
                 modifier = Modifier
                     .height(40.dp)
-                    .fillMaxWidth(0.6f)
+                    .fillMaxWidth(0.8f)
+
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
@@ -181,7 +198,7 @@ fun TutorialScreen(
                     text = "Cómo funciona",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
+                    fontSize = 12.sp
                 )
             }
         }
@@ -200,4 +217,12 @@ fun TutorialScreen(
             )
         }
     }
+}
+//composable para preview de la pantalla
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview2() {
+    TutorialScreen(
+        {},{},{},{},{}
+    )
 }

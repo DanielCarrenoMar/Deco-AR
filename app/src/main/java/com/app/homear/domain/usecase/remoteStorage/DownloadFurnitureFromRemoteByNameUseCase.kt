@@ -12,17 +12,17 @@ import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
 
-class DownloadFileFromRemoteByIdUseCase @Inject constructor(
+class DownloadFurnitureFromRemoteByNameUseCase @Inject constructor(
     private val repository: RemoteStorageRepository
 ){
-    operator fun invoke(fileId: String, context: Context): Flow<Resource<File>> = channelFlow {
+    operator fun invoke(fileName: String, context: Context): Flow<Resource<File>> = channelFlow {
         try {
             send(Resource.Loading())
 
-            val driveFile: DriveFileModel = repository.getFileById(fileId)
-                ?: throw Exception("File not found with ID: $fileId")
+            val driveFile: DriveFileModel = repository.getFurnitureFileByName(fileName)
+                ?: throw Exception("File not found with name: $fileName")
 
-            val byteArray = repository.downloadFileById(fileId)
+            val byteArray = repository.downloadFileById(driveFile.id)
             val path = context.getExternalFilesDir(DIRECTORY_PICTURES)
             val file = File(path, driveFile.name)
 

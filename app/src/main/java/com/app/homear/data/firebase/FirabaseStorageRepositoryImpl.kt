@@ -3,6 +3,7 @@ package com.app.homear.data.firebase
 import android.util.Log
 import com.app.homear.domain.model.FurnitureModel
 import com.app.homear.domain.model.ProviderModel
+import com.app.homear.domain.model.PublicationModel
 import com.app.homear.domain.model.UserModel
 import com.app.homear.domain.model.Superficie
 import com.app.homear.domain.repository.FirebaseStorageRepository
@@ -128,6 +129,132 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
         return false
     }
 
+    override suspend fun getUser(): UserModel? {
+        try {
+            val authUser = currentUser()
+            val snapshot = firestore.collection("users").document(authUser?.uid ?: "").get().await()
+            return snapshot.toObject(UserModel::class.java)
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al obtener la colección", e)
+            return null
+        }
+    }
+
+    override suspend fun getProvider(): ProviderModel? {
+        try {
+            val authUser = currentUser()
+            val snapshot = firestore.collection("providers").document(authUser?.uid ?: "").get().await()
+            return snapshot.toObject(ProviderModel::class.java)
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al obtener la colección", e)
+            return null
+        }
+    }
+    override suspend fun getUser(id: String): UserModel? {
+        try {
+            val snapshot = firestore.collection("users").document(id).get().await()
+            return snapshot.toObject(UserModel::class.java)
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al obtener la colección", e)
+            return null
+        }
+    }
+
+    override suspend fun getProvider(id: String): ProviderModel? {
+        try {
+            val snapshot = firestore.collection("providers").document(id).get().await()
+            return snapshot.toObject(ProviderModel::class.java)
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al obtener la colección", e)
+            return null
+        }
+    }
+
+
+    override suspend fun getFurniture(id: String): FurnitureModel? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun addFurniture(furniture: FurnitureModel): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deleteFurniture(id: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun updateFurniture(furniture: FurnitureModel): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun addProvider(provider: ProviderModel): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun addUser(user: UserModel): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deleteProvider(id: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deleteUser(id: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getProviderByEmail(email: String): ProviderModel? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getUserByEmail(email: String): UserModel? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getFurnitureByProvider(provider: String): List<FurnitureModel> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun addPublication(publication: PublicationModel): Boolean {
+        try {
+            firestore.collection("publications").document().set(publication).await()
+            return true
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al agregar la publicación", e)
+            return false
+        }
+    }
+
+    override suspend fun getPublications(): List<PublicationModel> {
+        try {
+            val snapshot = firestore.collection("publications").get().await()
+            return snapshot.documents.mapNotNull { document ->
+                val entity = document.toObject(PublicationModel::class.java)
+                entity
+            }
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al obtener las publicaciones", e)
+            return emptyList()
+        }
+    }
+
+    override suspend fun getPublication(id: String): PublicationModel? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deletePublication(id: String): Boolean {
+        try {
+            firestore.collection("publications").document(id).delete().await()
+            return true
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al eliminar la publicación", e)
+            return false
+        }
+    }
+
+    override suspend fun updatePublication(publication: PublicationModel): Boolean {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun getCollectionModel(): List<FurnitureModel> {
         return try {
@@ -158,10 +285,9 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
 
     }
 
-    override suspend fun updateUser(user: UserModel): Boolean {
+    override suspend fun updateUser(id: String,user: UserModel): Boolean {
         try {
-            val authUser = currentUser()
-            firestore.collection("users").document(authUser?.uid ?: "").set(user).await()
+            firestore.collection("users").document(id).set(user).await()
             return true
         } catch (e: Exception) {
             Log.e("FIRESTORE", "Error al obtener la colección", e)

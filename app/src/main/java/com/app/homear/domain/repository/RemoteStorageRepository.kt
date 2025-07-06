@@ -1,7 +1,6 @@
 package com.app.homear.domain.repository
 
 import com.app.homear.domain.model.DriveFileModel
-import com.google.api.services.drive.model.File;
 
 interface RemoteStorageRepository {
     suspend fun getFileById(fileId: String): DriveFileModel?

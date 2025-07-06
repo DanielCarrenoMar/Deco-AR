@@ -33,7 +33,7 @@ fun NavigationWrapper() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = Tutorial, // En que pagina inicia
+        startDestination = Catalog, // En que pagina inicia
         enterTransition = { fadeIn(animationSpec = tween(700)) }, // Animacion de entrada
         exitTransition = { fadeOut(animationSpec = tween(700)) }, // Animacion de salida
         popEnterTransition = {fadeIn(animationSpec = tween(0))}, // Animacion cuado se hace un navigatePop
