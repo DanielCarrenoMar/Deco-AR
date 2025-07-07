@@ -128,27 +128,7 @@ fun ConfigurationScreen(
                     role = "Usuario"
                 )
                 Spacer(modifier = Modifier.height(32.dp))
-                
-                // Agrupación: Preferencias
-                Text(
-                    text = "Preferencias",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp,
-                    color = Color(0xFF222222),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OptionConfiguracionCheck(
-                    nombre = "Notificaciones",
-                    iconPath = "file:///android_asset/configuracion/toggle.svg",
-                    active = true
-                )
-                OptionConfiguracionDropMenu(
-                    nombre = "Idioma",
-                    iconPath = "file:///android_asset/configuracion/languaje.svg",
-                    opciones = listOf("Español", "Inglés")
-                )
-                Spacer(modifier = Modifier.height(28.dp))
-                
+
                 // Agrupación: Cuenta
                 Text(
                     text = "Cuenta",

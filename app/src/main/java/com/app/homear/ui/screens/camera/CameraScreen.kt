@@ -340,7 +340,6 @@ fun CameraScreen(
                     val croppedBitmap = cropBitmapToARContent(bitmap, currentView.rootView)
                     capturedBitmap = croppedBitmap
                     Log.d("CameraScreen", "Captura con PixelCopy exitosa: ${croppedBitmap.width}x${croppedBitmap.height}")
-                    Toast.makeText(context, "Captura de pantalla tomada", Toast.LENGTH_SHORT).show()
                 } else {
                     Log.e("CameraScreen", "PixelCopy falló")
                     Toast.makeText(context, "Error al capturar la pantalla", Toast.LENGTH_SHORT).show()
@@ -377,7 +376,6 @@ fun CameraScreen(
                 }
                 fos?.use {
                     bmp.compress(Bitmap.CompressFormat.JPEG, 100, it)
-                    Toast.makeText(context, "Imagen guardada en la galería", Toast.LENGTH_SHORT).show()
                 } ?: run {
                     Toast.makeText(context, "No se pudo guardar la imagen", Toast.LENGTH_SHORT).show()
                 }
