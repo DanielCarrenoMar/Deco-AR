@@ -19,7 +19,7 @@ fun ProfileScreen(
     navigateToTutorial: () -> Unit,
     navigateToCatalog: () -> Unit,
     navigateToCamera: () -> Unit,
-    navigateToConfiguration: () -> Unit,
+    navigateToSpaces: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     Column(
@@ -36,8 +36,8 @@ fun ProfileScreen(
             toCamera = navigateToCamera,
             toTutorial = navigateToTutorial,
             toCatalog = navigateToCatalog,
-            toProfile = null,
-            toConfiguration = navigateToConfiguration,
+            toSpaces = navigateToSpaces,
+            toConfiguration = null,
         )
     }
 }

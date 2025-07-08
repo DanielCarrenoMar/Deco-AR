@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
@@ -63,7 +64,7 @@ import java.io.File
 fun CatalogScreen(
     navigateToTutorial: () -> Unit,
     navigateToCamera: () -> Unit,
-    navigateToProfile: () -> Unit,
+    navigateToSpaces: () -> Unit,
     navigateToConfiguration: () -> Unit,
     viewModel: CatalogViewModel = hiltViewModel(),
 ) {
@@ -91,8 +92,10 @@ fun CatalogScreen(
             Text(
                 text = "Catálogo",
                 color = CorporatePurple,
+                fontSize = 36.sp,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp)
@@ -303,7 +306,7 @@ fun CatalogScreen(
                 toCamera = navigateToCamera,
                 toTutorial = navigateToTutorial,
                 toCatalog = null,
-                toProfile = navigateToProfile,
+                toSpaces = navigateToSpaces,
                 toConfiguration = navigateToConfiguration,
             )
         }

@@ -248,7 +248,7 @@ private fun ModelSelector(
 fun CameraScreen(
     navigateToTutorial: () -> Unit,
     navigateToCatalog: () -> Unit,
-    navigateToProfile: () -> Unit,
+    navigateToSpaces: () -> Unit,
     navigateToConfiguration: () -> Unit,
     viewModel: CameraViewModel = hiltViewModel()
 ) {
@@ -1333,7 +1333,7 @@ fun CameraScreen(
                         toCamera = null,
                         toTutorial = navigateToTutorial,
                         toCatalog = navigateToCatalog,
-                        toProfile = navigateToProfile,
+                        toSpaces = navigateToSpaces,
                         toConfiguration = navigateToConfiguration,
                     )
                 }

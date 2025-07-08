@@ -16,6 +16,7 @@ import com.app.homear.ui.screens.loading.LoadingScreen
 import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
 import com.app.homear.ui.screens.register.RegisterScreen
+import com.app.homear.ui.screens.spaces.SpacesScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
 import com.app.homear.ui.screens.start.StartScreen
 
@@ -71,7 +72,7 @@ fun NavigationWrapper() {
                 onHowItWorksClick = { /* Aquí puedes navegar a un tutorial o modal */ },
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
-                { navController.navigatePop(Profile) },
+                { navController.navigatePop(Spaces) },
                 { navController.navigatePop(Configuration) },
             )
         }
@@ -80,7 +81,7 @@ fun NavigationWrapper() {
             CameraScreen(
                 { navController.navigatePop(Tutorial) },
                 { navController.navigate(Catalog) },
-                { navController.navigatePop(Profile) },
+                { navController.navigatePop(Spaces) },
                 { navController.navigatePop(Configuration) },
             )
         }
@@ -89,13 +90,13 @@ fun NavigationWrapper() {
             CatalogScreen (
                 navigateToTutorial = { navController.navigatePop(Tutorial) },
                 navigateToCamera = { navController.navigatePop(Camera) },
-                navigateToProfile = { navController.navigatePop(Profile) },
+                navigateToSpaces = { navController.navigatePop(Spaces) },
                 navigateToConfiguration = { navController.navigatePop(Configuration) },
             )
         }
 
-        composable<Profile> {
-            ProfileScreen (
+        composable<Spaces> {
+            SpacesScreen (
                 { navController.navigatePop(Tutorial) },
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
@@ -108,7 +109,17 @@ fun NavigationWrapper() {
                 { navController.navigatePop(Tutorial) },
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
-                { navController.navigatePop(Profile) },
+                { navController.navigatePop(Spaces) },
+                navigateToProfile = { navController.navigatePop(Profile) },
+            )
+        }
+
+        composable<Profile> {
+            ProfileScreen(
+                navigateToTutorial = { navController.navigatePop(Tutorial) },
+                navigateToCatalog = { navController.navigatePop(Catalog) },
+                navigateToCamera = { navController.navigatePop(Camera) },
+                navigateToSpaces = { navController.navigatePop(Spaces) },
             )
         }
     }

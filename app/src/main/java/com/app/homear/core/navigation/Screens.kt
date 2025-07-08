@@ -32,3 +32,6 @@ object Configuration
 
 @Serializable
 object Start
+
+@Serializable
+object Spaces

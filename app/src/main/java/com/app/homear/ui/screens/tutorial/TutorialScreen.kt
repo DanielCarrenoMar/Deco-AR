@@ -53,7 +53,7 @@ fun TutorialScreen(
     onHowItWorksClick: () -> Unit = {},
     navigateToCatalog: () -> Unit,
     navigateToCamera: () -> Unit,
-    navigateToProfile: () -> Unit,
+    navigateToSpaces: () -> Unit,
     navigateToConfiguration: () -> Unit,
     viewModel: TutorialViewModel = hiltViewModel()
 ) {
@@ -212,7 +212,7 @@ fun TutorialScreen(
                 toCamera = navigateToCamera,
                 toTutorial = null,
                 toCatalog = navigateToCatalog,
-                toProfile = navigateToProfile,
+                toSpaces = navigateToSpaces,
                 toConfiguration = navigateToConfiguration,
             )
         }
