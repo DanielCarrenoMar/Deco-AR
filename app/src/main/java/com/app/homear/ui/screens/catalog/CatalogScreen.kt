@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,6 +19,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.FilterList
@@ -25,21 +32,33 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.theme.CorporatePurple
+import com.app.homear.domain.model.Superficie
+import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatalogScreen(
     navigateToTutorial: () -> Unit,
@@ -134,19 +153,32 @@ fun CatalogScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Icono de filtro a la izquierda
-                Icon(
-                    Icons.Filled.FilterList,
-                    contentDescription = "Filtrar",
+                Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF2F2F2))
-                        .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
+                        .background(
+                            if (viewModel.hasActiveFilters()) CorporatePurple.copy(alpha = 0.2f) else Color(
+                                0xFFF2F2F2
+                            )
+                        )
+                        .border(
+                            1.dp,
+                            if (viewModel.hasActiveFilters()) CorporatePurple else Color.LightGray,
+                            RoundedCornerShape(12.dp)
+                        )
                         .clickable {
-                            android.util.Log.d("CatalogScreen", "Filter clicked")
+                            viewModel.toggleFilters()
                         }
-                        .padding(8.dp)
-                )
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Filled.FilterList,
+                        contentDescription = "Filtrar",
+                        tint = if (viewModel.hasActiveFilters()) CorporatePurple else Color.Black
+                    )
+                }
                 Spacer(modifier = Modifier.weight(1f))
                 // Selector de vista a la derecha
                 Row(
@@ -246,7 +278,11 @@ fun CatalogScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "DEBUG INFO:\nTotal items: ${viewModel.furnitureItems.size}\nFiltered: ${viewModel.filteredItems.size}\nSearch: '${viewModel.searchQuery}'\nLoading: ${viewModel.isLoading}",
+                            text = if (viewModel.hasActiveFilters() || viewModel.searchQuery.isNotEmpty()) {
+                                "No se encontraron muebles con los filtros aplicados"
+                            } else {
+                                "No hay muebles disponibles"
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                             color = Color.Gray,
                             textAlign = TextAlign.Center
@@ -271,6 +307,281 @@ fun CatalogScreen(
                 toConfiguration = navigateToConfiguration,
             )
         }
+
+        // Filter Bottom Sheet
+        if (viewModel.showFilters) {
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.toggleFilters() },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            ) {
+                FilterBottomSheet(
+                    viewModel = viewModel,
+                    onDismiss = { viewModel.toggleFilters() }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun FilterBottomSheet(
+    viewModel: CatalogViewModel,
+    onDismiss: () -> Unit
+) {
+    var tempFilterState by remember { mutableStateOf(viewModel.filterState) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Filtros",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            IconButton(onClick = onDismiss) {
+                Icon(Icons.Filled.Close, contentDescription = "Cerrar")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Materials Filter
+        if (viewModel.availableMaterials.isNotEmpty()) {
+            Text(
+                text = "Materiales",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            LazyColumn(
+                modifier = Modifier.height(100.dp)
+            ) {
+                items(viewModel.availableMaterials.toList()) { material ->
+                    FilterChip(
+                        onClick = {
+                            tempFilterState = if (tempFilterState.selectedMaterials.contains(material)) {
+                                tempFilterState.copy(
+                                    selectedMaterials = tempFilterState.selectedMaterials - material
+                                )
+                            } else {
+                                tempFilterState.copy(
+                                    selectedMaterials = tempFilterState.selectedMaterials + material
+                                )
+                            }
+                        },
+                        label = { Text(material) },
+                        selected = tempFilterState.selectedMaterials.contains(material),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Surface Filter
+        Text(
+            text = "Superficie",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        LazyColumn(
+            modifier = Modifier.height(120.dp)
+        ) {
+            items(viewModel.availableSuperficies) { superficie ->
+                FilterChip(
+                    onClick = {
+                        tempFilterState = if (tempFilterState.selectedSuperficie == superficie) {
+                            tempFilterState.copy(selectedSuperficie = null)
+                        } else {
+                            tempFilterState.copy(selectedSuperficie = superficie)
+                        }
+                    },
+                    label = { Text(superficie.name) },
+                    selected = tempFilterState.selectedSuperficie == superficie,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Dimensions Filter
+        Text(
+            text = "Dimensiones (metros)",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Height filter
+        DimensionFilter(
+            label = "Altura",
+            minValue = tempFilterState.minHeight,
+            maxValue = tempFilterState.maxHeight,
+            onMinChange = { tempFilterState = tempFilterState.copy(minHeight = it) },
+            onMaxChange = { tempFilterState = tempFilterState.copy(maxHeight = it) }
+        )
+
+        // Width filter
+        DimensionFilter(
+            label = "Ancho",
+            minValue = tempFilterState.minWidth,
+            maxValue = tempFilterState.maxWidth,
+            onMinChange = { tempFilterState = tempFilterState.copy(minWidth = it) },
+            onMaxChange = { tempFilterState = tempFilterState.copy(maxWidth = it) }
+        )
+
+        // Length filter
+        DimensionFilter(
+            label = "Largo",
+            minValue = tempFilterState.minLength,
+            maxValue = tempFilterState.maxLength,
+            onMinChange = { tempFilterState = tempFilterState.copy(minLength = it) },
+            onMaxChange = { tempFilterState = tempFilterState.copy(maxLength = it) }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Action buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = {
+                    tempFilterState = FilterState()
+                    viewModel.clearFilters()
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Limpiar")
+            }
+            Button(
+                onClick = {
+                    viewModel.updateFilterState(tempFilterState)
+                    onDismiss()
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Aplicar")
+            }
+        }
+    }
+}
+
+@Composable
+fun DimensionFilter(
+    label: String,
+    minValue: Float?,
+    maxValue: Float?,
+    onMinChange: (Float?) -> Unit,
+    onMaxChange: (Float?) -> Unit
+) {
+    var minText by remember(minValue) { mutableStateOf(minValue?.toString() ?: "") }
+    var maxText by remember(maxValue) { mutableStateOf(maxValue?.toString() ?: "") }
+
+    fun parseDecimal(text: String): Float? {
+        if (text.isBlank()) return null
+        return try {
+            text.replace(",", ".").toFloatOrNull()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun isValidDecimalInput(text: String): Boolean {
+        if (text.isEmpty()) return true
+
+        val regex = Regex("^\\d*[.,]?\\d*$")
+        return regex.matches(text) && text.count { it == ',' || it == '.' } <= 1
+    }
+
+    Column(
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Min value
+            BasicTextField(
+                value = minText,
+                onValueChange = { newValue ->
+                    if (isValidDecimalInput(newValue)) {
+                        minText = newValue
+                        onMinChange(parseDecimal(newValue))
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (minText.isEmpty()) {
+                            Text("Mín", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+            
+            Text(
+                text = "-",
+                modifier = Modifier.align(Alignment.CenterVertically)
+            )
+            
+            // Max value
+            BasicTextField(
+                value = maxText,
+                onValueChange = { newValue ->
+                    if (isValidDecimalInput(newValue)) {
+                        maxText = newValue
+                        onMaxChange(parseDecimal(newValue))
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (maxText.isEmpty()) {
+                            Text("Máx", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -284,7 +595,7 @@ fun FurnitureCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (isList) Modifier.height(120.dp) else Modifier.aspectRatio(0.75f))
+            .then(if (isList) Modifier.height(140.dp) else Modifier.aspectRatio(0.75f))
             .clickable(onClick = onItemClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(12.dp),
@@ -315,29 +626,102 @@ fun FurnitureCard(
                     .padding(top = 40.dp, start = 12.dp, end = 12.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Placeholder para imagen
-                Box(
+                // Imagen del mueble
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(File(item.imagePath))
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Imagen del mueble",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .weight(if (isList) 0.4f else 1f)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color.LightGray)
+                        .background(Color.LightGray),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = CorporatePurple
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Filled.Image,
+                                contentDescription = "Error al cargar imagen",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Titulo y descripción
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.Black,
+                    maxLines = 1
                 )
 
                 Text(
                     text = item.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF222222)
+                    color = Color(0xFF222222),
+                    maxLines = if (isList) 1 else 2
                 )
+
+                // Información adicional
+                Column(
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    // Dimensiones
+                    Text(
+                        text = "${String.format("%.1f", item.height)}h × ${
+                            String.format(
+                                "%.1f",
+                                item.width
+                            )
+                        }w × ${String.format("%.1f", item.length)}l m",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        maxLines = 1
+                    )
+
+                    // Superficie
+                    Text(
+                        text = "Superficie: ${item.superficie.name}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        maxLines = 1
+                    )
+
+                    // Materiales (solo mostrar el primero si hay varios)
+                    if (item.materials.isNotEmpty()) {
+                        Text(
+                            text = "Material: ${item.materials.first()}${if (item.materials.size > 1) " +${item.materials.size - 1}" else ""}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = CorporatePurple,
+                            maxLines = 1
+                        )
+                    }
+                }
             }
         }
     }
