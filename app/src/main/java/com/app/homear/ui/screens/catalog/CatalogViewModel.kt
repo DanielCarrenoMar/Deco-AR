@@ -22,6 +22,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import java.io.File
 import javax.inject.Inject
 
@@ -181,54 +183,79 @@ class CatalogViewModel @Inject constructor(
     }
 
     private fun downloadImagesForFurniture(furnitureList: List<FurnitureModel>) {
+        // Limitar la concurrencia máxima de descargas simultáneas
+        val maxConcurrentDownloads = 2 // Puedes ajustar este valor según necesidades
+        val semaphore = Semaphore(maxConcurrentDownloads)
+
         viewModelScope.launch {
             try {
-                // Descargar todas las imágenes en paralelo
                 val downloadJobs = furnitureList.mapIndexed { index, model ->
                     async {
-                        try {
-                            val imageName = model.imageFile.name
-                            Log.d("CatalogViewModel", "Downloading image: $imageName")
+                        val imageName = model.imageFile.name
 
-                            downloadImageFromRemoteByNameUseCase(
-                                imageName,
-                                context
-                            ).collect { imageResult ->
-                                when (imageResult) {
-                                    is Resource.Success -> {
-                                        val localImagePath = imageResult.data!!.absolutePath
-                                        Log.d(
-                                            "CatalogViewModel",
-                                            "Image downloaded successfully: $localImagePath"
-                                        )
+                        // 1. Verificar si la imagen ya existe localmente (sin usar semáforo)
+                        val localImageFile = File(
+                            context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                            imageName
+                        )
 
-                                        // Actualizar el item con la ruta local
-                                        updateFurnitureItemImage(index, localImagePath)
+                        if (localImageFile.exists() && localImageFile.isFile()) {
+                            // La imagen ya existe localmente, usar esa ruta
+                            val localImagePath = localImageFile.absolutePath
+                            Log.d(
+                                "CatalogViewModel",
+                                "Image found locally: $localImagePath"
+                            )
+                            updateFurnitureItemImage(index, localImagePath)
+                        } else {
+                            // 2. Descargar la imagen usando concurrencia limitada
+                            semaphore.withPermit {
+                                try {
+
+                                    downloadImageFromRemoteByNameUseCase(
+                                        imageName,
+                                        context
+                                    ).collect { imageResult ->
+                                        when (imageResult) {
+                                            is Resource.Success -> {
+                                                val localImagePath = imageResult.data!!.absolutePath
+                                                Log.d(
+                                                    "CatalogViewModel",
+                                                    "Image downloaded successfully: $localImagePath"
+                                                )
+
+                                                // Actualizar el item con la ruta local
+                                                updateFurnitureItemImage(index, localImagePath)
+                                            }
+
+                                            is Resource.Error<*> -> {
+                                                Log.e(
+                                                    "CatalogViewModel",
+                                                    "Error downloading image $imageName: ${imageResult.message}"
+                                                )
+                                            }
+
+                                            is Resource.Loading -> {
+                                                Log.d(
+                                                    "CatalogViewModel",
+                                                    "Downloading image: $imageName"
+                                                )
+                                            }
+                                        }
                                     }
-
-                                    is Resource.Error<*> -> {
-                                        Log.e(
-                                            "CatalogViewModel",
-                                            "Error downloading image $imageName: ${imageResult.message}"
-                                        )
-                                    }
-
-                                    is Resource.Loading -> {
-                                        Log.d("CatalogViewModel", "Downloading image: $imageName")
-                                    }
+                                } catch (e: Exception) {
+                                    Log.e(
+                                        "CatalogViewModel",
+                                        "Error processing image for furniture at index $index",
+                                        e
+                                    )
                                 }
                             }
-                        } catch (e: Exception) {
-                            Log.e(
-                                "CatalogViewModel",
-                                "Error downloading image for furniture at index $index",
-                                e
-                            )
                         }
                     }
                 }
 
-                // Esperar a que todas las descargas terminen
+                // Esperar a que todas las operaciones terminen
                 downloadJobs.awaitAll()
 
             } catch (e: Exception) {
