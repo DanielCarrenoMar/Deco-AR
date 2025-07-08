@@ -93,7 +93,7 @@ fun SpacesScreen(
                         modifier = Modifier.weight(1f),
                         decorationBox = { innerTextField ->
                             if (searchQuery.value.isEmpty()) {
-                                Text("Buscar...", color = Color.Gray)
+                                Text("Buscar espacios...", color = Color.Gray)
                             }
                             innerTextField()
                         }

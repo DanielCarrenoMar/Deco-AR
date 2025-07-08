@@ -43,16 +43,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
+import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.theme.CorporatePurple
@@ -101,26 +105,20 @@ fun CatalogScreen(
                     .padding(bottom = 16.dp)
             )
 
-            // Barra de búsqueda
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFFF2F2F2))
-                    .border(1.dp, Color.LightGray, RoundedCornerShape(24.dp)),
-                contentAlignment = Alignment.CenterStart
+                    .background(Color(0xFFF2F2F2)),
+                contentAlignment = Alignment.CenterEnd
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 12.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Filled.Search,
-                        contentDescription = "Buscar",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
                     BasicTextField(
                         value = viewModel.searchQuery,
                         onValueChange = { query ->
@@ -142,9 +140,16 @@ fun CatalogScreen(
                                 contentDescription = "Limpiar búsqueda"
                             )
                         }
+                    } else {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = "Buscar",
+                            tint = Color.Gray
+                        )
                     }
                 }
             }
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -158,64 +163,80 @@ fun CatalogScreen(
                 // Icono de filtro a la izquierda
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(45.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (viewModel.hasActiveFilters()) CorporatePurple.copy(alpha = 0.2f) else Color(
-                                0xFFF2F2F2
-                            )
-                        )
-                        .border(
-                            1.dp,
-                            if (viewModel.hasActiveFilters()) CorporatePurple else Color.LightGray,
-                            RoundedCornerShape(12.dp)
-                        )
-                        .clickable {
-                            viewModel.toggleFilters()
-                        }
+                        .background(Color.Transparent)
+                        .clickable { viewModel.toggleFilters() }
                         .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Filled.FilterList,
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(
+                                if (viewModel.hasActiveFilters())
+                                    "file:///android_asset/catalogo/filter-selected.svg"
+                                else
+                                    "file:///android_asset/catalogo/filter.svg"
+                            )
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
                         contentDescription = "Filtrar",
-                        tint = if (viewModel.hasActiveFilters()) CorporatePurple else Color.Black
+                        modifier = Modifier.size(45.dp)
                     )
                 }
+
                 Spacer(modifier = Modifier.weight(1f))
+
                 // Selector de vista a la derecha
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Filled.GridView,
-                        contentDescription = "Vista Grid",
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(36.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(if (viewModel.isGridView) Color(0xFFE0E0E0) else Color.Transparent)
-                            .clickable {
-                                if (!viewModel.isGridView) {
-                                    viewModel.isGridView = true
-                                }
-                            }
-                            .padding(4.dp)
-                    )
+                            .background( Color.Transparent)
+                            .clickable { viewModel.isGridView = true }
+                            .padding(4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(
+                                    if (viewModel.isGridView)
+                                        "file:///android_asset/catalogo/grid-selected.svg"
+                                    else
+                                        "file:///android_asset/catalogo/grid.svg"
+                                )
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Vista Grid",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+
                     Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        Icons.Filled.List,
-                        contentDescription = "Vista Lista",
+                    Box(
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(36.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(if (!viewModel.isGridView) Color(0xFFE0E0E0) else Color.Transparent)
-                            .clickable {
-                                if (viewModel.isGridView) {
-                                    viewModel.isGridView = false
-                                }
-                            }
-                            .padding(4.dp)
-                    )
+                            .background(Color.Transparent)
+                            .clickable { viewModel.isGridView = false }
+                            .padding(4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(
+                                    if (!viewModel.isGridView)
+                                        "file:///android_asset/catalogo/list-selected.svg"
+                                    else
+                                        "file:///android_asset/catalogo/list.svg"
+                                )
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Vista Lista",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
                 }
             }
 
@@ -595,51 +616,50 @@ fun FurnitureCard(
     onAddClick: () -> Unit,
     isList: Boolean = false
 ) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (isList) Modifier.height(140.dp) else Modifier.aspectRatio(0.75f))
+            .then(if (isList) Modifier.height(140.dp) else Modifier.wrapContentHeight())
             .clickable(onClick = onItemClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
         ) {
-            // Icono de añadir arriba a la izquierda
-            Box(
+            // Icono de añadir en SVG sobre la imagen
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data("file:///android_asset/catalogo/add.svg")
+                    .decoderFactory(SvgDecoder.Factory())
+                    .build(),
+                contentDescription = "Agregar",
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 12.dp, top = 12.dp, bottom = 16.dp),
-                contentAlignment = Alignment.TopStart
-            ) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = "Añadir",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable { onAddClick() }
-                )
-            }
-            // Contenido del card
+                    .size(26.dp)
+                    .align(Alignment.TopStart)
+                    .clickable { onAddClick() }
+                    .offset(x = 8.dp, y = 8.dp)
+            )
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = 40.dp, start = 12.dp, end = 12.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                verticalArrangement = Arrangement.Top
             ) {
-                // Imagen del mueble
                 SubcomposeAsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
+                    model = ImageRequest.Builder(context)
                         .data(File(item.imagePath))
                         .crossfade(true)
                         .build(),
                     contentDescription = "Imagen del mueble",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(if (isList) 0.4f else 1f)
-                        .clip(RoundedCornerShape(8.dp))
+                        .height(120.dp)
                         .background(Color.LightGray),
                     contentScale = ContentScale.Crop,
                     loading = {
@@ -674,56 +694,23 @@ fun FurnitureCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Titulo y descripción
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = Color.Black,
-                    maxLines = 1
+                    maxLines = 2
                 )
 
-                Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF222222),
-                    maxLines = if (isList) 1 else 2
-                )
-
-                // Información adicional
-                Column(
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    // Dimensiones
+                if (item.materials.isNotEmpty()) {
                     Text(
-                        text = "${String.format("%.1f", item.height)}h × ${
-                            String.format(
-                                "%.1f",
-                                item.width
-                            )
-                        }w × ${String.format("%.1f", item.length)}l m",
+                        text = " ${item.materials.first()}" +
+                                if (item.materials.size > 1) " +${item.materials.size - 1}" else "",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray,
                         maxLines = 1
                     )
-
-                    // Superficie
-                    Text(
-                        text = "Superficie: ${item.superficie.name}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
-                        maxLines = 1
-                    )
-
-                    // Materiales (solo mostrar el primero si hay varios)
-                    if (item.materials.isNotEmpty()) {
-                        Text(
-                            text = "Material: ${item.materials.first()}${if (item.materials.size > 1) " +${item.materials.size - 1}" else ""}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = CorporatePurple,
-                            maxLines = 1
-                        )
-                    }
                 }
             }
         }
