@@ -50,7 +50,7 @@ fun NavBar(
         Triple("Inicio", "home", toTutorial),
         Triple("Catálogo", "furniture", toCatalog),
         Triple("Cámara", "camera", toCamera),
-        Triple("Usuario", "user", toProfile),
+        Triple("Espacio", "space", toProfile),
         Triple("Configuración", "settings", toConfiguration)
     )
     Box(
