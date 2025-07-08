@@ -8,10 +8,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,12 +28,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Add
+
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.runtime.Composable
@@ -358,6 +359,8 @@ fun FilterBottomSheet(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+            .imePadding()
     ) {
         // Header
         Row(
@@ -385,8 +388,8 @@ fun FilterBottomSheet(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            LazyColumn(
-                modifier = Modifier.height(100.dp)
+            LazyRow(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 items(viewModel.availableMaterials.toList()) { material ->
                     FilterChip(
@@ -417,8 +420,8 @@ fun FilterBottomSheet(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        LazyColumn(
-            modifier = Modifier.height(120.dp)
+        LazyRow(
+            modifier = Modifier.fillMaxWidth()
         ) {
             items(viewModel.availableSuperficies) { superficie ->
                 FilterChip(
@@ -557,7 +560,7 @@ fun DimensionFilter(
                     .height(40.dp)
                     .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
                     .padding(horizontal = 8.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
                 decorationBox = { innerTextField ->
                     Box(
@@ -591,7 +594,7 @@ fun DimensionFilter(
                     .height(40.dp)
                     .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
                     .padding(horizontal = 8.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
                 decorationBox = { innerTextField ->
                     Box(
