@@ -28,12 +28,15 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.Surface
+import androidx.compose.ui.text.TextStyle
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -53,6 +56,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -62,6 +67,7 @@ import coil.request.ImageRequest
 import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.theme.CorporatePurple
 import com.app.homear.domain.model.Superficie
+import com.app.homear.R
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,9 +104,13 @@ fun CatalogScreen(
                 text = "Catálogo",
                 color = CorporatePurple,
                 fontSize = 36.sp,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 36.sp,
+                    lineHeight = 40.sp,
+                    color = CorporatePurple,
+                    textAlign = TextAlign.Center
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp)
@@ -194,7 +204,7 @@ fun CatalogScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background( Color.Transparent)
+                            .background(Color.Transparent)
                             .clickable { viewModel.isGridView = true }
                             .padding(4.dp),
                         contentAlignment = Alignment.Center
@@ -345,6 +355,22 @@ fun CatalogScreen(
                 )
             }
         }
+
+        // Modal Vista Mueble
+        viewModel.selectedItem?.let { selectedItem ->
+            ModalVistaMuebleDynamic(
+                isDialogOpen = viewModel.showItemModal,
+                onDismiss = { viewModel.closeItemModal() },
+                onConfirm = { viewModel.confirmItemAction() },
+                nombreObjeto = selectedItem.name,
+                tipoObjeto = selectedItem.materials.firstOrNull() ?: "Mueble",
+                altoObjeto = "${selectedItem.height}m",
+                anchoObjeto = "${selectedItem.width}m",
+                profundidadObjeto = "${selectedItem.length}m",
+                materialObjeto = selectedItem.materials.joinToString(", "),
+                imagePath = selectedItem.imagePath
+            )
+        }
     }
 }
 
@@ -370,8 +396,12 @@ fun FilterBottomSheet(
         ) {
             Text(
                 text = "Filtros",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    lineHeight = 28.sp,
+                    color = Color.Black
+                )
             )
             IconButton(onClick = onDismiss) {
                 Icon(Icons.Filled.Close, contentDescription = "Cerrar")
@@ -384,8 +414,12 @@ fun FilterBottomSheet(
         if (viewModel.availableMaterials.isNotEmpty()) {
             Text(
                 text = "Materiales",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = TextStyle(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    lineHeight = 24.sp,
+                    color = Color.Black
+                ),
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             LazyRow(
@@ -416,8 +450,12 @@ fun FilterBottomSheet(
         // Surface Filter
         Text(
             text = "Superficie",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            style = TextStyle(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                color = Color.Black
+            ),
             modifier = Modifier.padding(bottom = 8.dp)
         )
         LazyRow(
@@ -444,8 +482,12 @@ fun FilterBottomSheet(
         // Dimensions Filter
         Text(
             text = "Dimensiones (metros)",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            style = TextStyle(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                color = Color.Black
+            ),
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
@@ -539,7 +581,12 @@ fun DimensionFilter(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = TextStyle(
+                fontWeight = FontWeight.Normal,
+                fontSize = 15.sp,
+                lineHeight = 22.sp,
+                color = Color.Black
+            ),
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Row(
@@ -568,7 +615,11 @@ fun DimensionFilter(
                         contentAlignment = Alignment.CenterStart
                     ) {
                         if (minText.isEmpty()) {
-                            Text("Mín", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "Mín",
+                                color = Color.Gray,
+                                style = TextStyle(fontSize = 13.sp, color = Color.Gray)
+                            )
                         }
                         innerTextField()
                     }
@@ -602,7 +653,11 @@ fun DimensionFilter(
                         contentAlignment = Alignment.CenterStart
                     ) {
                         if (maxText.isEmpty()) {
-                            Text("Máx", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "Máx",
+                                color = Color.Gray,
+                                style = TextStyle(fontSize = 13.sp, color = Color.Gray)
+                            )
                         }
                         innerTextField()
                     }
@@ -699,10 +754,12 @@ fun FurnitureCard(
 
                 Text(
                     text = item.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black,
+                    style = TextStyle(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp,
+                        color = Color.Black
+                    ),
                     maxLines = 2
                 )
 
@@ -710,10 +767,220 @@ fun FurnitureCard(
                     Text(
                         text = " ${item.materials.first()}" +
                                 if (item.materials.size > 1) " +${item.materials.size - 1}" else "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
+                        style = TextStyle(
+                            fontWeight = FontWeight.Normal,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                            color = Color.Gray
+                        ),
                         maxLines = 1
                     )
+                }
+            }
+        }
+    }
+}
+
+// Composable ModalVistaMuebleDynamic
+@Composable
+fun ModalVistaMuebleDynamic(
+    isDialogOpen: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    nombreObjeto: String,
+    tipoObjeto: String,
+    altoObjeto: String,
+    anchoObjeto: String,
+    profundidadObjeto: String,
+    materialObjeto: String,
+    imagePath: String?
+) {
+    if (isDialogOpen) {
+        Dialog(
+            onDismissRequest = { onDismiss() },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+        ) {
+            // Contenedor del diálogo con fondo transparente
+            Surface(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Transparent), // Fondo transparente
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface // Color del contenido
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(12.dp)
+                ) {
+                    // Imagen dinámica del mueble
+                    if (imagePath != null && imagePath.isNotBlank()) {
+                        SubcomposeAsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(File(imagePath))
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Imagen del objeto",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp)
+                                .align(Alignment.CenterHorizontally)
+                                .clip(RoundedCornerShape(10.dp)),
+                            loading = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.LightGray),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = CorporatePurple
+                                    )
+                                }
+                            },
+                            error = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.LightGray),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Image,
+                                        contentDescription = "Error al cargar imagen",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                            }
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp)
+                                .align(Alignment.CenterHorizontally)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Filled.Image,
+                                contentDescription = "Sin imagen",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Título / nombre del Modal
+                    Text(
+                        text = nombreObjeto,
+                        style = TextStyle(
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        ),
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+
+                    // Tipo de mueble
+                    Text(
+                        text = tipoObjeto,
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray
+                        ),
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Contenido del elemento
+                    Text(
+                        text = "Alto: $altoObjeto",
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Text(
+                        text = "Ancho: $anchoObjeto",
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Text(
+                        text = "Profundidad: $profundidadObjeto",
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Text(
+                        text = "Material: $materialObjeto",
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Botones
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        // Botón para Cerrar
+                        TextButton(
+                            onClick = { onDismiss() },
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.LightGray)
+                                .width(120.dp)
+                                .height(35.dp)
+                        ) {
+                            Text(
+                                text = "Cerrar",
+                                style = TextStyle(
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
+                            )
+                        }
+
+                        // Botón para Agregar
+                        TextButton(
+                            onClick = { onConfirm() },
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Magenta)
+                                .width(120.dp)
+                                .height(35.dp)
+                        ) {
+                            Text(
+                                text = "Agregar",
+                                style = TextStyle(
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }
