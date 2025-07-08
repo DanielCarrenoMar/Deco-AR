@@ -3,12 +3,13 @@ package com.app.homear.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.app.homear.domain.model.FurnitureModel
-import java.io.File
 import com.app.homear.domain.model.Superficie
+import com.app.homear.domain.model.LocalFurnitureModel
+import java.io.File
+import java.util.HashSet
 
-@Entity(tableName = "furniture")
-data class FurnitureEntity(
+@Entity(tableName = "local_furniture")
+data class LocalFurnitureEntity(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id") val id: Int = 0,
     @ColumnInfo(name = "name") val name: String,
@@ -20,11 +21,14 @@ data class FurnitureEntity(
     @ColumnInfo(name = "height") val height: Float,
     @ColumnInfo(name = "width") val width: Float,
     @ColumnInfo(name = "length") val length: Float,
-    @ColumnInfo(name = "superficie") val superficie: Superficie
+    @ColumnInfo(name = "superficie") val superficie: Superficie,
+    @ColumnInfo(name = "downloadDate") val downloadDate: String,
+    @ColumnInfo(name = "isDownloaded") val isDownloaded: Boolean = true
 )
 
-fun FurnitureEntity.toFurnitureModel(): FurnitureModel {
-    return FurnitureModel(
+fun LocalFurnitureEntity.toLocalFurnitureModel(): LocalFurnitureModel {
+    return LocalFurnitureModel(
+        id = this.id,
         name = this.name,
         description = this.description,
         material = HashSet(this.material.split(",").filter { it.isNotBlank() }),
@@ -34,13 +38,15 @@ fun FurnitureEntity.toFurnitureModel(): FurnitureModel {
         height = this.height,
         width = this.width,
         length = this.length,
-        superficie = this.superficie
+        superficie = this.superficie,
+        downloadDate = this.downloadDate,
+        isDownloaded = this.isDownloaded
     )
 }
 
-fun FurnitureModel.toFurnitureEntity(): FurnitureEntity {
-    return FurnitureEntity(
-        id = 0,
+fun LocalFurnitureModel.toLocalFurnitureEntity(): LocalFurnitureEntity {
+    return LocalFurnitureEntity(
+        id = this.id,
         name = this.name,
         description = this.description,
         material = this.material.joinToString(","),
@@ -50,6 +56,8 @@ fun FurnitureModel.toFurnitureEntity(): FurnitureEntity {
         height = this.height,
         width = this.width,
         length = this.length,
-        superficie = this.superficie
+        superficie = this.superficie,
+        downloadDate = this.downloadDate,
+        isDownloaded = this.isDownloaded
     )
 }
