@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -43,22 +42,19 @@ import androidx.core.graphics.toColorInt
  *  @param onDismiss es una funcion que se ejecuta cuando se presiona en el boton de cerrar,o
  *          al presionar fuera del modal, normalmente se usa para cerrar el modal ejemplos
  *          onDismiss = {modalOpen = false}
+ * @param informacion es una lista de strings para cargar la informacion en el modal
+ * @param isList indica si quieres que aparezca el icono en cada elemento de la lista o no
  */
 
 @Composable
-fun ModalTutorial(
+fun ModalInfo(
     isDialogOpen: Boolean,
     onDismiss: () -> Unit,
+    titulo: String,
+    informacion: List<String>,
+    isList: Boolean
 ) {
     val scrollState = rememberScrollState()
-    //cargar pasos tutorial
-    val pasosTutorial = listOf(
-        "Paso 1: asjndkandlawndlawndawnd",
-        "Paso 2: aijdoawndoawdniawbflawbfiawbfawl",
-        "Paso 3: aijdoawndoawdniawbflawbfiawbfawldawkjdawkdjkawndawnd",
-        "Paso 4: aijdoawndoawdniawbflawbfiawbfawlawdoawdnlawdoawndlkawndlwa",
-        "Paso 5: aijdoawndoawdniawbflawbfiawbfawland awdkjawdawdjawndlawjndlj",
-    )
 
     if (isDialogOpen) {
         Dialog(
@@ -87,13 +83,17 @@ fun ModalTutorial(
                 )
                 {
                     Column(
-                        modifier = Modifier.fillMaxSize().verticalScroll(scrollState),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.9f)
+                            .verticalScroll(scrollState)
+                        ,
                         horizontalAlignment = Alignment.CenterHorizontally
                     )
                     {
                         // Título / nombre del Modal
                         Text(
-                            text = "Tutorial",
+                            text = titulo,
                             style = TextStyle(
                                 fontSize = 25.sp,
                                 fontWeight = FontWeight.Bold,
@@ -111,31 +111,55 @@ fun ModalTutorial(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         )
                         {
-                            for (item in pasosTutorial) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                )
-                                {
-                                    // aqui se carga el icono
-                                    Icon(
-                                        painter = painterResource(R.drawable.icon_brightness_fill),
-                                        contentDescription = "icono Favorito",
-                                        modifier = Modifier.size(10.dp),
-                                        tint = Color("#8F006D".toColorInt()),
+                            if(isList)
+                            {
+                                for (item in informacion) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
                                     )
-
-                                    Spacer(modifier = Modifier.width(5.dp))
-
-                                    // Tipo de mueble
-                                    Text(
-                                        text = item,
-                                        style = TextStyle(
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Normal,
-                                            color = Color.Black
+                                    {
+                                        // aqui se carga el icono
+                                        Icon(
+                                            painter = painterResource(R.drawable.icon_brightness_fill),
+                                            contentDescription = "icono Favorito",
+                                            modifier = Modifier.size(10.dp),
+                                            tint = Color("#8F006D".toColorInt()),
                                         )
+
+                                        Spacer(modifier = Modifier.width(5.dp))
+
+                                        Text(
+                                            text = item,
+                                            style = TextStyle(
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Normal,
+                                                color = Color.Black
+                                            )
+                                        )
+                                    }
+                                }
+
+                            }
+                            else
+                            {
+                                for (item in informacion) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
                                     )
+                                    {
+                                        Spacer(modifier = Modifier.width(5.dp))
+
+                                        Text(
+                                            text = item,
+                                            style = TextStyle(
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Normal,
+                                                color = Color.Black
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -147,7 +171,11 @@ fun ModalTutorial(
                     // Barra de navegación en la parte inferior
                     Box(
                         modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
                             .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.1f)
+                            .background(Color.Transparent)
                     )
                     {
                         // Botón para Cerrar
@@ -157,7 +185,9 @@ fun ModalTutorial(
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.LightGray)
                                 .fillMaxWidth(0.5f)
-                                .height(30.dp),
+                                .height(30.dp)
+                                .align(Alignment.Center)
+                            ,
                             contentPadding = PaddingValues(
                                 horizontal = 0.dp,
                                 vertical = 0.dp
@@ -183,12 +213,11 @@ fun ModalTutorial(
 
 
 
-
 //composable para preview de la pantalla
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview2() {
-    ModalTutorial(
-        true,{}
+    ModalInfo(
+        true,{}, "Tutorial",emptyList(),true
     )
 }
