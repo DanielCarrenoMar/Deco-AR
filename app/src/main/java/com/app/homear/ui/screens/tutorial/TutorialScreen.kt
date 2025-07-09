@@ -95,7 +95,8 @@ fun TutorialScreen(
             isDialogOpen = isModalOpen,
             onDismiss = {isModalOpen = false},
             titulo = "Tutorial",
-            informacion = stepsTutorial
+            informacion = stepsTutorial,
+            isList = true
         )
 
         // Título decorAR

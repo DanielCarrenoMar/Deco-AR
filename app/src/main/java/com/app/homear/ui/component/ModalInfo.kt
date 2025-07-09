@@ -43,6 +43,7 @@ import androidx.core.graphics.toColorInt
  *          al presionar fuera del modal, normalmente se usa para cerrar el modal ejemplos
  *          onDismiss = {modalOpen = false}
  * @param informacion es una lista de strings para cargar la informacion en el modal
+ * @param isList indica si quieres que aparezca el icono en cada elemento de la lista o no
  */
 
 @Composable
@@ -50,7 +51,8 @@ fun ModalInfo(
     isDialogOpen: Boolean,
     onDismiss: () -> Unit,
     titulo: String,
-    informacion: List<String>
+    informacion: List<String>,
+    isList: Boolean
 ) {
     val scrollState = rememberScrollState()
 
@@ -109,31 +111,55 @@ fun ModalInfo(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         )
                         {
-                            for (item in informacion) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                )
-                                {
-                                    // aqui se carga el icono
-                                    Icon(
-                                        painter = painterResource(R.drawable.icon_brightness_fill),
-                                        contentDescription = "icono Favorito",
-                                        modifier = Modifier.size(10.dp),
-                                        tint = Color("#8F006D".toColorInt()),
+                            if(isList)
+                            {
+                                for (item in informacion) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
                                     )
-
-                                    Spacer(modifier = Modifier.width(5.dp))
-
-                                    // Tipo de mueble
-                                    Text(
-                                        text = item,
-                                        style = TextStyle(
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Normal,
-                                            color = Color.Black
+                                    {
+                                        // aqui se carga el icono
+                                        Icon(
+                                            painter = painterResource(R.drawable.icon_brightness_fill),
+                                            contentDescription = "icono Favorito",
+                                            modifier = Modifier.size(10.dp),
+                                            tint = Color("#8F006D".toColorInt()),
                                         )
+
+                                        Spacer(modifier = Modifier.width(5.dp))
+
+                                        Text(
+                                            text = item,
+                                            style = TextStyle(
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Normal,
+                                                color = Color.Black
+                                            )
+                                        )
+                                    }
+                                }
+
+                            }
+                            else
+                            {
+                                for (item in informacion) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
                                     )
+                                    {
+                                        Spacer(modifier = Modifier.width(5.dp))
+
+                                        Text(
+                                            text = item,
+                                            style = TextStyle(
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Normal,
+                                                color = Color.Black
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -192,6 +218,6 @@ fun ModalInfo(
 @Composable
 fun GreetingPreview2() {
     ModalInfo(
-        true,{}, "Tutorial",emptyList()
+        true,{}, "Tutorial",emptyList(),true
     )
 }
