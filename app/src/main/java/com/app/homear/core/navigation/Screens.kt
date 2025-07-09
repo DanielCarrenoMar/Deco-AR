@@ -44,3 +44,6 @@ object SpaceDetail
 
 @Serializable
 object EditProfile
+
+@Serializable
+object SpacesList

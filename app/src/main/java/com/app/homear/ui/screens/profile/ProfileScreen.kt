@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Text
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -60,6 +61,7 @@ fun ProfileScreen(
     navigateToCamera: () -> Unit = {},
     navigateToSpaces: () -> Unit = {},
     navigateToEditProfile : () -> Unit = {},
+    navigateToSpacesList: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     Column(
@@ -142,18 +144,12 @@ fun ProfileScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            FurnitureSectionDesignOnly(
-                title = "Proyectos",
-                items = getSampleFurnitureItems()
-            )
-
             Spacer(modifier = Modifier.height(16.dp))
 
             FurnitureSectionDesignOnly(
-                title = "Lista de Deseos",
-                items = getSampleFurnitureItems()
+                title = "Lista de Espacios",
+                items = getSampleFurnitureItems(),
+                navigateToSpacesList = navigateToSpacesList
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -174,7 +170,7 @@ fun ProfileScreen(
 
 
 @Composable
-fun FurnitureSectionDesignOnly(title: String, items: List<FurnitureItem>) {
+fun FurnitureSectionDesignOnly(title: String, items: List<FurnitureItem>, navigateToSpacesList: () -> Unit) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -189,7 +185,9 @@ fun FurnitureSectionDesignOnly(title: String, items: List<FurnitureItem>) {
             Image(
                 painter = painterResource(id = R.drawable.iconoflecha),
                 contentDescription = null,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { navigateToSpacesList() }
             )
         }
         Spacer(modifier = Modifier.height(16.dp))

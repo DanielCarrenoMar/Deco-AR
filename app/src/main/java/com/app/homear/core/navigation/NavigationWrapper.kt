@@ -20,6 +20,7 @@ import com.app.homear.ui.screens.profile.ProfileScreen
 import com.app.homear.ui.screens.register.RegisterScreen
 import com.app.homear.ui.screens.spaceDetail.SpaceDetailScreen
 import com.app.homear.ui.screens.spaces.SpacesScreen
+import com.app.homear.ui.screens.spaceslist.SpacesListScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
 import com.app.homear.ui.screens.start.StartScreen
 
@@ -126,6 +127,7 @@ fun NavigationWrapper() {
                 navigateToCamera = { navController.navigatePop(Camera) },
                 navigateToSpaces = { navController.navigatePop(Spaces) },
                 navigateToEditProfile = { navController.navigate(EditProfile) },
+                navigateToSpacesList = { navController.navigate(SpacesList) },
             )
         }
 
@@ -137,12 +139,19 @@ fun NavigationWrapper() {
 
         composable<SpaceDetail>{
             SpaceDetailScreen (
-                navigateToSpaces = { navController.navigatePop(Spaces)}
+                onBack = { navController.popBackStack() }
             )
         }
         composable<EditProfile> {
             EditProfileScreen(
                 onBack = { navController.popBackStack() } // Regresa a la pantalla anterior (Profile)
+            )
+        }
+
+        composable<SpacesList> {
+            SpacesListScreen(
+                onBack = { navController.popBackStack() }, // Regresa a la pantalla anterior (Profile)
+               navigateToSpacesDetails = { navController.navigate(SpaceDetail) }
             )
         }
 

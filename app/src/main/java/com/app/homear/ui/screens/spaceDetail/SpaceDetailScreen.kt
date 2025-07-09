@@ -30,7 +30,7 @@ import java.io.File
 
 @Composable
 fun SpaceDetailScreen(
-    navigateToSpaces: () -> Unit = {}
+    onBack: () -> Unit,
 ) {
     val dummySpace = Triple("Sala Moderna", "Usuario 1", "/storage/emulated/0/Pictures/space_1.jpg")
     val furnitureList = listOf(
@@ -65,7 +65,7 @@ fun SpaceDetailScreen(
                     tint = Color.Gray,
                     modifier = Modifier
                         .size(36.dp)
-                        .clickable { navigateToSpaces() }
+                        .clickable { onBack() }
                 )
 
                 Column(horizontalAlignment = Alignment.End) {
@@ -258,5 +258,5 @@ fun FurnitureCard(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun SpaceDetailScreenPreview() {
-    SpaceDetailScreen()
+    SpaceDetailScreen(onBack = {})
 }
