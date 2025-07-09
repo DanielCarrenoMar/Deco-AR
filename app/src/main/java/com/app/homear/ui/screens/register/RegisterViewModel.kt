@@ -44,7 +44,7 @@ class RegisterViewModel @Inject constructor(
                     is Resource.Success -> {
                         val id = currentUserUseCase.invoke()?.uid
                         if (id != null) {
-                            updateUserUseCase.invoke(id, UserModel(name, email,"USER")).collect{
+                            updateUserUseCase.invoke(id, UserModel(name, email,"USER",id)).collect{
 
                                 _isLoading.value = false
                                 _error.value = false
@@ -73,7 +73,7 @@ class RegisterViewModel @Inject constructor(
 
     fun registerProvider(rif:String, pass: String, name: String ) {
         viewModelScope.launch {
-            val email = "$rif@deco.ar.com"
+            val email = "$rif@decoar.com"
             signUpUseCase(email, pass).collect { result ->
                 when (result) {
                     is Resource.Success -> {
@@ -82,7 +82,7 @@ class RegisterViewModel @Inject constructor(
                             updateProviderUseCase.invoke(ProviderModel(name = name, email = email, id = rif, address = null, phone = null, image = null, description = null, state = null, city = null, country = null)).collect {
 
                             }
-                            updateUserUseCase.invoke(id,UserModel(name = name, email = email, type = "PROVIDER")).collect {}
+                            updateUserUseCase.invoke(id,UserModel(name = name, email = email, type = "PROVIDER",key = rif)).collect {}
                         }
                     }
                     is Resource.Loading -> {

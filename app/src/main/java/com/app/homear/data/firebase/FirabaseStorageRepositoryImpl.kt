@@ -176,7 +176,13 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addFurniture(furniture: FurnitureModel): Boolean {
-        TODO("Not yet implemented")
+        try {
+            firestore.collection("models").document().set(furniture).await()
+            return true
+        } catch (e: Exception) {
+            Log.e("FIRESTORE", "Error al agregar el mueble", e)
+            return false
+        }
     }
 
     override suspend fun deleteFurniture(id: String): Boolean {

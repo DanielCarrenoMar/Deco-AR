@@ -38,6 +38,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import com.app.homear.R
 import com.app.homear.ui.theme.ColorVerde
 import com.app.homear.ui.theme.CorporatePurple
@@ -48,9 +50,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.app.homear.ui.component.NavBar
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.app.homear.domain.model.UserModel
 import com.app.homear.ui.screens.profile.ProfileViewModel
 
 @Composable
@@ -59,6 +64,8 @@ fun ProfileScreen(
     navigateToCatalog: () -> Unit = {},
     navigateToCamera: () -> Unit = {},
     navigateToSpaces: () -> Unit = {},
+    navigateToLogin: () -> Unit = {},
+    navigateToRegister: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     Column(
@@ -91,71 +98,57 @@ fun ProfileScreen(
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.iconoperfil),
-                            contentDescription = "Foto de perfil",
+                    if (viewModel.state.isLoading) {
+                        // Estado de carga
+                        Box(
                             modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape)
-                                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = "Petrolina Sinforosa",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.Black
-                        )
-                        Text(
-                            text = "petrolina2025@gmail.com",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = {},
-                            modifier = Modifier
-                                .fillMaxWidth(0.6f)
-                                .height(40.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
-                            shape = RoundedCornerShape(20.dp),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                                .fillMaxWidth()
+                                .height(300.dp)
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Editar perfil",
-                                color = Color.White,
-                                style = MaterialTheme.typography.labelLarge
+                            CircularProgressIndicator(
+                                color = CorporatePurple,
+                                modifier = Modifier.size(40.dp)
                             )
                         }
+                    } else if (viewModel.state.isAuthenticated && viewModel.state.user != null) {
+                        // Usuario autenticado - mostrar perfil
+                        AuthenticatedProfileContent(
+                            user = viewModel.state.user!!,
+                            onEditProfile = { /* TODO: Implementar edición de perfil */ },
+                            onLogout = { viewModel.logout() }
+                        )
+                    } else {
+                        // Usuario no autenticado - mostrar opciones de login/registro
+                        UnauthenticatedProfileContent(
+                            onLogin = navigateToLogin,
+                            onRegister = navigateToRegister,
+                            errorMessage = viewModel.state.errorMessage,
+                            onRetry = { viewModel.refreshUser() }
+                        )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            FurnitureSectionDesignOnly(
-                title = "Proyectos",
-                items = getSampleFurnitureItems()
-            )
+            // Mostrar secciones solo si el usuario está autenticado
+            if (viewModel.state.isAuthenticated) {
+                FurnitureSectionDesignOnly(
+                    title = "Proyectos",
+                    items = getSampleFurnitureItems()
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            FurnitureSectionDesignOnly(
-                title = "Lista de Deseos",
-                items = getSampleFurnitureItems()
-            )
+                FurnitureSectionDesignOnly(
+                    title = "Lista de Deseos",
+                    items = getSampleFurnitureItems()
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
 
         NavBar(
@@ -166,11 +159,216 @@ fun ProfileScreen(
             toConfiguration = null,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+                .padding(
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                )
         )
     }
 }
 
+@Composable
+fun AuthenticatedProfileContent(
+    user: UserModel,
+    onEditProfile: () -> Unit,
+    onLogout: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.iconoperfil),
+            contentDescription = "Foto de perfil",
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
+            contentScale = ContentScale.Crop
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = user.name,
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.Black
+        )
+        Text(
+            text = user.email,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray
+        )
+
+        // Mostrar tipo de usuario
+        Text(
+            text = "Tipo: ${user.type}",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = onEditProfile,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
+                shape = RoundedCornerShape(20.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            ) {
+                Text(
+                    text = "Editar perfil",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+
+            OutlinedButton(
+                onClick = onLogout,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Text(
+                    text = "Cerrar sesión",
+                    color = CorporatePurple,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun UnauthenticatedProfileContent(
+    onLogin: () -> Unit,
+    onRegister: () -> Unit,
+    errorMessage: String?,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.iconoperfil),
+            contentDescription = "Icono de perfil",
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "¡Bienvenido a HomeAR!",
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.Black,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = "Inicia sesión o regístrate para acceder a todas las funciones",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
+        )
+
+        // Mostrar error si existe
+        if (errorMessage != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Error al cargar el perfil",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Color(0xFFD32F2F)
+                    )
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFD32F2F),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = onRetry,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFFD32F2F)
+                        )
+                    ) {
+                        Text("Reintentar")
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = onLogin,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
+                shape = RoundedCornerShape(24.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            ) {
+                Text(
+                    text = "Iniciar Sesión",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            OutlinedButton(
+                onClick = onRegister,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = CorporatePurple
+                )
+            ) {
+                Text(
+                    text = "Registrarse",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun FurnitureSectionDesignOnly(title: String, items: List<FurnitureItem>) {
@@ -268,7 +466,9 @@ fun ProfileScreenPreview() {
             navigateToTutorial = {},
             navigateToCatalog = {},
             navigateToCamera = {},
-            navigateToSpaces = {}
+            navigateToSpaces = {},
+            navigateToLogin = {},
+            navigateToRegister = {}
         )
     }
 }

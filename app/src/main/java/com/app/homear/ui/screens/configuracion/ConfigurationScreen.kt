@@ -49,7 +49,7 @@ fun ConfigurationScreen(
     navigateToCatalog: () -> Unit,
     navigateToCamera: () -> Unit,
     navigateToSpaces: () -> Unit,
-    navigateToProfile: () -> Unit, // agregado
+    navigateToProfile: () -> Unit,
     viewModel: ConfigurationViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -87,31 +87,43 @@ fun ConfigurationScreen(
                         .wrapContentWidth(Alignment.CenterHorizontally)
                 )
 
-                UserProfileCard(
-                    name = "Juan Pérez",
-                    email = "juan.perez@gmail.com",
-                    role = "Usuario",
-                    navigateToProfile = navigateToProfile // llamado
-                )
+                // Mostrar diferente ProfileCard según el estado de autenticación
+                if (viewModel.state.isLoading) {
+                    LoadingProfileCard()
+                } else if (viewModel.state.isAuthenticated && viewModel.state.user != null) {
+                    UserProfileCard(
+                        name = viewModel.state.user!!.name,
+                        email = viewModel.state.user!!.email,
+                        role = viewModel.state.user!!.type,
+                        navigateToProfile = navigateToProfile
+                    )
+                } else {
+                    UnauthenticatedProfileCard(
+                        navigateToProfile = navigateToProfile
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                Text(
-                    text = "Cuenta",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp,
-                    color = Color(0xFF222222),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OptionConfiguracion(
-                    nombre = "Cambiar contraseña",
-                    iconPath = "file:///android_asset/configuracion/lock.svg"
-                )
-                OptionConfiguracion(
-                    nombre = "Cerrar sesión",
-                    iconPath = "file:///android_asset/configuracion/logout.svg"
-                )
-                Spacer(modifier = Modifier.height(28.dp))
+                // Mostrar opciones solo si el usuario está autenticado
+                if (viewModel.state.isAuthenticated) {
+                    Text(
+                        text = "Cuenta",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF222222),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OptionConfiguracion(
+                        nombre = "Cambiar contraseña",
+                        iconPath = "file:///android_asset/configuracion/lock.svg"
+                    )
+                    OptionConfiguracion(
+                        nombre = "Cerrar sesión",
+                        iconPath = "file:///android_asset/configuracion/logout.svg"
+                    )
+                    Spacer(modifier = Modifier.height(28.dp))
+                }
 
                 Text(
                     text = "Soporte",
@@ -150,11 +162,87 @@ fun ConfigurationScreen(
 }
 
 @Composable
+fun LoadingProfileCard() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0xFFE0E0E0)),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = CorporatePurple,
+            modifier = Modifier.size(32.dp)
+        )
+    }
+}
+
+@Composable
+fun UnauthenticatedProfileCard(
+    navigateToProfile: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scaleUnauthenticatedProfileCard"
+    )
+
+    Box(
+        modifier = Modifier
+            .scale(scale)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0xFF6D6D6D))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { navigateToProfile() }
+            )
+            .padding(24.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.iconoperfil),
+                contentDescription = "Imagen de usuario",
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(Color.White, RoundedCornerShape(50))
+                    .padding(8.dp),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Iniciar Sesión",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Toca aquí para acceder a tu cuenta",
+                fontSize = 14.sp,
+                color = Color(0xFFE0E0E0),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
 fun UserProfileCard(
-    name: String = "Juan Pérez",
-    email: String = "juan.perez@gmail.com",
-    role: String = "Usuario",
-    navigateToProfile: () -> Unit // añadido
+    name: String,
+    email: String ,
+    role: String,
+    navigateToProfile: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -235,7 +323,9 @@ fun OptionConfiguracion(nombre: String, iconPath: String) {
         label = "scaleOption"
     )
 
-    Box(modifier = Modifier.scale(scale).fillMaxWidth()) {
+    Box(modifier = Modifier
+        .scale(scale)
+        .fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

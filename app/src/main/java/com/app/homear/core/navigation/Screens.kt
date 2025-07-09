@@ -35,3 +35,6 @@ object Start
 
 @Serializable
 object Spaces
+
+@Serializable
+object AddProduct
