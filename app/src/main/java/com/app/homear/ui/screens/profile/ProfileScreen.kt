@@ -59,6 +59,7 @@ fun ProfileScreen(
     navigateToCatalog: () -> Unit = {},
     navigateToCamera: () -> Unit = {},
     navigateToSpaces: () -> Unit = {},
+    navigateToEditProfile : () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     Column(
@@ -123,7 +124,7 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
-                            onClick = {},
+                            onClick = navigateToEditProfile,
                             modifier = Modifier
                                 .fillMaxWidth(0.6f)
                                 .height(40.dp),

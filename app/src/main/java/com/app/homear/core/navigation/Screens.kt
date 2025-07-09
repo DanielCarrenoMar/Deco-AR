@@ -41,3 +41,6 @@ object CreateSpace
 
 @Serializable
 object SpaceDetail
+
+@Serializable
+object EditProfile
