@@ -8,7 +8,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.app.homear.ui.screens.addProducto.AddProductoScreen
 import com.app.homear.ui.screens.catalog.CatalogScreen
 import com.app.homear.ui.screens.camera.CameraScreen
 import com.app.homear.ui.screens.configuracion.ConfigurationScreen
@@ -35,7 +34,7 @@ fun NavigationWrapper() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = AddProduct, // En que pagina inicia
+        startDestination = Catalog, // En que pagina inicia
         enterTransition = { fadeIn(animationSpec = tween(700)) }, // Animacion de entrada
         exitTransition = { fadeOut(animationSpec = tween(700)) }, // Animacion de salida
         popEnterTransition = {fadeIn(animationSpec = tween(0))}, // Animacion cuado se hace un navigatePop
@@ -84,6 +83,7 @@ fun NavigationWrapper() {
                 { navController.navigate(Catalog) },
                 { navController.navigatePop(Spaces) },
                 { navController.navigatePop(Configuration) },
+                { navController.navigatePop(CreateSpace) },
             )
         }
 
@@ -130,6 +130,32 @@ fun NavigationWrapper() {
             AddProductoScreen(
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Catalog) },
+                navigateToEditProfile = { navController.navigate(EditProfile) },
+                navigateToSpacesList = { navController.navigate(SpacesList) },
+            )
+        }
+
+        composable<CreateSpace>{
+            CreateSpaceScreen (
+                navigateToCamera = { navController.navigatePop(Camera)}
+            )
+        }
+
+        composable<SpaceDetail>{
+            SpaceDetailScreen (
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable<EditProfile> {
+            EditProfileScreen(
+                onBack = { navController.popBackStack() } // Regresa a la pantalla anterior (Profile)
+            )
+        }
+
+        composable<SpacesList> {
+            SpacesListScreen(
+                onBack = { navController.popBackStack() }, // Regresa a la pantalla anterior (Profile)
+               navigateToSpacesDetails = { navController.navigate(SpaceDetail) }
             )
         }
     }

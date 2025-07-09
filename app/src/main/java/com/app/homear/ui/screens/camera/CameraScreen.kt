@@ -97,6 +97,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 
 // Función para encontrar la vista ARSceneView
@@ -250,6 +252,7 @@ fun CameraScreen(
     navigateToCatalog: () -> Unit,
     navigateToSpaces: () -> Unit,
     navigateToConfiguration: () -> Unit,
+    navigateToCreateSpace: () -> Unit,
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -258,6 +261,8 @@ fun CameraScreen(
     val engine = rememberEngine()
     val view = rememberView(engine)
     val currentView = LocalView.current
+    var showConfirmSavedModal by remember { mutableStateOf(false) }
+
 
     // Función para recortar el bitmap y excluir elementos de UI
     fun cropBitmapToARContent(originalBitmap: Bitmap, rootView: View): Bitmap {
@@ -386,54 +391,72 @@ fun CameraScreen(
         AlertDialog(
             onDismissRequest = { capturedBitmap = null },
             title = {
-                Column {
-                    Text("Vista Previa", fontSize = 18.sp)
-                    Text(
-                        text = "Tamaño: ${bitmap.width}x${bitmap.height}",
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                }
+                Text(
+                    text = "¿Desea guardar la captura?",
+                    fontSize = 16.sp,
+                    color = Color.Black,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
             text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .background(Color.LightGray, shape = RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Vista previa de captura",
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp)
-                            .background(Color.LightGray)
-                    ) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Captura de pantalla",
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Imagen capturada correctamente",
-                        fontSize = 14.sp,
-                        color = Color.Green
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp))
                     )
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    saveImageToGallery(bitmap)
-                    capturedBitmap = null
-                }) {
-                    Text("Guardar")
+                Button(
+                    onClick = {
+                        saveImageToGallery(bitmap)
+                        capturedBitmap = null
+                        showConfirmSavedModal = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E24AA)), // morado
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text(text = "Confirmar", color = Color.White)
                 }
             },
             dismissButton = {
-                Button(onClick = { capturedBitmap = null }) {
-                    Text("Eliminar")
+                Button(
+                    onClick = { capturedBitmap = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0E0)), // gris claro
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text(text = "Cancelar", color = Color.Black)
                 }
+            },
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+    if (showConfirmSavedModal) {
+        ConfirmSpaceCreatedModal(
+            onDismiss = { showConfirmSavedModal = false },
+            onConfirm = {
+                showConfirmSavedModal = false
+                navigateToCreateSpace() 
             }
         )
     }
+
 
     if (haveAr) {
         Box(
@@ -1348,4 +1371,50 @@ fun CameraScreen(
             Text(text = "ARCore no está soportado en este dispositivo.")
         }
     }
+}
+
+@Composable
+fun ConfirmSpaceCreatedModal(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit // 🚩 NUEVO
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(16.dp),
+        title = {
+            Text(
+                text = "¿Desea crear un espacio?",
+                fontSize = 18.sp,
+                color = Color.Black,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirm() // 🚩 Ejecutar navegación a CreateSpaceScreen
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E24AA)), // morado
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .defaultMinSize(minWidth = 100.dp)
+            ) {
+                Text(text = "Confirmar", color = Color.White)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0E0)), // gris claro
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .defaultMinSize(minWidth = 100.dp)
+            ) {
+                Text(text = "Cancelar", color = Color.Black)
+            }
+        }
+    )
 }

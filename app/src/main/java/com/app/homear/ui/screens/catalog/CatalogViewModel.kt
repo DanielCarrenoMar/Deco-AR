@@ -106,6 +106,11 @@ class CatalogViewModel @Inject constructor(
             matchesSearch && matchesMaterial && matchesHeight && matchesWidth && matchesLength && matchesSuperficie
         }
 
+    var showItemModal by mutableStateOf(false)
+        private set
+    var selectedItem by mutableStateOf<FurnitureItem?>(null)
+        private set
+
     fun loadFurnitureData() {
         viewModelScope.launch {
             getAllCollectionFurnitureUseCase().collect { result ->
@@ -286,7 +291,8 @@ class CatalogViewModel @Inject constructor(
 
     fun onItemSelected(item: FurnitureItem) {
         Log.d("CatalogViewModel", "Item selected: ${item.name}")
-        // TODO: Implement navigation to detail screen
+        selectedItem = item
+        showItemModal = true
     }
 
     fun onItemAddToCart(item: FurnitureItem) {
@@ -315,6 +321,19 @@ class CatalogViewModel @Inject constructor(
                 filterState.minLength != null ||
                 filterState.maxLength != null ||
                 filterState.selectedSuperficie != null
+    }
+
+    fun closeItemModal() {
+        showItemModal = false
+        selectedItem = null
+    }
+
+    fun confirmItemAction() {
+        selectedItem?.let { item ->
+            Log.d("CatalogViewModel", "Item confirmed for AR: ${item.name}")
+            // TODO: Navigate to AR view with selected item
+        }
+        closeItemModal()
     }
 
     init {

@@ -37,4 +37,17 @@ object Start
 object Spaces
 
 @Serializable
+object CreateSpace
+
+@Serializable
+object SpaceDetail
+
+@Serializable
+object EditProfile
+
+@Serializable
+object SpacesList
+
+
+@Serializable
 object AddProduct

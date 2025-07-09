@@ -49,10 +49,26 @@ fun ConfigurationScreen(
     navigateToCatalog: () -> Unit,
     navigateToCamera: () -> Unit,
     navigateToSpaces: () -> Unit,
-    navigateToProfile: () -> Unit,
+    navigateToProfile: () -> Unit, // agregado
     viewModel: ConfigurationViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val context = LocalContext.current
+    //variables que controlan los modales
+    var isModalHelpOpen by remember { mutableStateOf(false) }
+    var isModalAboutUsOpen by remember { mutableStateOf(false) }
+
+    //informacion de los modales
+    val inforHelp = listOf<String>(
+        "¡Hola!\n" +
+                "\n" +
+                "Lamentamos informarte que, por el momento, no contamos con soporte o una implementación específica para ayudas dentro de nuestra plataforma. Estamos trabajando para integrar estas funcionalidades en el futuro y mejorar tu experiencia.\n" +
+                "\n" +
+                "Agradecemos tu comprensión."
+    )
+
+    val infoAboutUs = listOf<String>(
+        "Somos un equipo de estudiantes de la Universidad Católica Andrés Bello (UCAB) Guayana, apasionados por la tecnología y cursando la cátedra de Ingeniería de Software. Este proyecto es el resultado de nuestro esfuerzo y aprendizaje en esta materia, donde aplicamos los conocimientos adquiridos para desarrollar soluciones innovadoras. Nuestro objetivo es demostrar nuestras habilidades y contribuir con ideas frescas en el campo de la ingeniería de software."
+    )
 
     Box(
         modifier = Modifier
@@ -136,9 +152,27 @@ fun ConfigurationScreen(
                     nombre = "Ayuda",
                     iconPath = "file:///android_asset/configuracion/help.svg"
                 )
+                //modal de ayuda
+                ModalInfo(
+                    isDialogOpen = isModalHelpOpen,
+                    onDismiss = {isModalHelpOpen = false},
+                    titulo = "Ayuda",
+                    informacion = inforHelp,
+                    isList = false
+                )
+
                 OptionConfiguracion(
                     nombre = "Sobre nosotros",
-                    iconPath = "file:///android_asset/configuracion/about.svg"
+                    iconPath = "file:///android_asset/configuracion/about.svg",
+                    onClick =  {isModalAboutUsOpen = true}
+                )
+                //modal sobre nosotros
+                ModalInfo(
+                    isDialogOpen = isModalAboutUsOpen,
+                    onDismiss = {isModalAboutUsOpen = false},
+                    titulo = "Sobre Nosotros",
+                    informacion = infoAboutUs,
+                    isList = false
                 )
                 Spacer(modifier = Modifier.height(100.dp))
             }
@@ -335,7 +369,7 @@ fun OptionConfiguracion(nombre: String, iconPath: String) {
                     interactionSource = interactionSource,
                     indication = null
                 ) {
-                    // acción al click
+                    onClick()
                 }
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
