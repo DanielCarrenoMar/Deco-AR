@@ -38,3 +38,6 @@ object Spaces
 
 @Serializable
 object CreateSpace
+
+@Serializable
+object SpaceDetail

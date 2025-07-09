@@ -17,6 +17,7 @@ import com.app.homear.ui.screens.loading.LoadingScreen
 import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
 import com.app.homear.ui.screens.register.RegisterScreen
+import com.app.homear.ui.screens.spaceDetail.SpaceDetailScreen
 import com.app.homear.ui.screens.spaces.SpacesScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
 import com.app.homear.ui.screens.start.StartScreen
@@ -103,6 +104,7 @@ fun NavigationWrapper() {
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
                 { navController.navigatePop(Configuration) },
+                { navController.navigatePop(SpaceDetail) },
             )
         }
 
@@ -128,6 +130,12 @@ fun NavigationWrapper() {
         composable<CreateSpace>{
             CreateSpaceScreen (
                 navigateToCamera = { navController.navigatePop(Camera)}
+            )
+        }
+
+        composable<SpaceDetail>{
+            SpaceDetailScreen (
+                navigateToSpaces = { navController.navigatePop(Spaces)}
             )
         }
     }
