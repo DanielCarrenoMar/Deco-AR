@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Search
 
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -679,35 +681,20 @@ fun FurnitureCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (isList) Modifier.height(140.dp) else Modifier.wrapContentHeight())
-            .clickable(onClick = onItemClick),
+            .then(if (isList) Modifier.height(120.dp) else Modifier.wrapContentHeight())
+            .then(
+                if (!isList) Modifier.clickable(onClick = onItemClick) else Modifier
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            // Icono de añadir en SVG sobre la imagen
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data("file:///android_asset/catalogo/add.svg")
-                    .decoderFactory(SvgDecoder.Factory())
-                    .build(),
-                contentDescription = "Agregar",
-                modifier = Modifier
-                    .size(26.dp)
-                    .align(Alignment.TopStart)
-                    .clickable { onAddClick() }
-                    .offset(x = 8.dp, y = 8.dp)
-            )
-
-            Column(
+        if (isList) {
+            Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 40.dp, start = 12.dp, end = 12.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.Top
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
@@ -716,33 +703,30 @@ fun FurnitureCard(
                         .build(),
                     contentDescription = "Imagen del mueble",
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
+                        .width(90.dp)
+                        .height(90.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .background(Color.LightGray),
                     contentScale = ContentScale.Crop,
                     loading = {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.LightGray),
+                            modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(20.dp),
                                 color = CorporatePurple
                             )
                         }
                     },
                     error = {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.LightGray),
+                            modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Filled.Image,
-                                contentDescription = "Error al cargar imagen",
+                                contentDescription = "Error",
                                 tint = Color.White,
                                 modifier = Modifier.size(32.dp)
                             )
@@ -750,31 +734,160 @@ fun FurnitureCard(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                Text(
-                    text = item.name,
-                    style = TextStyle(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp,
-                        lineHeight = 22.sp,
-                        color = Color.Black
-                    ),
-                    maxLines = 2
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = item.name,
+                        style = TextStyle(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 20.sp
+                        )
+                    )
+                    Text(
+                        text = item.materials.firstOrNull() ?: "Tipo de mueble",
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            color = Color.Gray
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { onItemClick() },
+                            modifier = Modifier
+                                .height(36.dp)
+                                .weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.DarkGray
+                            ),
+                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                                brush = SolidColor(Color.LightGray)
+                            )
+                        ) {
+                            Text(
+                                "Detalles",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        Button(
+                            onClick = { onAddClick() },
+                            modifier = Modifier
+                                .height(36.dp)
+                                .weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CorporatePurple,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                "Agregar",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            // Grid view (igual que antes)
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data("file:///android_asset/catalogo/add.svg")
+                        .decoderFactory(SvgDecoder.Factory())
+                        .build(),
+                    contentDescription = "Agregar",
+                    modifier = Modifier
+                        .size(26.dp)
+                        .align(Alignment.TopStart)
+                        .clickable { onAddClick() }
+                        .offset(x = 8.dp, y = 8.dp)
                 )
 
-                if (item.materials.isNotEmpty()) {
-                    Text(
-                        text = " ${item.materials.first()}" +
-                                if (item.materials.size > 1) " +${item.materials.size - 1}" else "",
-                        style = TextStyle(
-                            fontWeight = FontWeight.Normal,
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp,
-                            color = Color.Gray
-                        ),
-                        maxLines = 1
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 40.dp, start = 12.dp, end = 12.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(File(item.imagePath))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Imagen del mueble",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .background(Color.LightGray),
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = CorporatePurple
+                                )
+                            }
+                        },
+                        error = {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.Image,
+                                    contentDescription = "Error",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = item.name,
+                        style = TextStyle(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                            lineHeight = 22.sp,
+                            color = Color.Black
+                        ),
+                        maxLines = 2
+                    )
+
+                    if (item.materials.isNotEmpty()) {
+                        Text(
+                            text = " ${item.materials.first()}" +
+                                    if (item.materials.size > 1) " +${item.materials.size - 1}" else "",
+                            style = TextStyle(
+                                fontWeight = FontWeight.Normal,
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp,
+                                color = Color.Gray
+                            ),
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
@@ -826,7 +939,7 @@ fun ModalVistaMuebleDynamic(
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(100.dp)
+                                .height(150.dp)
                                 .align(Alignment.CenterHorizontally)
                                 .clip(RoundedCornerShape(10.dp)),
                             loading = {
@@ -862,7 +975,7 @@ fun ModalVistaMuebleDynamic(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(100.dp)
+                                .height(150.dp)
                                 .align(Alignment.CenterHorizontally)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(Color.LightGray),
@@ -947,7 +1060,7 @@ fun ModalVistaMuebleDynamic(
                         TextButton(
                             onClick = { onDismiss() },
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(5.dp))
                                 .background(Color.LightGray)
                                 .width(120.dp)
                                 .height(35.dp)
@@ -966,8 +1079,8 @@ fun ModalVistaMuebleDynamic(
                         TextButton(
                             onClick = { onConfirm() },
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color.Magenta)
+                                .clip(RoundedCornerShape(5.dp))
+                                .background(CorporatePurple)
                                 .width(120.dp)
                                 .height(35.dp)
                         ) {
