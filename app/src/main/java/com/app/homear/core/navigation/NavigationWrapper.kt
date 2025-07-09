@@ -11,6 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import com.app.homear.ui.screens.catalog.CatalogScreen
 import com.app.homear.ui.screens.camera.CameraScreen
 import com.app.homear.ui.screens.configuracion.ConfigurationScreen
+import com.app.homear.ui.screens.createspace.CreateSpaceScreen
 import com.app.homear.ui.screens.intro.IntroScreen
 import com.app.homear.ui.screens.loading.LoadingScreen
 import com.app.homear.ui.screens.login.LoginScreen
@@ -83,6 +84,7 @@ fun NavigationWrapper() {
                 { navController.navigate(Catalog) },
                 { navController.navigatePop(Spaces) },
                 { navController.navigatePop(Configuration) },
+                { navController.navigatePop(CreateSpace) },
             )
         }
 
@@ -120,6 +122,12 @@ fun NavigationWrapper() {
                 navigateToCatalog = { navController.navigatePop(Catalog) },
                 navigateToCamera = { navController.navigatePop(Camera) },
                 navigateToSpaces = { navController.navigatePop(Spaces) },
+            )
+        }
+
+        composable<CreateSpace>{
+            CreateSpaceScreen (
+                navigateToCamera = { navController.navigatePop(Camera)}
             )
         }
     }
