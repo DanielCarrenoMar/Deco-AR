@@ -133,11 +133,13 @@ fun ConfigurationScreen(
                     )
                     OptionConfiguracion(
                         nombre = "Cambiar contraseña",
-                        iconPath = "file:///android_asset/configuracion/lock.svg"
+                        iconPath = "file:///android_asset/configuracion/lock.svg",
+                        onClick = {  }
                     )
                     OptionConfiguracion(
                         nombre = "Cerrar sesión",
-                        iconPath = "file:///android_asset/configuracion/logout.svg"
+                        iconPath = "file:///android_asset/configuracion/logout.svg",
+                        onClick = {  }
                     )
                     Spacer(modifier = Modifier.height(28.dp))
                 }
@@ -151,7 +153,8 @@ fun ConfigurationScreen(
                 )
                 OptionConfiguracion(
                     nombre = "Ayuda",
-                    iconPath = "file:///android_asset/configuracion/help.svg"
+                    iconPath = "file:///android_asset/configuracion/help.svg",
+                    onClick = { isModalHelpOpen = true }
                 )
                 //modal de ayuda
                 ModalInfo(
@@ -344,7 +347,7 @@ fun UserProfileCard(
 }
 
 @Composable
-fun OptionConfiguracion(nombre: String, iconPath: String) {
+fun OptionConfiguracion(nombre: String, iconPath: String, onClick: () -> Unit){
     val context = LocalContext.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()

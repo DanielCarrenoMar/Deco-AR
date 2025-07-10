@@ -131,15 +131,6 @@ fun NavigationWrapper() {
             )
         }
 
-        composable<AddProduct>{
-            AddProductoScreen(
-                { navController.navigatePop(Catalog) },
-                { navController.navigatePop(Catalog) },
-                navigateToEditProfile = { navController.navigate(EditProfile) },
-                navigateToSpacesList = { navController.navigate(SpacesList) },
-            )
-        }
-
         composable<CreateSpace>{
             CreateSpaceScreen (
                 navigateToCamera = { navController.navigatePop(Camera)}
