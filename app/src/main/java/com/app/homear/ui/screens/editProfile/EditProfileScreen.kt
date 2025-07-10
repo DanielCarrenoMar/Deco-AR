@@ -29,6 +29,22 @@ import com.app.homear.ui.theme.ColorVerde
 import com.app.homear.ui.theme.CorporatePurple
 import com.app.homear.ui.theme.HomeARTheme
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextStyle
+import com.app.homear.ui.component.InputData
+import java.io.File
+import androidx.core.content.FileProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,175 +60,279 @@ fun EditProfileScreen(
     val coverImageUri by vm.coverImageUri.collectAsState()
     val profileImageUri by vm.profileImageUri.collectAsState()
 
+    val textField1 = remember { mutableStateOf("") }
+    val textField2 = remember { mutableStateOf("") }
+    val textField3 = remember { mutableStateOf("") }
+
+    val context = LocalContext.current
+    var portadaImageUri by remember { mutableStateOf<Uri?>(null) }
+    var portadaSource by remember { mutableStateOf("") } // "camera" o "gallery"
+
+    // Lanzador para galería de portada
     val galleryLauncherCover = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> vm.updateCoverImageUri(uri) }
+    ) { uri: Uri? ->
+        portadaImageUri = uri
+        portadaSource = if (uri != null) "gallery" else ""
+    }
 
+    // Lanzador para galería de perfil
     val galleryLauncherProfile = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? -> vm.updateProfileImageUri(uri) }
 
+    // Lanzador para cámara
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+    val cameraLauncherCover = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) {
+            portadaImageUri = cameraImageUri
+            portadaSource = "camera"
+        }
+    }
+
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
+            .fillMaxWidth()
+            .background(color = Color(0xFF00664B))
+            .verticalScroll(rememberScrollState())
     ) {
-        TopAppBar(
-            title = { Text("Editar Perfil", color = Color.White) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
-                }
-            },
-            actions = {
-                IconButton(
-                    onClick = {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(top = 39.dp, bottom = 56.dp, start = 23.dp, end = 23.dp)
+                .fillMaxWidth()
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data("file:///android_asset/editar-perfil/back.svg")
+                    .decoderFactory(SvgDecoder.Factory())
+                    .build(),
+                contentDescription = "Atrás",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(40.dp)
+                    .clickable { onBack() }
+            )
+            Text(
+                text = "Editar Perfil",
+                color = Color(0xFFEEEEEE),
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data("file:///android_asset/editar-perfil/check.svg")
+                    .decoderFactory(SvgDecoder.Factory())
+                    .build(),
+                contentDescription = "Guardar",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(40.dp)
+                    .clickable {
                         vm.saveUserProfile()
                         onBack()
                     }
-                ) {
-                    Icon(Icons.Filled.Done, contentDescription = "Guardar", tint = Color.White)
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = ColorVerde)
-        )
-
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .background(ColorVerde)
             )
-
-            Box(
+        }
+        Box {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data("file:///android_asset/editar-perfil/card.svg")
+                    .decoderFactory(SvgDecoder.Factory())
+                    .build(),
+                contentDescription = "Fondo tarjeta",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth()
+            )
+            // Aquí va el contenido del formulario encima del fondo
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = (-75).dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(top = 10.dp, bottom = 31.dp)
             ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .padding(bottom = 50.dp)
+                        .fillMaxWidth()
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier.size(144.dp)
                     ) {
-                        Box(modifier = Modifier.size(120.dp)) {
-                            if (profileImageUri != null) {
-                                Image(
-                                    painter = rememberAsyncImagePainter(profileImageUri),
-                                    contentDescription = "Foto de perfil",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape)
-                                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.AccountCircle,
-                                    contentDescription = "Foto de perfil",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape),
-                                    tint = CorporatePurple
-                                )
-                            }
-
-                            Icon(
-                                imageVector = Icons.Default.CameraAlt,
-                                contentDescription = "Cambiar foto de perfil",
-                                tint = CorporatePurple,
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .size(30.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White)
-                                    .border(1.dp, CorporatePurple, CircleShape)
-                                    .padding(4.dp)
-                                    .clickable { galleryLauncherProfile.launch("image/*") }
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { vm.updateName(it) },
-                            label = { Text("Nombre") },
-                            modifier = Modifier.fillMaxWidth()
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data("file:///android_asset/editar-perfil/profile.svg")
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Foto de perfil",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { vm.updateEmail(it) },
-                            label = { Text("Correo electrónico") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = { vm.updatePhone(it) },
-                            label = { Text("Teléfono") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Text(
-                            text = "Portada",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.align(Alignment.Start)
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
-                        ) {
-                            Button(
-                                onClick = { /* Preparar launcher de cámara */ },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(100.dp)
-                                    .padding(4.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(Icons.Default.PhotoCamera, contentDescription = "Tomar foto", tint = Color.Black)
-                                    Text("Tomar foto", color = Color.Black)
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data("file:///android_asset/editar-perfil/edit-profile.svg")
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Lapiz",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(50.dp)
+                                .align(Alignment.BottomEnd)
+                                .offset(x = (-4).dp, y = 0.dp)
+                                .clickable {
+                                    galleryLauncherProfile.launch("image/*")
                                 }
-                            }
-                            Button(
-                                onClick = { galleryLauncherCover.launch("image/*") },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(100.dp)
-                                    .padding(4.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(Icons.Default.PhotoLibrary, contentDescription = "Galería", tint = Color.Black)
-                                    Text("Galería", color = Color.Black)
-                                }
-                            }
-                        }
+                        )
                     }
                 }
+                // Campos de formulario personalizados
+                Box(modifier = Modifier.padding(start = 20.dp, end = 20.dp)) {
+                    InputData(
+                        dataValue = textField1,
+                        label = "Nombre",
+                        placeHolder = "Ingrese su nombre"
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(modifier = Modifier.padding(start = 20.dp, end = 20.dp)) {
+                    InputData(
+                        dataValue = textField2,
+                        label = "Correo electrónico",
+                        placeHolder = "Ingrese su correo electrónico"
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(modifier = Modifier.padding(start = 20.dp, end = 20.dp)) {
+                    InputData(
+                        dataValue = textField3,
+                        label = "Teléfono",
+                        placeHolder = "Ingrese su teléfono"
+                    )
+                }
+                Spacer(modifier = Modifier.height(18.dp))
+                // Portada
+                Text(
+                    "Portada",
+                    color = Color(0xFF646464),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .padding(bottom = 10.dp, start = 22.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp)
+                        .fillMaxWidth()
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .padding(end = 16.dp)
+                            .border(
+                                width = 2.dp,
+                                color = Color(0xFFA4A4A4),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .weight(1f)
+                            .heightIn(min = 100.dp)
+                            .widthIn(min = 120.dp)
+                            .padding(vertical = 12.dp, horizontal = 8.dp)
+                            .clickable {
+                                // Tomar foto con cámara
+                                val photoFile = File.createTempFile("cover_photo", ".jpg", context.cacheDir)
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    context.packageName + ".provider",
+                                    photoFile
+                                )
+                                cameraImageUri = uri
+                                cameraLauncherCover.launch(uri)
+                            }
+                    ) {
+                        if (portadaImageUri != null && portadaSource == "camera") {
+                            Image(
+                                painter = rememberAsyncImagePainter(portadaImageUri),
+                                contentDescription = "Portada tomada",
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .padding(bottom = 8.dp)
+                                    .align(Alignment.CenterHorizontally),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data("file:///android_asset/editar-perfil/camera.svg")
+                                    .decoderFactory(SvgDecoder.Factory())
+                                    .build(),
+                                contentDescription = "Tomar foto",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .padding(bottom = 8.dp)
+                                    .align(Alignment.CenterHorizontally)
+                            )
+                        }
+                        Text(
+                            "Tomar foto",
+                            color = Color(0xFF7F7C7C),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .border(
+                                width = 2.dp,
+                                color = Color(0xFFA4A4A4),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .weight(1f)
+                            .heightIn(min = 100.dp)
+                            .widthIn(min = 120.dp)
+                            .padding(vertical = 12.dp, horizontal = 8.dp)
+                            .clickable {
+                                // Seleccionar de galería
+                                galleryLauncherCover.launch("image/*")
+                            }
+                    ) {
+                        if (portadaImageUri != null && portadaSource == "gallery") {
+                            Image(
+                                painter = rememberAsyncImagePainter(portadaImageUri),
+                                contentDescription = "Portada galería",
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .padding(bottom = 8.dp)
+                                    .align(Alignment.CenterHorizontally),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data("file:///android_asset/editar-perfil/image.svg")
+                                    .decoderFactory(SvgDecoder.Factory())
+                                    .build(),
+                                contentDescription = "Galería",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .padding(bottom = 8.dp)
+                                    .align(Alignment.CenterHorizontally)
+                            )
+                        }
+                        Text(
+                            "Galería",
+                            color = Color(0xFF7F7C7C),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

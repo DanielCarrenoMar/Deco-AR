@@ -130,7 +130,8 @@ fun NavigationWrapper() {
                 navigateToCamera = { navController.navigatePop(Camera) },
                 navigateToSpaces = { navController.navigatePop(Spaces) },
                 navigateToLogin = { navController.navigatePop(Login) },
-                navigateToRegister = { navController.navigatePop(Register) }
+                navigateToRegister = { navController.navigatePop(Register) },
+                navigateToEditProfile = { navController.navigate(EditProfile) } // Nuevo callback
             )
         }
 

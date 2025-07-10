@@ -860,20 +860,6 @@ fun CameraScreen(
                     horizontalAlignment = Alignment.End
                 ) {
                     ModelSelector(viewModel = viewModel)
-                    
-                    // Botón de foto debajo del selector de modelos
-                    Button(
-                        onClick = {
-                            takeScreenshot()
-                        },
-                        modifier = Modifier.padding(top = 2.dp)
-                    ) {
-                        Text(
-                            text = "📸 Foto",
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
                 }
             }
 
@@ -1255,7 +1241,51 @@ fun CameraScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 148.dp)
+                    .padding(end = 15.dp, bottom = 120.dp) // Más arriba y más visible
+            ) {
+                // Botón de captura tipo cámara
+                val interactionSourceCapture = remember { MutableInteractionSource() }
+                val isPressedCapture by interactionSourceCapture.collectIsPressedAsState()
+                val scaleCapture by animateFloatAsState(targetValue = if (isPressedCapture) 0.92f else 1f, label = "scaleCapture")
+                Box(
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(80.dp)
+                        .graphicsLayer(
+                            scaleX = scaleCapture,
+                            scaleY = scaleCapture
+                        )
+                        .background(
+                            color = Color.Transparent,
+                            shape = RoundedCornerShape(size = 20.dp)
+                        )
+                        .clickable(
+                            interactionSource = interactionSourceCapture,
+                            indication = null
+                        ) {
+                            takeScreenshot()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data("file:///android_asset/camara/capture.svg")
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Botón capturar foto",
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(80.dp)
+                            .padding(vertical = 5.dp)
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 210.dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.End

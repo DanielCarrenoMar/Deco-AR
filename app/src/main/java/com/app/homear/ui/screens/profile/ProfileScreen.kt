@@ -66,6 +66,7 @@ fun ProfileScreen(
     navigateToSpaces: () -> Unit = {},
     navigateToLogin: () -> Unit = {},
     navigateToRegister: () -> Unit = {},
+    navigateToEditProfile: () -> Unit = {}, // Nuevo parámetro
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     Column(
@@ -116,7 +117,7 @@ fun ProfileScreen(
                         // Usuario autenticado - mostrar perfil
                         AuthenticatedProfileContent(
                             user = viewModel.state.user!!,
-                            onEditProfile = { /* TODO: Implementar edición de perfil */ },
+                            onEditProfile = navigateToEditProfile,
                             onLogout = { viewModel.logout() }
                         )
                     } else {
@@ -468,7 +469,8 @@ fun ProfileScreenPreview() {
             navigateToCamera = {},
             navigateToSpaces = {},
             navigateToLogin = {},
-            navigateToRegister = {}
+            navigateToRegister = {},
+            navigateToEditProfile = {}
         )
     }
 }
