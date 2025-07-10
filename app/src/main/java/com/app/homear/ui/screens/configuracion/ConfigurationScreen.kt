@@ -374,7 +374,7 @@ fun OptionConfiguracion(nombre: String, iconPath: String, onClick: () -> Unit){
                     interactionSource = interactionSource,
                     indication = null
                 ) {
-
+                    onClick()
                 }
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {

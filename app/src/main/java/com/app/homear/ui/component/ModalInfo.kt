@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -66,148 +67,98 @@ fun ModalInfo(
             )
         )
         {
-            // Contenedor del diálogo con fondo transparente
             Surface(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Transparent), // Fondo transparente
+                    .background(Color.Transparent),
                 shape = RoundedCornerShape(14.dp),
                 color = Color.White
-            )
-            {
-                Box(
+            ) {
+                Column(
                     modifier = Modifier
                         .padding(12.dp)
-                        .fillMaxWidth(1f)
-                        .fillMaxHeight(0.7f)
+                        .fillMaxWidth()
+                        .then(
+                            if (isList) Modifier.fillMaxHeight(0.7f)
+                            else Modifier.wrapContentHeight()
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Título
+                    Text(
+                        text = titulo,
+                        style = TextStyle(
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color("#8F006D".toColorInt()),
+                        ),
+                    )
 
-                )
-                {
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Contenido scrollable si es lista
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .fillMaxHeight(0.9f)
-                            .verticalScroll(scrollState)
-                        ,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    )
-                    {
-                        // Título / nombre del Modal
-                        Text(
-                            text = titulo,
-                            style = TextStyle(
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color("#8F006D".toColorInt()),
+                            .then(
+                                if (isList) Modifier
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState())
+                                else Modifier.wrapContentHeight()
                             ),
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        //Pasos de Tutorial
-
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.Start,
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        )
-                        {
-                            if(isList)
-                            {
-                                for (item in informacion) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
+                        horizontalAlignment = Alignment.Start,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        informacion.forEach { item ->
+                            if (isList) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.icon_brightness_fill),
+                                        contentDescription = "icono",
+                                        modifier = Modifier.size(10.dp),
+                                        tint = Color("#8F006D".toColorInt()),
                                     )
-                                    {
-                                        // aqui se carga el icono
-                                        Icon(
-                                            painter = painterResource(R.drawable.icon_brightness_fill),
-                                            contentDescription = "icono Favorito",
-                                            modifier = Modifier.size(10.dp),
-                                            tint = Color("#8F006D".toColorInt()),
-                                        )
-
-                                        Spacer(modifier = Modifier.width(5.dp))
-
-                                        Text(
-                                            text = item,
-                                            style = TextStyle(
-                                                fontSize = 16.sp,
-                                                fontWeight = FontWeight.Normal,
-                                                color = Color.Black
-                                            )
-                                        )
-                                    }
-                                }
-
-                            }
-                            else
-                            {
-                                for (item in informacion) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = item,
+                                        fontSize = 16.sp,
+                                        color = Color.Black
                                     )
-                                    {
-                                        Spacer(modifier = Modifier.width(5.dp))
-
-                                        Text(
-                                            text = item,
-                                            style = TextStyle(
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Normal,
-                                                color = Color.Black
-                                            )
-                                        )
-                                    }
                                 }
-                            }
-                        }
-
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Barra de navegación en la parte inferior
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .fillMaxHeight(0.1f)
-                            .background(Color.Transparent)
-                    )
-                    {
-                        // Botón para Cerrar
-                        TextButton(
-                            onClick = { onDismiss() },
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(5.dp))
-                                .background(CorporatePurple)
-                                .fillMaxWidth(0.5f)
-                                .height(30.dp)
-                                .align(Alignment.Center)
-                            ,
-                            contentPadding = PaddingValues(
-                                horizontal = 0.dp,
-                                vertical = 0.dp
-                            ) // Reducir padding interno
-                        ) {
-                            Text(
-                                text = "Entendido",
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
+                            } else {
+                                Text(
+                                    text = item,
+                                    fontSize = 16.sp,
+                                    color = Color.Black
                                 )
-                            )
+                            }
                         }
                     }
 
-                }
+                    Spacer(modifier = Modifier.height(16.dp))
 
+                    // Botón Entendido
+                    TextButton(
+                        onClick = { onDismiss() },
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(CorporatePurple)
+                            .fillMaxWidth(0.5f)
+                            .height(40.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(
+                            text = "Entendido",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
+                }
             }
+
         }
     }
 }
