@@ -35,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
@@ -51,7 +52,7 @@ fun ConfigurationScreen(
     navigateToCamera: () -> Unit,
     navigateToSpaces: () -> Unit,
     navigateToProfile: () -> Unit, // agregado
-    viewModel: ConfigurationViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    viewModel: ConfigurationViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     //variables que controlan los modales
@@ -167,7 +168,8 @@ fun ConfigurationScreen(
 
                 OptionConfiguracion(
                     nombre = "Sobre nosotros",
-                    iconPath = "file:///android_asset/configuracion/"
+                    iconPath = "file:///android_asset/configuracion/",
+                    onClick = {isModalAboutUsOpen = true},
                 )
                 //modal sobre nosotros
                 ModalInfo(
