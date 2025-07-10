@@ -168,7 +168,7 @@ fun ConfigurationScreen(
 
                 OptionConfiguracion(
                     nombre = "Sobre nosotros",
-                    iconPath = "file:///android_asset/configuracion/",
+                    iconPath = "file:///android_asset/configuracion/about.svg",
                     onClick = {isModalAboutUsOpen = true},
                 )
                 //modal sobre nosotros
@@ -374,7 +374,7 @@ fun OptionConfiguracion(nombre: String, iconPath: String, onClick: () -> Unit){
                     interactionSource = interactionSource,
                     indication = null
                 ) {
-
+                    onClick()
                 }
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
