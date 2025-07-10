@@ -9,8 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.model.UserModel
 import com.app.homear.domain.usecase.firestore.GetCurrentUserUseCase
-
+import com.app.homear.domain.usecase.auth.SingOutUseCase
 import com.app.homear.domain.usecase.auth.IsLoggedInUseCase
+
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -19,13 +20,15 @@ data class ConfigurationState(
     val isLoading: Boolean = false,
     val user: UserModel? = null,
     val isAuthenticated: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val userType: String? = null
 )
 
 @HiltViewModel
 class ConfigurationViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val isLoggedInUseCase: IsLoggedInUseCase
+    private val isLoggedInUseCase: IsLoggedInUseCase,
+    private val singOutUseCase: SingOutUseCase,
 ): ViewModel() {
 
     var state by mutableStateOf(ConfigurationState())
@@ -86,11 +89,35 @@ class ConfigurationViewModel @Inject constructor(
         }
     }
 
+    var userType by mutableStateOf<String?>(null)
+        private set
+
+
     fun refreshSession() {
         loadUserSession()
     }
 
     fun clearError() {
         state = state.copy(errorMessage = null)
+    }
+
+    fun signOut(onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            singOutUseCase().collect { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        // Actualiza estado y navega fuera
+                        state = state.copy(isAuthenticated = false, user = null)
+                        onResult(true)
+                    }
+                    is Resource.Error -> {
+                        // Muestra mensaje de error si quieres
+                        state = state.copy(errorMessage = result.message ?: "Hubo un error al cerrar sesión")
+                        onResult(false)
+                    }
+                    is Resource.Loading -> { /* Puedes mostrar loading si gustas */ }
+                }
+            }
+        }
     }
 }

@@ -32,11 +32,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.text.TextStyle
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -79,12 +81,14 @@ fun CatalogScreen(
     navigateToCamera: () -> Unit,
     navigateToSpaces: () -> Unit,
     navigateToConfiguration: () -> Unit,
+    navigateToAddProducto: () -> Unit,
     viewModel: CatalogViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.loadFurnitureData()
+        viewModel.checkIfProvider()
     }
 
     Box(
@@ -371,6 +375,16 @@ fun CatalogScreen(
                 profundidadObjeto = "${selectedItem.length}m",
                 materialObjeto = selectedItem.materials.joinToString(", "),
                 imagePath = selectedItem.imagePath
+            )
+        }
+        
+        // Agregado: Botón para agregar producto
+        if (viewModel.isProvider) {
+            AddButton(
+                onClick = navigateToAddProducto,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(20.dp)
             )
         }
     }
@@ -1097,5 +1111,23 @@ fun ModalVistaMuebleDynamic(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AddButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primary,
+        modifier = modifier
+    ) {
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "+",
+            tint = MaterialTheme.colorScheme.onPrimary
+        )
     }
 }

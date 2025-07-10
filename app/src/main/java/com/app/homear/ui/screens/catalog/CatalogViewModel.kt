@@ -18,6 +18,7 @@ import com.app.homear.domain.usecase.remoteStorage.DownloadFileFromRemoteByIdUse
 import com.app.homear.domain.usecase.remoteStorage.DownloadFurnitureFromRemoteByNameUseCase
 import com.app.homear.domain.usecase.remoteStorage.DownloadImageFromRemoteByNameUseCase
 import com.app.homear.domain.usecase.remoteStorage.GetAllFurnituresFromRemoteUseCase
+import com.app.homear.domain.usecase.firestore.GetCurrentUserUseCase
 import com.app.homear.ui.screens.camera.CameraViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -64,6 +65,8 @@ class CatalogViewModel @Inject constructor(
     private val getAllCollectionFurnitureUseCase: GetAllCollectionFurnitureUseCase,
     private val downloadImageFromRemoteByNameUseCase: DownloadImageFromRemoteByNameUseCase,
     private val downloadFurnitureFromRemoteByNameUseCase: DownloadFurnitureFromRemoteByNameUseCase,
+    private val getTodosLosModelosUseCase: GetAllFurnituresFromRemoteUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
     @ApplicationContext private val context: Context
 ): ViewModel() {
     var furnitureItems by mutableStateOf<List<FurnitureItem>>(emptyList())
@@ -74,6 +77,8 @@ class CatalogViewModel @Inject constructor(
         private set
     var showFilters by mutableStateOf(false)
     var filterState by mutableStateOf(FilterState())
+        private set
+    var isProvider by mutableStateOf(false)
         private set
 
     // Available filter options
@@ -340,6 +345,7 @@ class CatalogViewModel @Inject constructor(
             }
         }
     }
+    
 
     private fun updateFurnitureItemImage(index: Int, localImagePath: String) {
         val currentItems = furnitureItems.toMutableList()
@@ -418,6 +424,20 @@ class CatalogViewModel @Inject constructor(
             // TODO: Navigate to AR view with selected item
         }
         closeItemModal()
+    }
+
+    fun checkIfProvider() {
+        viewModelScope.launch {
+            getCurrentUserUseCase().collect { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        val user = result.data
+                        isProvider = user?.type == "PROVIDER"
+                    }
+                    else -> Unit // podrías capturar el error si quieres
+                }
+            }
+        }
     }
 
     init {

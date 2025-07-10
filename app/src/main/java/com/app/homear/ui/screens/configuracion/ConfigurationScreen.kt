@@ -52,12 +52,16 @@ fun ConfigurationScreen(
     navigateToCamera: () -> Unit,
     navigateToSpaces: () -> Unit,
     navigateToProfile: () -> Unit, // agregado
+    navigateToIntro: () -> Unit, // NUEVA: Navegación cuando cierre sesión
     viewModel: ConfigurationViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     //variables que controlan los modales
     var isModalHelpOpen by remember { mutableStateOf(false) }
     var isModalAboutUsOpen by remember { mutableStateOf(false) }
+
+    // Estado para controlar loading de cierre de sesión
+    var isSigningOut by remember { mutableStateOf(false) }
 
     //informacion de los modales
     val inforHelp = listOf<String>(
@@ -140,8 +144,37 @@ fun ConfigurationScreen(
                     OptionConfiguracion(
                         nombre = "Cerrar sesión",
                         iconPath = "file:///android_asset/configuracion/logout.svg",
-                        onClick = {  }
+                        onClick = {
+                            if (!isSigningOut) {
+                                isSigningOut = true
+                                viewModel.signOut { success ->
+                                    isSigningOut = false
+                                    if (success) {
+                                        // Navegar a intro/login/splash
+                                        navigateToIntro()
+                                    }
+                                    // Si quieres, puedes manejar toast/error aquí
+                                }
+                            }
+                        }
                     )
+                    if (isSigningOut) {
+                        // Indicador simple de progreso (puedes ajustar estilo)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = CorporatePurple,
+                                modifier = Modifier.size(28.dp),
+                                strokeWidth = 3.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Cerrando sesión...", color = CorporatePurple)
+                        }
+                    }
                     Spacer(modifier = Modifier.height(28.dp))
                 }
 

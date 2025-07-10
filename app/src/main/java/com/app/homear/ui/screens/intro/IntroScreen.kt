@@ -25,13 +25,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.homear.R
-import com.app.homear.ui.screens.loading.LoadingViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun IntroScreen(
-    viewModel: LoadingViewModel = hiltViewModel(),
-    onNavigatoNext: () -> Unit = {}
+    viewModel: IntroViewModel = hiltViewModel(),
+    onNavigateNext: () -> Unit = {},
+    onNavigateTutorial: () -> Unit = {}
 ) {
     val scale = remember { Animatable(1f) }
 
@@ -50,7 +51,11 @@ fun IntroScreen(
             targetValue = 2f,
             animationSpec = tween(500, easing = EaseInOut)
         )
-        onNavigatoNext()
+        if (viewModel.isLoggedIn()) {
+            onNavigateTutorial()
+        } else {
+            onNavigateNext()
+        }
     }
 
     Box(
