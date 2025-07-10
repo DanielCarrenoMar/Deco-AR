@@ -45,6 +45,8 @@ import com.app.homear.ui.component.InputData
 fun AddProductoScreen(
     onCancel: () -> Unit,
     onSuccess: () -> Unit,
+    navigateToEditProfile: () -> Unit,
+    navigateToSpacesList: () -> Unit,
     viewModel: AddProductoViewModel = hiltViewModel(),
 ) {
     // Variables para captar datos

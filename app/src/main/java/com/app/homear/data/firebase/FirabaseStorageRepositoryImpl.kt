@@ -68,6 +68,10 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
         return auth.currentUser
     }
 
+    override suspend fun isLoggedIn(): Boolean {
+        return auth.currentUser != null
+    }
+
     override suspend fun signOut(): Boolean {
         return try {
             auth.signOut()
@@ -131,9 +135,10 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
 
     override suspend fun getUser(): UserModel? {
         try {
-            val authUser = currentUser()
+            val authUser = auth.currentUser
             val snapshot = firestore.collection("users").document(authUser?.uid ?: "").get().await()
-            return snapshot.toObject(UserModel::class.java)
+            val entity = snapshot.toObject(FirestoreUserEntity::class.java)
+            return entity?.toUserModel()
         } catch (e: Exception) {
             Log.e("FIRESTORE", "Error al obtener la colección", e)
             return null
@@ -153,7 +158,8 @@ class FirebaseStorageRepositoryImpl @Inject constructor(
     override suspend fun getUser(id: String): UserModel? {
         try {
             val snapshot = firestore.collection("users").document(id).get().await()
-            return snapshot.toObject(UserModel::class.java)
+            val entity = snapshot.toObject(FirestoreUserEntity::class.java)
+            return entity?.toUserModel()
         } catch (e: Exception) {
             Log.e("FIRESTORE", "Error al obtener la colección", e)
             return null

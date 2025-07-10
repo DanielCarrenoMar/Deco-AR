@@ -39,6 +39,7 @@ import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.app.homear.R
+import com.app.homear.ui.component.ModalInfo
 import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.theme.CorporatePurple
 import kotlinx.coroutines.launch
@@ -163,8 +164,7 @@ fun ConfigurationScreen(
 
                 OptionConfiguracion(
                     nombre = "Sobre nosotros",
-                    iconPath = "file:///android_asset/configuracion/about.svg",
-                    onClick =  {isModalAboutUsOpen = true}
+                    iconPath = "file:///android_asset/configuracion/"
                 )
                 //modal sobre nosotros
                 ModalInfo(
@@ -369,7 +369,7 @@ fun OptionConfiguracion(nombre: String, iconPath: String) {
                     interactionSource = interactionSource,
                     indication = null
                 ) {
-                    onClick()
+
                 }
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {

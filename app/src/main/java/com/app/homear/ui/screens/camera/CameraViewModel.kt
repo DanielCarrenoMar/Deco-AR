@@ -35,10 +35,21 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.cos
 
+// IMPORT: FurnitureItem definition
+import com.app.homear.ui.screens.catalog.FurnitureItem
+
 data class ARModel(
     val name: String,
     val modelPath: String,
 )
+
+// Extension for converting FurnitureItem to ARModel
+fun FurnitureItem.toARModel(): ARModel {
+    return ARModel(
+        name = this.name,
+        modelPath = this.modelPath
+    )
+}
 
 // NUEVO: Clase para representar un modelo colocado en AR con información de selección
 data class PlacedARModel(
@@ -52,33 +63,47 @@ data class PlacedARModel(
 class CameraViewModel @Inject constructor(
 
 ): ViewModel(){
-    // NUEVO: Lista de modelos disponibles (debe estar antes de selectedModel)
-    val availableModels = listOf(
-        ARModel(
-            name = "Mueble Moderno",
-            modelPath = "models/Mueble-1.glb"
-        ),
-        ARModel(
-            name = "BoomBox Retro",
-            modelPath = "models/BoomBox.glb"
-        ),
-        ARModel(
-            name = "Caja Decorativa",
-            modelPath = "models/Box.glb"
-        ),
-        ARModel(
-            name = "Decoración Apple",
-            modelPath = "models/apple.glb"
-        ),
-        ARModel(
-            name = "Pato Decorativo",
-            modelPath = "models/Duck.glb"
-        ),
-        ARModel(
-            name = "Baldosa",
-            modelPath = "models/baldosa.glb"
+    companion object {
+        // Shared singleton list of renderable ARModels in the app
+        val sharedAvailableModels = mutableListOf(
+            ARModel(
+                name = "Mueble Moderno",
+                modelPath = "models/Mueble-1.glb"
+            ),
+            ARModel(
+                name = "BoomBox Retro",
+                modelPath = "models/BoomBox.glb"
+            ),
+            ARModel(
+                name = "Caja Decorativa",
+                modelPath = "models/Box.glb"
+            ),
+            ARModel(
+                name = "Decoración Apple",
+                modelPath = "models/apple.glb"
+            ),
+            ARModel(
+                name = "Pato Decorativo",
+                modelPath = "models/Duck.glb"
+            ),
+            ARModel(
+                name = "Baldosa",
+                modelPath = "models/baldosa.glb"
+            )
         )
-    )
+
+        // Function to add new model from FurnitureItem ("+" in catalog)
+        fun addARModelFromFurniture(furniture: FurnitureItem) {
+            val newModel = furniture.toARModel()
+            // Prevent duplicates
+            if (sharedAvailableModels.none { it.name == newModel.name && it.modelPath == newModel.modelPath }) {
+                sharedAvailableModels.add(newModel)
+            }
+        }
+    }
+
+    // NUEVO: Lista de modelos disponibles (debe estar antes de selectedModel)
+    val availableModels: MutableList<ARModel> = sharedAvailableModels
 
     // NUEVO: Dimensiones de pantalla para proyección precisa
     private var screenWidth = 800f

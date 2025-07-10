@@ -16,6 +16,7 @@ interface FirebaseStorageRepository {
     suspend fun signIn(email: String, password: String): Task<AuthResult>
     suspend fun signUp(email: String, password: String): Task<AuthResult>
     suspend fun currentUser(): FirebaseUser?
+    suspend fun isLoggedIn(): Boolean
     suspend fun signOut(): Boolean
     suspend fun updateProvider(provider: ProviderModel): Boolean
     suspend fun updateProvider(key: String, value: String): Boolean

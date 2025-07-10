@@ -15,8 +15,10 @@ import com.app.homear.domain.model.Superficie
 import com.app.homear.domain.usecase.firestore.GetAllCollectionFurnitureUseCase
 import com.app.homear.domain.usecase.remoteStorage.DeleteFileFromRemoteByIdUseCase
 import com.app.homear.domain.usecase.remoteStorage.DownloadFileFromRemoteByIdUseCase
+import com.app.homear.domain.usecase.remoteStorage.DownloadFurnitureFromRemoteByNameUseCase
 import com.app.homear.domain.usecase.remoteStorage.DownloadImageFromRemoteByNameUseCase
 import com.app.homear.domain.usecase.remoteStorage.GetAllFurnituresFromRemoteUseCase
+import com.app.homear.ui.screens.camera.CameraViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
@@ -52,10 +54,16 @@ data class FilterState(
     val selectedSuperficie: Superficie? = null
 )
 
+data class ARModel(
+    val name: String,
+    val modelPath: String
+)
+
 @HiltViewModel
 class CatalogViewModel @Inject constructor(
     private val getAllCollectionFurnitureUseCase: GetAllCollectionFurnitureUseCase,
     private val downloadImageFromRemoteByNameUseCase: DownloadImageFromRemoteByNameUseCase,
+    private val downloadFurnitureFromRemoteByNameUseCase: DownloadFurnitureFromRemoteByNameUseCase,
     @ApplicationContext private val context: Context
 ): ViewModel() {
     var furnitureItems by mutableStateOf<List<FurnitureItem>>(emptyList())
@@ -140,6 +148,7 @@ class CatalogViewModel @Inject constructor(
 
                         // Descargar imágenes en paralelo
                         downloadImagesForFurniture(furnitureList)
+                        downloadModelsForFurniture(furnitureList)
                     }
 
                     is Resource.Loading -> {
@@ -269,6 +278,69 @@ class CatalogViewModel @Inject constructor(
         }
     }
 
+    private fun downloadModelsForFurniture(furnitureList: List<FurnitureModel>) {
+        val maxConcurrentDownloads = 2 // Puedes ajustar este valor
+        val semaphore = Semaphore(maxConcurrentDownloads)
+
+        viewModelScope.launch {
+            try {
+                val downloadJobs = furnitureList.mapIndexed { index, model ->
+                    async {
+                        val modelName = model.modelFile.name
+                        val localModelFile = File(
+                            context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                            modelName
+                        )
+                        if (localModelFile.exists() && localModelFile.isFile) {
+                            // Ya existe local
+                            val localModelPath = localModelFile.absolutePath
+                            updateFurnitureItemModel(index, localModelPath)
+                        } else {
+                            semaphore.withPermit {
+                                try {
+                                    downloadFurnitureFromRemoteByNameUseCase(
+                                        modelName,
+                                        context
+                                    ).collect { result ->
+                                        when (result) {
+                                            is Resource.Success -> {
+                                                val localModelPath = result.data!!.absolutePath
+                                                updateFurnitureItemModel(index, localModelPath)
+                                            }
+
+                                            is Resource.Error<*> -> {
+                                                Log.e(
+                                                    "CatalogViewModel",
+                                                    "Error downloading model $modelName: ${result.message}"
+                                                )
+                                            }
+
+                                            is Resource.Loading -> {
+                                                Log.d(
+                                                    "CatalogViewModel",
+                                                    "Downloading model: $modelName"
+                                                )
+                                            }
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e(
+                                        "CatalogViewModel",
+                                        "Error processing model for furniture at index $index",
+                                        e
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                downloadJobs.awaitAll()
+            } catch (e: Exception) {
+                Log.e("CatalogViewModel", "Error in downloadModelsForFurniture", e)
+            }
+        }
+    }
+
     private fun updateFurnitureItemImage(index: Int, localImagePath: String) {
         val currentItems = furnitureItems.toMutableList()
         if (index < currentItems.size) {
@@ -277,6 +349,18 @@ class CatalogViewModel @Inject constructor(
             Log.d(
                 "CatalogViewModel",
                 "Updated furniture item $index with local image path: $localImagePath"
+            )
+        }
+    }
+
+    private fun updateFurnitureItemModel(index: Int, localModelPath: String) {
+        val currentItems = furnitureItems.toMutableList()
+        if (index < currentItems.size) {
+            currentItems[index] = currentItems[index].copy(modelPath = localModelPath)
+            furnitureItems = currentItems
+            Log.d(
+                "CatalogViewModel",
+                "Updated furniture item $index with local model path: $localModelPath"
             )
         }
     }
@@ -297,7 +381,7 @@ class CatalogViewModel @Inject constructor(
 
     fun onItemAddToCart(item: FurnitureItem) {
         Log.d("CatalogViewModel", "Item added to favorites/cart: ${item.name}")
-        // TODO: Implement add to favorites/cart functionality
+        CameraViewModel.addARModelFromFurniture(item)
     }
 
     fun toggleFilters() {

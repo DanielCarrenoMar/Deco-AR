@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.model.UserModel
 import com.app.homear.domain.usecase.firestore.GetCurrentUserUseCase
+
+import com.app.homear.domain.usecase.auth.IsLoggedInUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,7 +24,8 @@ data class ConfigurationState(
 
 @HiltViewModel
 class ConfigurationViewModel @Inject constructor(
-    private val getCurrentUserUseCase: GetCurrentUserUseCase
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val isLoggedInUseCase: IsLoggedInUseCase
 ): ViewModel() {
 
     var state by mutableStateOf(ConfigurationState())
@@ -36,36 +39,49 @@ class ConfigurationViewModel @Inject constructor(
         viewModelScope.launch {
             state = state.copy(isLoading = true, errorMessage = null)
 
-            getCurrentUserUseCase().collect { result ->
-                when (result) {
-                    is Resource.Success -> {
-                        val user = result.data
-                        state = state.copy(
-                            isLoading = false,
-                            user = user,
-                            isAuthenticated = user != null,
-                            errorMessage = null
-                        )
-                        Log.d("ConfigurationViewModel", "User session loaded: ${user?.name}")
-                    }
+            val isLogged = isLoggedInUseCase() // usamos tu nuevo caso de uso
+            Log.d("ConfigVM", "¿Está logueado? " + isLogged);
 
-                    is Resource.Error -> {
-                        state = state.copy(
-                            isLoading = false,
-                            user = null,
-                            isAuthenticated = false,
-                            errorMessage = result.message
-                        )
-                        Log.e(
-                            "ConfigurationViewModel",
-                            "Error loading user session: ${result.message}"
-                        )
-                    }
+            if (isLogged) {
+                getCurrentUserUseCase().collect { result ->
+                    when (result) {
+                        is Resource.Success -> {
+                            val user = result.data
+                            state = state.copy(
+                                isLoading = false,
+                                user = user,
+                                isAuthenticated = true,
+                                errorMessage = null
+                            )
+                            Log.d("ConfigurationViewModel", "User session loaded: ${user?.name}")
+                        }
 
-                    is Resource.Loading -> {
-                        state = state.copy(isLoading = true)
+                        is Resource.Error -> {
+                            state = state.copy(
+                                isLoading = false,
+                                user = null,
+                                isAuthenticated = false,
+                                errorMessage = result.message
+                            )
+                            Log.e(
+                                "ConfigurationViewModel",
+                                "Error loading user session: ${result.message}"
+                            )
+                        }
+
+                        is Resource.Loading -> {
+                            state = state.copy(isLoading = true)
+                        }
                     }
                 }
+            } else {
+                // Si no está logueado, actualiza el estado acorde
+                state = state.copy(
+                    isLoading = false,
+                    user = null,
+                    isAuthenticated = false,
+                    errorMessage = null
+                )
             }
         }
     }
