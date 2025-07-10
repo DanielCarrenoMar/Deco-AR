@@ -46,7 +46,7 @@ fun NavigationWrapper() {
     ) {
         composable<Intro> {
             IntroScreen(
-                onNavigatoNext = { navController.navigatePop(Loading) }
+                onNavigatoNext = { navController.navigatePop(Start) }
             )
         }
 
