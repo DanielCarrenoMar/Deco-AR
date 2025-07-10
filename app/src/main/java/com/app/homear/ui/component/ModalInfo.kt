@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.toColorInt
+import com.app.homear.ui.theme.CorporatePurple
 
 /**
  *  @param isDialogoOpen es un booleano que controla si el modal se muestra o no
@@ -70,15 +71,15 @@ fun ModalInfo(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.Transparent), // Fondo transparente
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface // Color del contenido
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White
             )
             {
                 Box(
                     modifier = Modifier
                         .padding(12.dp)
-                        .fillMaxWidth(0.8f)
-                        .fillMaxHeight(0.6f)
+                        .fillMaxWidth(1f)
+                        .fillMaxHeight(0.7f)
 
                 )
                 {
@@ -95,7 +96,7 @@ fun ModalInfo(
                         Text(
                             text = titulo,
                             style = TextStyle(
-                                fontSize = 25.sp,
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color("#8F006D".toColorInt()),
                             ),
@@ -132,7 +133,7 @@ fun ModalInfo(
                                         Text(
                                             text = item,
                                             style = TextStyle(
-                                                fontSize = 12.sp,
+                                                fontSize = 16.sp,
                                                 fontWeight = FontWeight.Normal,
                                                 color = Color.Black
                                             )
@@ -182,8 +183,8 @@ fun ModalInfo(
                         TextButton(
                             onClick = { onDismiss() },
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color.LightGray)
+                                .clip(RoundedCornerShape(5.dp))
+                                .background(CorporatePurple)
                                 .fillMaxWidth(0.5f)
                                 .height(30.dp)
                                 .align(Alignment.Center)
@@ -194,11 +195,11 @@ fun ModalInfo(
                             ) // Reducir padding interno
                         ) {
                             Text(
-                                text = "Cerrar",
+                                text = "Entendido",
                                 style = TextStyle(
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.Gray
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
                                 )
                             )
                         }
