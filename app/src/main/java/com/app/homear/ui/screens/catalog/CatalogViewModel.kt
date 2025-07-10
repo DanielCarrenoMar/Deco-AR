@@ -198,7 +198,7 @@ class CatalogViewModel @Inject constructor(
 
     private fun downloadImagesForFurniture(furnitureList: List<FurnitureModel>) {
         // Limitar la concurrencia máxima de descargas simultáneas
-        val maxConcurrentDownloads = 2 // Puedes ajustar este valor según necesidades
+        val maxConcurrentDownloads = 10 // Puedes ajustar este valor según necesidades
         val semaphore = Semaphore(maxConcurrentDownloads)
 
         viewModelScope.launch {
@@ -279,7 +279,7 @@ class CatalogViewModel @Inject constructor(
     }
 
     private fun downloadModelsForFurniture(furnitureList: List<FurnitureModel>) {
-        val maxConcurrentDownloads = 2 // Puedes ajustar este valor
+        val maxConcurrentDownloads = 10 // Puedes ajustar este valor
         val semaphore = Semaphore(maxConcurrentDownloads)
 
         viewModelScope.launch {
