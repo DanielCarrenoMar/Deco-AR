@@ -22,7 +22,7 @@ import javax.inject.Inject
 data class FirestoreFurnitureEntity(
     val name: String = "",
     val description: String = "",
-    val material: List<String> = emptyList(), // ArrayList de Firestore
+    val materials: List<String> = emptyList(), // ArrayList de Firestore
     val keywords: List<String> = emptyList(), // ArrayList de Firestore
     val modelPath: String = "",
     val imagePath: String = "",
@@ -35,7 +35,7 @@ data class FirestoreFurnitureEntity(
         return FurnitureModel(
             name = this.name,
             description = this.description,
-            material = this.material.toHashSet(),
+            materials = this.materials.toHashSet(),
             keywords = this.keywords.toHashSet(),
             modelFile = File(this.modelPath),
             imageFile = File(this.imagePath),

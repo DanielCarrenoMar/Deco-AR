@@ -27,7 +27,7 @@ fun FurnitureEntity.toFurnitureModel(): FurnitureModel {
     return FurnitureModel(
         name = this.name,
         description = this.description,
-        material = HashSet(this.material.split(",").filter { it.isNotBlank() }),
+        materials = HashSet(this.material.split(",").filter { it.isNotBlank() }),
         keywords = HashSet(this.keywords.split(",").filter { it.isNotBlank() }),
         modelFile = File(this.modelPath),
         imageFile = File(this.imagePath),
@@ -43,7 +43,7 @@ fun FurnitureModel.toFurnitureEntity(): FurnitureEntity {
         id = 0,
         name = this.name,
         description = this.description,
-        material = this.material.joinToString(","),
+        material = this.materials.joinToString(","),
         keywords = this.keywords.joinToString(","),
         modelPath = this.modelFile.path,
         imagePath = this.imageFile.path,

@@ -70,6 +70,7 @@ import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.theme.CorporatePurple
 import com.app.homear.domain.model.Superficie
 import com.app.homear.R
+import com.app.homear.domain.model.FurnitureModel
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -370,7 +371,7 @@ fun CatalogScreen(
                 anchoObjeto = "${selectedItem.width}m",
                 profundidadObjeto = "${selectedItem.length}m",
                 materialObjeto = selectedItem.materials.joinToString(", "),
-                imagePath = selectedItem.imagePath
+                imagePath = selectedItem.imageFile.path
             )
         }
     }
@@ -671,7 +672,7 @@ fun DimensionFilter(
 
 @Composable
 fun FurnitureCard(
-    item: FurnitureItem,
+    item: FurnitureModel,
     onItemClick: () -> Unit,
     onAddClick: () -> Unit,
     isList: Boolean = false
@@ -698,7 +699,7 @@ fun FurnitureCard(
             ) {
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(File(item.imagePath))
+                        .data(item.imageFile)
                         .crossfade(true)
                         .build(),
                     contentDescription = "Imagen del mueble",
@@ -827,7 +828,7 @@ fun FurnitureCard(
                 ) {
                     SubcomposeAsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data(File(item.imagePath))
+                            .data(item.imageFile)
                             .crossfade(true)
                             .build(),
                         contentDescription = "Imagen del mueble",
@@ -929,7 +930,7 @@ fun ModalVistaMuebleDynamic(
                         .padding(12.dp)
                 ) {
                     // Imagen dinámica del mueble
-                    if (imagePath != null && imagePath.isNotBlank()) {
+                    if (!imagePath.isNullOrBlank()) {
                         SubcomposeAsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(File(imagePath))

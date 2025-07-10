@@ -179,7 +179,7 @@ class AddProductoViewModel @Inject constructor(
                 val furnitureModel = FurnitureModel(
                     name = name,
                     description = description,
-                    material = materialsSet,
+                    materials = materialsSet,
                     keywords = keywordsSet,
                     modelFile = File(modelUrl!!),
                     imageFile = File(imageUrl!!),

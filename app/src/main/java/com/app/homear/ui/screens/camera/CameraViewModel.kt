@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
+import com.app.homear.domain.model.FurnitureModel
 import com.google.android.filament.Engine
 import com.google.ar.core.Anchor
 import com.google.ar.core.ArCoreApk
@@ -35,19 +36,15 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.cos
 
-// IMPORT: FurnitureItem definition
-import com.app.homear.ui.screens.catalog.FurnitureItem
-
 data class ARModel(
     val name: String,
     val modelPath: String,
 )
 
-// Extension for converting FurnitureItem to ARModel
-fun FurnitureItem.toARModel(): ARModel {
+fun FurnitureModel.toARModel(): ARModel {
     return ARModel(
         name = this.name,
-        modelPath = this.modelPath
+        modelPath = this.modelFile.path
     )
 }
 
@@ -92,8 +89,7 @@ class CameraViewModel @Inject constructor(
             )
         )
 
-        // Function to add new model from FurnitureItem ("+" in catalog)
-        fun addARModelFromFurniture(furniture: FurnitureItem) {
+        fun addARModelFromFurniture(furniture: FurnitureModel) {
             val newModel = furniture.toARModel()
             // Prevent duplicates
             if (sharedAvailableModels.none { it.name == newModel.name && it.modelPath == newModel.modelPath }) {

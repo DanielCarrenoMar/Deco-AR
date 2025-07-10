@@ -16,7 +16,7 @@ enum class Superficie(){
 data class FurnitureModel (
     val name: String,
     val description: String,
-    val material: HashSet<String>,
+    val materials: HashSet<String>,
     val keywords: HashSet<String>,
     val modelFile: File,
     val imageFile: File,
@@ -29,7 +29,7 @@ data class FurnitureModel (
         val DEFAULT = FurnitureModel(
             name = "Vacio",
             description = "Vacio",
-            material = HashSet(),
+            materials = HashSet(),
             keywords = HashSet(),
             modelFile = File(""),
             imageFile = File(""),
@@ -45,7 +45,7 @@ fun FurnitureModel.toFurnitureEntity(): FurnitureEntity{
     return FurnitureEntity(
         name = this.name,
         description = this.description,
-        material = this.material.joinToString(","),
+        material = this.materials.joinToString(","),
         keywords = this.keywords.joinToString(","),
         modelPath = this.modelFile.path,
         imagePath = this.imageFile.path,

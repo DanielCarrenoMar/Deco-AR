@@ -29,7 +29,7 @@ import kotlinx.coroutines.sync.withPermit
 import java.io.File
 import javax.inject.Inject
 
-data class FurnitureItem(
+data class FurnitureModel(
     val id: Int,
     val name: String,
     val description: String,
@@ -66,7 +66,7 @@ class CatalogViewModel @Inject constructor(
     private val downloadFurnitureFromRemoteByNameUseCase: DownloadFurnitureFromRemoteByNameUseCase,
     @ApplicationContext private val context: Context
 ): ViewModel() {
-    var furnitureItems by mutableStateOf<List<FurnitureItem>>(emptyList())
+    var furnitureItems by mutableStateOf<List<FurnitureModel>>(emptyList())
         private set
     var searchQuery by mutableStateOf("")
     var isGridView by mutableStateOf(true)
@@ -83,7 +83,7 @@ class CatalogViewModel @Inject constructor(
     val availableSuperficies: List<Superficie>
         get() = Superficie.values().toList()
 
-    val filteredItems: List<FurnitureItem>
+    val filteredItems: List<FurnitureModel>
         get() = furnitureItems.filter { item ->
             // Search filter
             val matchesSearch = if (searchQuery.isBlank()) true else {
@@ -116,7 +116,7 @@ class CatalogViewModel @Inject constructor(
 
     var showItemModal by mutableStateOf(false)
         private set
-    var selectedItem by mutableStateOf<FurnitureItem?>(null)
+    var selectedItem by mutableStateOf<FurnitureModel?>(null)
         private set
 
     fun loadFurnitureData() {
@@ -124,31 +124,12 @@ class CatalogViewModel @Inject constructor(
             getAllCollectionFurnitureUseCase().collect { result ->
                 when (result) {
                     is Resource.Success -> {
-                        val furnitureList: List<FurnitureModel> = result.data!!
-
-                        // Crear los items iniciales con rutas temporales
-                        val initialItems = furnitureList.mapIndexed { index, model ->
-                            FurnitureItem(
-                                id = index + 1,
-                                name = model.name,
-                                description = model.description,
-                                modelPath = model.modelFile.path,
-                                imagePath = model.imageFile.path, // Ruta temporal
-                                colors = listOf("#8B4513", "#A0522D", "#D2691E"),
-                                materials = model.material,
-                                height = model.height,
-                                width = model.width,
-                                length = model.length,
-                                superficie = model.superficie
-                            )
-                        }
-
-                        furnitureItems = initialItems
+                        furnitureItems = result.data!!
                         isLoading = false
 
                         // Descargar imágenes en paralelo
-                        downloadImagesForFurniture(furnitureList)
-                        downloadModelsForFurniture(furnitureList)
+                        downloadImagesForFurniture(furnitureItems)
+                        downloadModelsForFurniture(furnitureItems)
                     }
 
                     is Resource.Loading -> {
@@ -160,35 +141,7 @@ class CatalogViewModel @Inject constructor(
                             "CatalogViewModel",
                             "Error loading furniture data: ${result.message}"
                         )
-                        // Agregar datos de prueba como fallback
-                        furnitureItems = listOf(
-                            FurnitureItem(
-                                id = 1,
-                                name = "Mueble de Prueba",
-                                description = "Datos de prueba - Firestore no disponible",
-                                modelPath = "models/test.glb",
-                                imagePath = "images/test.jpg",
-                                colors = listOf("#FF0000", "#00FF00", "#0000FF"),
-                                materials = setOf("Madera", "Metal"),
-                                height = 1.2f,
-                                width = 0.8f,
-                                length = 0.6f,
-                                superficie = Superficie.PISO
-                            ),
-                            FurnitureItem(
-                                id = 2,
-                                name = "Silla de Prueba",
-                                description = "Datos de prueba - Error en carga",
-                                modelPath = "models/test2.glb",
-                                imagePath = "images/test2.jpg",
-                                colors = listOf("#FFD700", "#FFA500", "#FF4500"),
-                                materials = setOf("Plástico", "Tela"),
-                                height = 0.9f,
-                                width = 0.5f,
-                                length = 0.5f,
-                                superficie = Superficie.PISO
-                            )
-                        )
+                        furnitureItems = emptyList()
                         isLoading = false
                     }
                 }
@@ -220,7 +173,7 @@ class CatalogViewModel @Inject constructor(
                                 "CatalogViewModel",
                                 "Image found locally: $localImagePath"
                             )
-                            updateFurnitureItemImage(index, localImagePath)
+                            updateFurnitureModelImage(index, localImagePath)
                         } else {
                             // 2. Descargar la imagen usando concurrencia limitada
                             semaphore.withPermit {
@@ -239,7 +192,7 @@ class CatalogViewModel @Inject constructor(
                                                 )
 
                                                 // Actualizar el item con la ruta local
-                                                updateFurnitureItemImage(index, localImagePath)
+                                                updateFurnitureModelImage(index, localImagePath)
                                             }
 
                                             is Resource.Error<*> -> {
@@ -294,7 +247,7 @@ class CatalogViewModel @Inject constructor(
                         if (localModelFile.exists() && localModelFile.isFile) {
                             // Ya existe local
                             val localModelPath = localModelFile.absolutePath
-                            updateFurnitureItemModel(index, localModelPath)
+                            updateFurnitureModelModel(index, localModelPath)
                         } else {
                             semaphore.withPermit {
                                 try {
@@ -305,7 +258,7 @@ class CatalogViewModel @Inject constructor(
                                         when (result) {
                                             is Resource.Success -> {
                                                 val localModelPath = result.data!!.absolutePath
-                                                updateFurnitureItemModel(index, localModelPath)
+                                                updateFurnitureModelModel(index, localModelPath)
                                             }
 
                                             is Resource.Error<*> -> {
@@ -341,10 +294,10 @@ class CatalogViewModel @Inject constructor(
         }
     }
 
-    private fun updateFurnitureItemImage(index: Int, localImagePath: String) {
+    private fun updateFurnitureModelImage(index: Int, localImagePath: String) {
         val currentItems = furnitureItems.toMutableList()
         if (index < currentItems.size) {
-            currentItems[index] = currentItems[index].copy(imagePath = localImagePath)
+            currentItems[index] = currentItems[index].copy(imageFile = File(localImagePath))
             furnitureItems = currentItems
             Log.d(
                 "CatalogViewModel",
@@ -353,10 +306,10 @@ class CatalogViewModel @Inject constructor(
         }
     }
 
-    private fun updateFurnitureItemModel(index: Int, localModelPath: String) {
+    private fun updateFurnitureModelModel(index: Int, localModelPath: String) {
         val currentItems = furnitureItems.toMutableList()
         if (index < currentItems.size) {
-            currentItems[index] = currentItems[index].copy(modelPath = localModelPath)
+            currentItems[index] = currentItems[index].copy(modelFile = File(localModelPath))
             furnitureItems = currentItems
             Log.d(
                 "CatalogViewModel",
@@ -373,13 +326,13 @@ class CatalogViewModel @Inject constructor(
         isGridView = !isGridView
     }
 
-    fun onItemSelected(item: FurnitureItem) {
+    fun onItemSelected(item: FurnitureModel) {
         Log.d("CatalogViewModel", "Item selected: ${item.name}")
         selectedItem = item
         showItemModal = true
     }
 
-    fun onItemAddToCart(item: FurnitureItem) {
+    fun onItemAddToCart(item: FurnitureModel) {
         Log.d("CatalogViewModel", "Item added to favorites/cart: ${item.name}")
         CameraViewModel.addARModelFromFurniture(item)
     }
