@@ -69,7 +69,10 @@ fun NavigationWrapper() {
         }
 
         composable<Register> {
-            RegisterScreen()
+            RegisterScreen(
+                onNavigateToLogin = { navController.navigatePop(Login) },
+                onRegisterSuccess = { navController.navigatePop(Tutorial) }
+            )
         }
 
         composable<Tutorial> {

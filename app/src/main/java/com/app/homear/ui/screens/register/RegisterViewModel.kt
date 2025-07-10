@@ -37,7 +37,7 @@ class RegisterViewModel @Inject constructor(
     val isLoading: LiveData<Boolean> = _isLoading
 
 
-    fun registerUser(email: String, pass: String, name: String){
+    fun registerUser(email: String, pass: String, name: String,  onRegisterSuccess: () -> Unit){
         viewModelScope.launch {
             signUpUseCase.invoke(email, pass).collect { result ->
                 when (result) {
@@ -49,7 +49,7 @@ class RegisterViewModel @Inject constructor(
                                 _isLoading.value = false
                                 _error.value = false
                                 Log.e("SingIn", "Error al iniciar Sesion, ${result.data}")
-
+                                onRegisterSuccess()
                             }
                             _isLogged.value = true
                         }
@@ -71,7 +71,7 @@ class RegisterViewModel @Inject constructor(
         }
     }
 
-    fun registerProvider(rif:String, pass: String, name: String ) {
+    fun registerProvider(rif:String, pass: String, name: String, onRegisterSuccess: () -> Unit){
         viewModelScope.launch {
             val email = "$rif@decoar.com"
             signUpUseCase(email, pass).collect { result ->
@@ -83,7 +83,10 @@ class RegisterViewModel @Inject constructor(
 
                             }
                             updateUserUseCase.invoke(id,UserModel(name = name, email = email, type = "PROVIDER",key = rif)).collect {}
+                            onRegisterSuccess()
                         }
+                        _isLogged.value = true
+
                     }
                     is Resource.Loading -> {
                         _isLoading.value = true
