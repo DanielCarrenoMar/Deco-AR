@@ -43,11 +43,4 @@ interface ProjectDao {
         description: String,
         lastModified: String
     ): Int
-
-    @Query("UPDATE projects SET isCompleted = :isCompleted, lastModified = :lastModified WHERE id = :id")
-    suspend fun updateProjectCompletionStatus(
-        id: Int,
-        isCompleted: Boolean,
-        lastModified: String
-    ): Int
 }

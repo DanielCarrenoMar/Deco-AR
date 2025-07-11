@@ -27,7 +27,6 @@ fun ProjectEntity.toProjectModel(): ProjectModel {
         description = this.description,
         createdDate = this.createdDate,
         lastModified = this.lastModified,
-        isCompleted = this.isCompleted
     )
 }
 
@@ -39,6 +38,5 @@ fun ProjectModel.toProjectEntity(): ProjectEntity {
         description = this.description,
         createdDate = this.createdDate,
         lastModified = this.lastModified,
-        isCompleted = this.isCompleted
     )
 }

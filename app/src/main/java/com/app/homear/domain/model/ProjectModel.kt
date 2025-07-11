@@ -7,5 +7,4 @@ data class ProjectModel(
     val description: String,
     val createdDate: String,
     val lastModified: String,
-    val isCompleted: Boolean = false
 )

@@ -21,6 +21,7 @@ class ProjectsViewModel  @Inject constructor(
     var projectList = _projectList.value
 
     fun loadProjects() {
+        Log.i("ProjectsViewModel", "Loading projects...")
         viewModelScope.launch {
             getAllProyectUseCase().collect { resource ->
                 when (resource) {
@@ -32,7 +33,7 @@ class ProjectsViewModel  @Inject constructor(
                         Log.i("ProjectsViewModel", "Projects loaded successfully: ${_projectList.value.size} projects found.")
                     }
                     is Resource.Error -> {
-                        // Handle error state if needed
+                        Log.e("ProjectsViewModel", "Error loading projects: ${resource.message}")
                     }
                 }
             }
@@ -40,6 +41,7 @@ class ProjectsViewModel  @Inject constructor(
     }
 
     fun testSaveProyect(projectModel: ProjectModel){
+        Log.i("ProjectsViewModel", "Saving project: ${projectModel.name}")
         viewModelScope.launch {
             saveProjectUseCase(projectModel).collect { resource ->
                 when (resource) {
@@ -50,7 +52,7 @@ class ProjectsViewModel  @Inject constructor(
                         Log.i("ProjectsViewModel", "Projects guardado correctamente: ${projectModel.name}")
                     }
                     is Resource.Error -> {
-                        // Handle error state if needed
+                        Log.e("ProjectsViewModel", "Error al guardar el proyecto: ${resource.message}")
                     }
                 }
             }

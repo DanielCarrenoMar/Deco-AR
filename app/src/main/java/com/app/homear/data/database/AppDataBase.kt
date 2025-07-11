@@ -14,7 +14,7 @@ import com.app.homear.data.database.entity.ProjectEntity
 import com.app.homear.data.database.entity.SpaceEntity
 import com.app.homear.data.database.entity.SpaceFurnitureEntity
 
-@Database(entities = [FurnitureEntity::class, SpaceEntity::class, SpaceFurnitureEntity::class, ProjectEntity::class], version = 1)
+@Database(entities = [FurnitureEntity::class, SpaceEntity::class, SpaceFurnitureEntity::class, ProjectEntity::class], version = 2)
 abstract class AppDatabase: RoomDatabase() {
     abstract fun getFurnitureDao(): FurnitureDao
     abstract fun getSpaceDao(): SpaceDao
