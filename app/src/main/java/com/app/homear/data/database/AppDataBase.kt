@@ -7,21 +7,17 @@ import com.app.homear.data.database.entity.FurnitureEntity
 
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import com.app.homear.data.database.dao.ProjectDao
 import com.app.homear.data.database.dao.SpaceDao
+import com.app.homear.data.database.dao.SpaceFurnitureDao
+import com.app.homear.data.database.entity.ProjectEntity
 import com.app.homear.data.database.entity.SpaceEntity
+import com.app.homear.data.database.entity.SpaceFurnitureEntity
 
-class Converters {
-    @TypeConverter
-    fun fromIntList(list: List<Int>): String = list.joinToString(",")
-
-    @TypeConverter
-    fun toIntList(data: String): List<Int> =
-        if (data.isEmpty()) emptyList() else data.split(",").map { it.toInt() }
-}
-
-@Database(entities = [FurnitureEntity::class, SpaceEntity::class], version = 1)
-@TypeConverters(Converters::class)
+@Database(entities = [FurnitureEntity::class, SpaceEntity::class, SpaceFurnitureEntity::class, ProjectEntity::class], version = 1)
 abstract class AppDatabase: RoomDatabase() {
     abstract fun getFurnitureDao(): FurnitureDao
     abstract fun getSpaceDao(): SpaceDao
+    abstract fun getProjectDao(): ProjectDao
+    abstract fun getSpaceFurnitureDao(): SpaceFurnitureDao
 }
