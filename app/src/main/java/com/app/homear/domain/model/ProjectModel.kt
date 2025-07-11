@@ -1,7 +1,6 @@
 package com.app.homear.domain.model
 
 data class ProjectModel(
-    val id: Int = 0,
     val idUser: String,
     val imagePath: String,
     val name: String,

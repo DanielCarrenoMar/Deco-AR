@@ -21,7 +21,6 @@ data class ProjectEntity(
 
 fun ProjectEntity.toProjectModel(): ProjectModel {
     return ProjectModel(
-        id = this.id,
         idUser = this.idUser,
         imagePath = this.imagePath,
         name = this.name,
@@ -34,7 +33,6 @@ fun ProjectEntity.toProjectModel(): ProjectModel {
 
 fun ProjectModel.toProjectEntity(): ProjectEntity {
     return ProjectEntity(
-        id = this.id,
         idUser = this.idUser,
         imagePath = this.imagePath,
         name = this.name,

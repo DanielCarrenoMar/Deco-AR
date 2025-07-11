@@ -34,7 +34,7 @@ object Configuration
 object Start
 
 @Serializable
-object Spaces
+object Project
 
 @Serializable
 object CreateSpace

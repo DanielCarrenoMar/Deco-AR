@@ -6,6 +6,7 @@ import com.app.homear.data.database.dao.ProjectDao
 import com.app.homear.data.database.dao.SpaceDao
 import com.app.homear.data.database.dao.SpaceFurnitureDao
 import com.app.homear.data.database.entity.toFurnitureModel
+import com.app.homear.data.database.entity.toProjectEntity
 import com.app.homear.data.database.entity.toProjectModel
 import com.app.homear.data.database.entity.toSpaceModel
 import com.app.homear.domain.model.FurnitureModel
@@ -97,6 +98,34 @@ class LocalStorageRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             throw e
         }
+    }
+
+    override suspend fun getProjectById(projectId: Int): ProjectModel? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun saveProject(projectModel: ProjectModel): Long {
+        try {
+            return projectDao.insertProject(projectModel.toProjectEntity())
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    override suspend fun updateProjectById(
+        projectId: Int,
+        name: String,
+        description: String
+    ): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deleteAllProjects(): Int {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deleteProjectFromId(projectId: Int): Boolean {
+        TODO("Not yet implemented")
     }
 
     override suspend fun getAllSpaces(): List<SpaceModel> {

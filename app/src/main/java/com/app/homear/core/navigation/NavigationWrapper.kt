@@ -20,7 +20,7 @@ import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
 import com.app.homear.ui.screens.register.RegisterScreen
 import com.app.homear.ui.screens.spaceDetail.SpaceDetailScreen
-import com.app.homear.ui.screens.projects.SpacesScreen
+import com.app.homear.ui.screens.projects.ProjectsScreen
 import com.app.homear.ui.screens.spaceslist.SpacesListScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
 import com.app.homear.ui.screens.start.StartScreen
@@ -83,7 +83,7 @@ fun NavigationWrapper() {
                 onHowItWorksClick = { /* Aquí puedes navegar a un tutorial o modal */ },
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
-                { navController.navigatePop(Spaces) },
+                { navController.navigatePop(Project) },
                 { navController.navigatePop(Configuration) },
             )
         }
@@ -92,7 +92,7 @@ fun NavigationWrapper() {
             CameraScreen(
                 { navController.navigatePop(Tutorial) },
                 { navController.navigate(Catalog) },
-                { navController.navigatePop(Spaces) },
+                { navController.navigatePop(Project) },
                 { navController.navigatePop(Configuration) },
                 { navController.navigatePop(CreateSpace) },
             )
@@ -102,14 +102,14 @@ fun NavigationWrapper() {
             CatalogScreen (
                 navigateToTutorial = { navController.navigatePop(Tutorial) },
                 navigateToCamera = { navController.navigatePop(Camera) },
-                navigateToSpaces = { navController.navigatePop(Spaces) },
+                navigateToSpaces = { navController.navigatePop(Project) },
                 navigateToConfiguration = {navController.navigatePop(Configuration)},
                 navigateToAddProducto = { navController.navigatePop(AddProduct) },
             )
         }
 
-        composable<Spaces> {
-            SpacesScreen (
+        composable<Project> {
+            ProjectsScreen (
                 { navController.navigatePop(Tutorial) },
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
@@ -123,7 +123,7 @@ fun NavigationWrapper() {
                 { navController.navigatePop(Tutorial) },
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
-                { navController.navigatePop(Spaces) },
+                { navController.navigatePop(Project) },
                 navigateToProfile = { navController.navigatePop(Profile) },
                 navigateToIntro = { navController.navigatePop(Intro) },
             )
@@ -134,7 +134,7 @@ fun NavigationWrapper() {
                 navigateToTutorial = { navController.navigatePop(Tutorial) },
                 navigateToCatalog = { navController.navigatePop(Catalog) },
                 navigateToCamera = { navController.navigatePop(Camera) },
-                navigateToSpaces = { navController.navigatePop(Spaces) },
+                navigateToSpaces = { navController.navigatePop(Project) },
                 navigateToLogin = { navController.navigatePop(Login) },
                 navigateToRegister = { navController.navigatePop(Register) },
                 navigateToEditProfile = { navController.navigate(EditProfile) } // Nuevo callback
@@ -178,7 +178,7 @@ fun NavigationWrapper() {
             CreateProjectScreen(
                 onNavigateBack = { navController.popBackStack() },
                 navigateToCamera = { navController.navigate(Camera) },
-                navigateToSpaces = { navController.navigate(Spaces) }
+                navigateToSpaces = { navController.navigate(Project) }
             )
         }
 

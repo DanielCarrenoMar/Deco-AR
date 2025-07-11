@@ -25,6 +25,15 @@ interface LocalStorageRepository {
     suspend fun deleteFurnitureFromId(fModelId: Int): Boolean
 
     suspend fun getAllProjects(): List<ProjectModel>
+    suspend fun getProjectById(projectId: Int): ProjectModel?
+    suspend fun saveProject(projectModel: ProjectModel): Long
+    suspend fun updateProjectById(
+        projectId: Int,
+        name: String,
+        description: String
+    ): Boolean
+    suspend fun deleteAllProjects(): Int
+    suspend fun deleteProjectFromId(projectId: Int): Boolean
 
     suspend fun getAllSpaces(): List<SpaceModel>
 
