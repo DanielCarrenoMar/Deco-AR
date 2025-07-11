@@ -9,9 +9,14 @@ import android.os.Environment
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.viewModelScope
 import java.io.File
 import org.json.JSONObject
 import com.app.homear.core.utils.SharedPreferenceHelper
+import com.app.homear.domain.model.Resource
+import com.app.homear.domain.model.SpaceModel
+import com.app.homear.domain.usecase.space.SaveSpaceUseCase
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 
 data class FurnitureModel(
@@ -28,7 +33,7 @@ data class FurniturePreviewModel(
 
 @HiltViewModel
 class CreateSpaceViewModel @Inject constructor(
-    @ApplicationContext private val context: Context
+    private val saveSpaceUseCase: SaveSpaceUseCase,
 ) : ViewModel() {
 
     private val _imagePath = mutableStateOf<String?>(null)
@@ -37,10 +42,40 @@ class CreateSpaceViewModel @Inject constructor(
     private val _furnitureList = mutableStateOf<List<FurniturePreviewModel>>(emptyList())
     val furnitureList: State<List<FurniturePreviewModel>> = _furnitureList
 
-    init {
-        // Al iniciar, buscar la última imagen guardada y su lista de modelos
+
+    fun initContent(context: Context){
         _imagePath.value = findLastImage()
-        loadModelsFromPrefsOrJson()
+        loadModelsFromPrefsOrJson(context)
+    }
+
+    fun saveSpace(){
+        /*viewModelScope.launch {
+            val currentDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
+            val spaceModel = SpaceModel(
+                id = -1, // No hace falta ID al guardar, se genera automáticamente
+                projectId = projectId.value ?: -1,
+                idUser = userId.value ?: "",
+                name = name.value ?: "",
+                description = description.value ?: "",
+                imagePath = imagePath.value ?: "",
+                createdDate = currentDate,
+                lastModified = currentDate
+            )
+
+            saveSpaceUseCase(spaceModel).collect { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        // Handle loading state if needed
+                    }
+                    is Resource.Success -> {
+                        val idSaved = resource.data!!
+                    }
+                    is Resource.Error -> {
+                        Log.e("ProjectsViewModel", "Error al guardar el proyecto: ${resource.message}")
+                    }
+                }
+            }
+        }*/
     }
 
     private fun findLastImage(): String? {
@@ -56,7 +91,7 @@ class CreateSpaceViewModel @Inject constructor(
             ?.absolutePath
     }
 
-    private fun loadModelsFromJson() {
+    private fun loadModelsFromJson(context: Context) {
         try {
             val imageFile = _imagePath.value?.let { File(it) } ?: return
             val timestamp = imageFile.nameWithoutExtension.split("_").lastOrNull()?.toLongOrNull() ?: return
@@ -82,7 +117,7 @@ class CreateSpaceViewModel @Inject constructor(
                 val modelObject = modelsArray.getJSONObject(i)
                 val name = modelObject.getString("name")
                 val type = modelObject.getString("type")
-                val details = getModelDetailsByName(name)
+                val details = getModelDetailsByName(name, context)
                 modelsList.add(
                     FurniturePreviewModel(
                         name = name,
@@ -109,7 +144,7 @@ class CreateSpaceViewModel @Inject constructor(
     /**
      * Busca en models.json el modelo por nombre y retorna description e imagePath absolutos
      */
-    private fun getModelDetailsByName(name: String): Pair<String?, String?>? {
+    private fun getModelDetailsByName(name: String, context: Context): Pair<String?, String?>? {
         try {
             val internalJsonFile = File(context.filesDir, "assets/models.json")
             if (!internalJsonFile.exists()) return null
@@ -129,7 +164,7 @@ class CreateSpaceViewModel @Inject constructor(
         return null
     }
 
-    private fun loadModelsFromPrefsOrJson() {
+    private fun loadModelsFromPrefsOrJson(context: Context) {
         val sharedPrefHelper = SharedPreferenceHelper(context)
         val jsonString = sharedPrefHelper.getStringData("furniture_list_json")
         if (!jsonString.isNullOrEmpty()) {
@@ -140,7 +175,7 @@ class CreateSpaceViewModel @Inject constructor(
                     val modelObject = modelsArray.getJSONObject(i)
                     val name = modelObject.getString("name")
                     val type = modelObject.getString("path")
-                    val details = getModelDetailsByName(name)
+                    val details = getModelDetailsByName(name, context)
                     modelsList.add(
                         FurniturePreviewModel(
                             name = name,
@@ -158,6 +193,6 @@ class CreateSpaceViewModel @Inject constructor(
                 Log.e("CreateSpaceViewModel", "Error al cargar la lista de modelos desde SharedPreferences: ${e.message}")
             }
         }
-        loadModelsFromJson()
+        loadModelsFromJson(context)
     }
-} 
+}

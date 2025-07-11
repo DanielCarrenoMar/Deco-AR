@@ -27,6 +27,9 @@ import coil.request.ImageRequest
 import com.app.homear.ui.theme.CorporatePurple
 import java.io.File
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 
 @Composable
 fun CreateSpaceScreen(
@@ -36,6 +39,14 @@ fun CreateSpaceScreen(
 ) {
     val spaceName = remember { mutableStateOf("") }
     val furnitureList by viewModel.furnitureList
+    val context = LocalContext.current
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.initContent(context)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -95,7 +106,6 @@ fun CreateSpaceScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-                val viewModel: CreateSpaceViewModel = hiltViewModel()
                 val imagePath by viewModel.imagePath
 
                 coil.compose.SubcomposeAsyncImage(
@@ -184,7 +194,10 @@ fun CreateSpaceScreen(
             }
 
             Button(
-                onClick = navigateToCreateProject,
+                onClick = {
+                    viewModel.saveSpace()
+                    navigateToCreateProject()
+                          },
                 colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier

@@ -53,16 +53,6 @@ fun ProjectsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(viewModel) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            /*viewModel.testSaveProyect(
-                ProjectModel(
-                    name = "Casa de Campo",
-                    idUser = "Usaurio 1",
-                    description = "Descripción del proyecto de prueba",
-                    imagePath = "/storage/emulated/0/Pictures/space_1.jpg",
-                    lastModified = "2023-10-01T12:00:00Z",
-                    createdDate = "2023-10-01T12:00:00Z",
-                )
-            )*/
             viewModel.loadProjects()
         }
     }
