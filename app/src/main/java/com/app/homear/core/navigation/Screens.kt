@@ -34,7 +34,7 @@ object Configuration
 object Start
 
 @Serializable
-object Spaces
+object Project
 
 @Serializable
 object CreateSpace
@@ -48,6 +48,11 @@ object EditProfile
 @Serializable
 object SpacesList
 
+@Serializable
+object CreateProject
+
+@Serializable
+object ProjectDetail
 
 @Serializable
 object AddProduct

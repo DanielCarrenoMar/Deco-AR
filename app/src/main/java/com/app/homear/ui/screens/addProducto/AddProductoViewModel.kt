@@ -90,23 +90,27 @@ class AddProductoViewModel @Inject constructor(
                 val imageBytes = uriToByteArray(Uri.parse(imageUri))
                 val imageName = "furniture_image_${System.currentTimeMillis()}.jpg"
                 val imagePath = "imagen/$imageName"
-                
+
                 val imageFile = File(context.filesDir, "assets/imagen/$imageName")
                 imageFile.parentFile?.mkdirs()
                 FileOutputStream(imageFile).use { it.write(imageBytes) }
-                
+
                 Log.d("AddProductoViewModel", "Image saved locally: ${imageFile.absolutePath}")
 
                 // 2. Copiar modelo 3D a assets/models
                 val modelBytes = uriToByteArray(Uri.parse(modelUri))
                 val modelName = "furniture_model_${System.currentTimeMillis()}.glb"
-                val modelPath = "models/$modelName"
-                
-                val modelFile = File(context.filesDir, "assets/models/$modelName")
-                modelFile.parentFile?.mkdirs()
+                val modelPath = "models/$modelName" // Mantener la ruta relativa para el JSON
+
+                // Asegurar que la carpeta assets/models existe
+                val assetsModelsDir = File(context.filesDir, "assets/models")
+                assetsModelsDir.mkdirs()
+
+                // Guardar el archivo en la ubicación correcta
+                val modelFile = File(assetsModelsDir, modelName)
                 FileOutputStream(modelFile).use { it.write(modelBytes) }
-                
-                Log.d("AddProductoViewModel", "Model saved locally: ${modelFile.absolutePath}")
+
+                Log.d("AddProductoViewModel", "Model saved locally: ${modelFile.absolutePath} with relative path: $modelPath")
 
                 // 3. Crear objeto de datos del mueble
                 val furnitureData = LocalFurnitureData(
@@ -142,14 +146,27 @@ class AddProductoViewModel @Inject constructor(
 
     private fun updateLocalFurnitureJSON(newFurniture: LocalFurnitureData) {
         try {
-            val jsonFile = File(context.filesDir, "assets/models.json")
-            jsonFile.parentFile?.mkdirs()
+            // Asegurar que el directorio existe
+            val assetsDir = File(context.filesDir, "assets")
+            assetsDir.mkdirs()
+
+            // Archivo JSON en almacenamiento interno
+            val jsonFile = File(assetsDir, "models.json")
             
+            // Leer el contenido existente (del almacenamiento interno o assets)
             val jsonArray = if (jsonFile.exists()) {
+                // Si existe en almacenamiento interno, leer de ahí
                 val content = jsonFile.readText()
                 if (content.isNotEmpty()) JSONArray(content) else JSONArray()
             } else {
-                JSONArray()
+                try {
+                    // Si no existe, intentar leer del asset empaquetado
+                    val assetContent = context.assets.open("models.json").bufferedReader().use { it.readText() }
+                    JSONArray(assetContent)
+                } catch (e: Exception) {
+                    // Si no existe el asset, crear nuevo array
+                    JSONArray()
+                }
             }
 
             // Crear objeto JSON para el nuevo mueble
@@ -166,11 +183,11 @@ class AddProductoViewModel @Inject constructor(
             }
 
             jsonArray.put(furnitureJson)
-            
-            // Guardar JSON actualizado
-            jsonFile.writeText(jsonArray.toString())
+
+            // Guardar JSON actualizado en almacenamiento interno
+            jsonFile.writeText(jsonArray.toString(2)) // toString(2) para formato legible
             Log.d("AddProductoViewModel", "JSON updated successfully: ${jsonFile.absolutePath}")
-            
+
         } catch (e: Exception) {
             Log.e("AddProductoViewModel", "Error updating JSON", e)
             throw e

@@ -107,44 +107,55 @@ class CatalogViewModel @Inject constructor(
             isLoading = true
             val items = mutableListOf<FurnitureItem>()
             try {
-                val jsonFile = File(context.filesDir, "assets/models.json")
-                if (jsonFile.exists()) {
-                    val content = jsonFile.readText()
-                    val jsonArray = JSONArray(content)
-                    for (i in 0 until jsonArray.length()) {
-                        val obj = jsonArray.getJSONObject(i)
-                        val id = i + 1
-                        val name = obj.getString("name")
-                        val description = obj.getString("description")
-                        val modelPath = File(context.filesDir, "assets/" + obj.getString("modelPath")).absolutePath
-                        val imagePath = File(context.filesDir, "assets/" + obj.getString("imagePath")).absolutePath
-                        val materials = obj.getString("materials").split(",").map { it.trim() }.toSet()
-                        val height = obj.getDouble("height").toFloat()
-                        val width = obj.getDouble("width").toFloat()
-                        val length = obj.getDouble("length").toFloat()
-                        val superficie = try { Superficie.valueOf(obj.getString("superficie")) } catch (_: Exception) { Superficie.PISO }
-                        items.add(
-                            FurnitureItem(
-                                id = id,
-                                name = name,
-                                description = description,
-                                modelPath = modelPath,
-                                imagePath = imagePath,
-                                colors = listOf("#8B4513", "#A0522D", "#D2691E"),
-                                materials = materials,
-                                height = height,
-                                width = width,
-                                length = length,
-                                superficie = superficie
-                            )
-                        )
+                // Primero intentar leer del almacenamiento interno
+                val internalJsonFile = File(context.filesDir, "assets/models.json")
+                val jsonContent = if (internalJsonFile.exists()) {
+                    // Si existe en almacenamiento interno, leer de ahí
+                    internalJsonFile.readText()
+                } else {
+                    try {
+                        // Si no existe, leer del asset empaquetado
+                        context.assets.open("models.json").bufferedReader().use { it.readText() }
+                    } catch (e: Exception) {
+                        // Si no existe el asset, usar un array vacío
+                        "[]"
                     }
+                }
+
+                val jsonArray = JSONArray(jsonContent)
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.getJSONObject(i)
+                    val id = i + 1
+                    val name = obj.getString("name")
+                    val description = obj.getString("description")
+                    val modelPath = obj.getString("modelPath") // Mantener la ruta relativa
+                    val imagePath = File(context.filesDir, "assets/" + obj.getString("imagePath")).absolutePath
+                    val materials = obj.getString("materials").split(",").map { it.trim() }.toSet()
+                    val height = obj.getDouble("height").toFloat()
+                    val width = obj.getDouble("width").toFloat()
+                    val length = obj.getDouble("length").toFloat()
+                    val superficie = try { Superficie.valueOf(obj.getString("superficie")) } catch (_: Exception) { Superficie.PISO }
+                    items.add(
+                        FurnitureItem(
+                            id = id,
+                            name = name,
+                            description = description,
+                            modelPath = modelPath, // Usar la ruta relativa directamente
+                            imagePath = imagePath,
+                            colors = listOf("#8B4513", "#A0522D", "#D2691E"),
+                            materials = materials,
+                            height = height,
+                            width = width,
+                            length = length,
+                            superficie = superficie
+                        )
+                    )
                 }
                 furnitureItems = items
                 // Registrar en CameraViewModel
                 items.forEach { CameraViewModel.addARModelFromFurniture(it) }
             } catch (e: Exception) {
-                Log.e("CatalogViewModel", "Error leyendo modelos locales", e)
+                Log.e("CatalogViewModel", "Error leyendo modelos", e)
                 furnitureItems = emptyList()
             }
             isLoading = false

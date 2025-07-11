@@ -37,10 +37,19 @@ import kotlin.math.cos
 
 // IMPORT: FurnitureItem definition
 import com.app.homear.ui.screens.catalog.FurnitureItem
+import java.io.File
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 data class ARModel(
     val name: String,
     val modelPath: String,
+)
+
+// Actualizar: Clase para almacenar información de modelos renderizados con contador
+data class RenderedModelInfo(
+    val name: String,
+    val path: String,
+    val count: Int = 1
 )
 
 // Extension for converting FurnitureItem to ARModel
@@ -61,8 +70,8 @@ data class PlacedARModel(
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
-
-): ViewModel(){
+    @ApplicationContext private val context: Context
+): ViewModel() {
     companion object {
         // Shared singleton list of renderable ARModels in the app
         val sharedAvailableModels = mutableListOf<ARModel>()
@@ -105,19 +114,27 @@ class CameraViewModel @Inject constructor(
     private val _placedARModels = mutableStateListOf<PlacedARModel>()
     val placedARModels = _placedARModels
 
+    // Nuevo: Lista de modelos renderizados
+    private val _renderedModels = mutableStateListOf<RenderedModelInfo>()
+    val renderedModels = _renderedModels
+
+    // Nuevo: Estado para mostrar/ocultar el diálogo de lista
+    private val _showModelsList = mutableStateOf(false)
+    val showModelsList = _showModelsList
+
     // Renderizado de Muebles
 
     private val kModelFile: String
         get() {
             val modelPath = selectedModel.value?.modelPath ?: "models/Mueble-1.glb"
-            // Asegurarse de que la ruta comience con "models/"
-            val normalizedPath = if (!modelPath.startsWith("models/")) {
-                "models/${modelPath.substringAfterLast("/")}"
-            } else {
+            // Asegurarnos de que tenemos la ruta completa al archivo en el almacenamiento interno
+            val internalPath = if (modelPath.startsWith("/")) {
                 modelPath
+            } else {
+                File(context.filesDir, "assets/$modelPath").absolutePath
             }
-            Log.d("AR_DEBUG", "kModelFile getter - Path normalizado: $normalizedPath")
-            return normalizedPath
+            Log.d("AR_DEBUG", "Loading model from: $internalPath")
+            return internalPath
         }
     private val kMaxModelInstances = 10
 
@@ -336,7 +353,20 @@ class CameraViewModel @Inject constructor(
             mutableStateListOf<ModelInstance>().apply {
                 if (isEmpty()) {
                     Log.d("AR_DEBUG", "Cargando nuevo modelo desde archivo: $modelPath")
-                    this += modelLoader.createInstancedModel(modelPath, kMaxModelInstances)
+                    try {
+                        // Intentar cargar el modelo desde el almacenamiento interno
+                        val modelFile = File(modelPath)
+                        if (modelFile.exists()) {
+                            this += modelLoader.createInstancedModel(modelFile, kMaxModelInstances)
+                            Log.d("AR_DEBUG", "Modelo cargado exitosamente desde almacenamiento interno")
+                        } else {
+                            Log.e("AR_DEBUG", "Archivo de modelo no encontrado: $modelPath")
+                            throw IllegalStateException("Modelo no encontrado: $modelPath")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AR_DEBUG", "Error cargando modelo: ${e.message}")
+                        throw e
+                    }
                 }
             }
         }
@@ -344,7 +374,8 @@ class CameraViewModel @Inject constructor(
         // Verificar si hay instancias disponibles, si no, crear más
         if (modelPool.isEmpty()) {
             Log.d("AR_DEBUG", "Pool vacío, creando más instancias para: $modelPath")
-            modelPool += modelLoader.createInstancedModel(modelPath, kMaxModelInstances)
+            val modelFile = File(modelPath)
+            modelPool += modelLoader.createInstancedModel(modelFile, kMaxModelInstances)
         }
 
         val modelNode = ModelNode(
@@ -378,6 +409,11 @@ class CameraViewModel @Inject constructor(
             boundingBoxNode = boundingBoxNode
         )
         _placedARModels.add(placedARModel)
+
+        // Nuevo: Registrar el modelo renderizado
+        selectedModel.value?.let { model ->
+            addRenderedModel(model.name, model.modelPath)
+        }
 
         return anchorNode
     }
@@ -731,6 +767,41 @@ class CameraViewModel @Inject constructor(
         }
     }
 
+    // Actualizar: Métodos para manejar modelos renderizados
+    fun addRenderedModel(name: String, path: String) {
+        val existingModelIndex = _renderedModels.indexOfFirst { it.name == name && it.path == path }
+        if (existingModelIndex != -1) {
+            // Si el modelo existe, incrementar su contador
+            val existingModel = _renderedModels[existingModelIndex]
+            _renderedModels[existingModelIndex] = existingModel.copy(count = existingModel.count + 1)
+        } else {
+            // Si es un nuevo modelo, agregarlo con contador en 1
+            _renderedModels.add(RenderedModelInfo(name, path))
+        }
+    }
+
+    fun removeRenderedModel(name: String) {
+        val modelIndex = _renderedModels.indexOfFirst { it.name == name }
+        if (modelIndex != -1) {
+            val model = _renderedModels[modelIndex]
+            if (model.count > 1) {
+                // Si hay más de una instancia, decrementar el contador
+                _renderedModels[modelIndex] = model.copy(count = model.count - 1)
+            } else {
+                // Si es la última instancia, remover el modelo
+                _renderedModels.removeAt(modelIndex)
+            }
+        }
+    }
+
+    fun clearRenderedModels() {
+        _renderedModels.clear()
+    }
+
+    fun toggleModelsList() {
+        _showModelsList.value = !_showModelsList.value
+    }
+
     // OPTIMIZACIÓN: Validar estado de tracking
     private fun isTrackingValid(anchor: Anchor?): Boolean {
         return anchor != null && anchor.trackingState == TrackingState.TRACKING
@@ -1010,6 +1081,11 @@ class CameraViewModel @Inject constructor(
 
             // 5. Remover de la lista de modelos colocados
             _placedARModels.remove(placedModel)
+
+            // Nuevo: Eliminar el modelo de la lista de renderizados
+            selectedModel.value?.let { model ->
+                removeRenderedModel(model.name)
+            }
 
             Log.d(
                 "AR_DEBUG",

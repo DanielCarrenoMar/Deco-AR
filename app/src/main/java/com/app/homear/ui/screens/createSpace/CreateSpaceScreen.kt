@@ -1,4 +1,4 @@
-package com.app.homear.ui.screens.createspace
+package com.app.homear.ui.screens.createSpace
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,35 +17,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
-import com.app.homear.R
 import com.app.homear.ui.theme.CorporatePurple
 import java.io.File
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun CreateSpaceScreen(
-    navigateToCamera: () -> Unit
+    navigateToCamera: () -> Unit,
+    navigateToCreateProject: () -> Unit,
+    viewModel: CreateSpaceViewModel = hiltViewModel()
 ) {
     val spaceName = remember { mutableStateOf("") }
-
-    val dummyCapturedImagePath = "/storage/emulated/0/Pictures/space_1.jpg"
-
-    val dummyFurnitureList = listOf(
-        "Silla Moderna" to "Silla",
-        "Mesa de Comedor" to "Mesa",
-        "Lámpara de Pie" to "Lámpara",
-        "Silla Moderna" to "Silla",
-        "Mesa de Comedor" to "Mesa",
-        "Lámpara de Pie" to "Lámpara"
-    )
+    val furnitureList by viewModel.furnitureList
 
     Box(
         modifier = Modifier
@@ -105,9 +95,12 @@ fun CreateSpaceScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
+                val viewModel: CreateSpaceViewModel = hiltViewModel()
+                val imagePath by viewModel.imagePath
+
                 coil.compose.SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(File(dummyCapturedImagePath))
+                        .data(imagePath?.let { File(it) })
                         .crossfade(true)
                         .build(),
                     contentDescription = "Imagen del espacio",
@@ -179,24 +172,26 @@ fun CreateSpaceScreen(
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                items(dummyFurnitureList) { (name, type) ->
+                items(furnitureList) { furniture ->
                     FurnitureCard(
-                        name = name,
-                        type = type,
+                        name = furniture.name,
+                        type = furniture.type,
+                        description = furniture.description,
+                        imagePath = furniture.imagePath,
                         onClick = { /* Acción al pulsar */ }
                     )
                 }
             }
 
             Button(
-                onClick = {},
+                onClick = navigateToCreateProject,
                 colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
             ) {
-                Text("Confirmar", color = Color.White, fontSize = 16.sp)
+                Text("Siguiente", color = Color.White, fontSize = 16.sp)
             }
         }
     }
@@ -206,6 +201,8 @@ fun CreateSpaceScreen(
 fun FurnitureCard(
     name: String,
     type: String,
+    description: String?,
+    imagePath: String?,
     onClick: () -> Unit
 ) {
     Card(
@@ -228,25 +225,34 @@ fun FurnitureCard(
                     .background(Color.LightGray),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.Image,
-                    contentDescription = "Sin imagen",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
+                if (!imagePath.isNullOrEmpty() && File(imagePath).exists()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(File(imagePath))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Imagen del mueble",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Image,
+                        contentDescription = "Sin imagen",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                 Text(type, fontSize = 12.sp, color = Color.Gray)
+                if (!description.isNullOrBlank()) {
+                    Text(description, fontSize = 12.sp, color = Color.DarkGray, maxLines = 2)
+                }
             }
         }
     }
 }
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun CreateSpaceScreenPreview() {
-    CreateSpaceScreen(
-        navigateToCamera = {}
-    )
-}
+

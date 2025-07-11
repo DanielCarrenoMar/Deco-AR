@@ -15,17 +15,11 @@ interface ProjectDao {
     @Query("SELECT * FROM projects WHERE idUser = :userId")
     suspend fun getProjectsByUserId(userId: String): List<ProjectEntity>
 
-    @Query("SELECT * FROM projects WHERE spaceId = :spaceId")
-    suspend fun getProjectsBySpaceId(spaceId: Int): List<ProjectEntity>
-
     @Query("SELECT * FROM projects WHERE isCompleted = :isCompleted")
     suspend fun getProjectsByCompletionStatus(isCompleted: Boolean): List<ProjectEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProject(project: ProjectEntity): Long
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertProjectList(projectList: List<ProjectEntity>)
 
     @Update
     suspend fun updateProject(project: ProjectEntity): Int
@@ -49,14 +43,4 @@ interface ProjectDao {
         description: String,
         lastModified: String
     ): Int
-
-    @Query("UPDATE projects SET isCompleted = :isCompleted, lastModified = :lastModified WHERE id = :id")
-    suspend fun updateProjectCompletionStatus(
-        id: Int,
-        isCompleted: Boolean,
-        lastModified: String
-    ): Int
-
-    @Query("UPDATE projects SET furnitureIds = :furnitureIds, lastModified = :lastModified WHERE id = :id")
-    suspend fun updateProjectFurniture(id: Int, furnitureIds: String, lastModified: String): Int
 }
