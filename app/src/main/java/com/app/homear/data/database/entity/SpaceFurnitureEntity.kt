@@ -9,6 +9,7 @@ import com.app.homear.domain.model.SpaceFurnitureModel
 data class SpaceFurnitureEntity(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id") val id: Int = 0,
+    @ColumnInfo(name = "spaceId") val spaceId: Int,
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "description") val description: String,
     @ColumnInfo(name = "modelPath") val modelPath: String,
@@ -17,7 +18,7 @@ data class SpaceFurnitureEntity(
 
 fun SpaceFurnitureEntity.toSpaceFurnitureModel(): SpaceFurnitureModel {
     return SpaceFurnitureModel(
-        id = this.id,
+        spaceId = this.spaceId,
         name = this.name,
         description = this.description,
         modelPath = this.modelPath,
@@ -27,7 +28,7 @@ fun SpaceFurnitureEntity.toSpaceFurnitureModel(): SpaceFurnitureModel {
 
 fun SpaceFurnitureModel.toSpaceFurnitureEntity(): SpaceFurnitureEntity {
     return SpaceFurnitureEntity(
-        id = this.id,
+        spaceId = this.spaceId,
         name = this.name,
         description = this.description,
         modelPath = this.modelPath,

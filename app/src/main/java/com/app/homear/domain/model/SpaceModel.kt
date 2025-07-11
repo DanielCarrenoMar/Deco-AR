@@ -1,7 +1,7 @@
 package com.app.homear.domain.model
 
 data class SpaceModel(
-    val id: Int = 0,
+    val projectId: Int,
     val idUser: String,
     val name: String,
     val description: String,
