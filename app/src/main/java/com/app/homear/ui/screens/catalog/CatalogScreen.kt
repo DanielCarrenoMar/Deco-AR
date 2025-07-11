@@ -32,11 +32,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.text.TextStyle
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,7 +72,6 @@ import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.theme.CorporatePurple
 import com.app.homear.domain.model.Superficie
 import com.app.homear.R
-import com.app.homear.domain.model.FurnitureModel
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,12 +81,14 @@ fun CatalogScreen(
     navigateToCamera: () -> Unit,
     navigateToSpaces: () -> Unit,
     navigateToConfiguration: () -> Unit,
+    navigateToAddProducto: () -> Unit,
     viewModel: CatalogViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.loadFurnitureData()
+        viewModel.checkIfProvider()
     }
 
     Box(
@@ -371,7 +374,17 @@ fun CatalogScreen(
                 anchoObjeto = "${selectedItem.width}m",
                 profundidadObjeto = "${selectedItem.length}m",
                 materialObjeto = selectedItem.materials.joinToString(", "),
-                imagePath = selectedItem.imageFile.path
+                imagePath = selectedItem.imagePath
+            )
+        }
+        
+        // Agregado: Botón para agregar producto
+        if (viewModel.isProvider) {
+            AddButton(
+                onClick = navigateToAddProducto,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(20.dp)
             )
         }
     }
@@ -672,7 +685,7 @@ fun DimensionFilter(
 
 @Composable
 fun FurnitureCard(
-    item: FurnitureModel,
+    item: FurnitureItem,
     onItemClick: () -> Unit,
     onAddClick: () -> Unit,
     isList: Boolean = false
@@ -699,7 +712,7 @@ fun FurnitureCard(
             ) {
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(item.imageFile)
+                        .data(File(item.imagePath))
                         .crossfade(true)
                         .build(),
                     contentDescription = "Imagen del mueble",
@@ -828,7 +841,7 @@ fun FurnitureCard(
                 ) {
                     SubcomposeAsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data(item.imageFile)
+                            .data(File(item.imagePath))
                             .crossfade(true)
                             .build(),
                         contentDescription = "Imagen del mueble",
@@ -930,7 +943,7 @@ fun ModalVistaMuebleDynamic(
                         .padding(12.dp)
                 ) {
                     // Imagen dinámica del mueble
-                    if (!imagePath.isNullOrBlank()) {
+                    if (imagePath != null && imagePath.isNotBlank()) {
                         SubcomposeAsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(File(imagePath))
@@ -1098,5 +1111,23 @@ fun ModalVistaMuebleDynamic(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AddButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primary,
+        modifier = modifier
+    ) {
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "+",
+            tint = MaterialTheme.colorScheme.onPrimary
+        )
     }
 }
