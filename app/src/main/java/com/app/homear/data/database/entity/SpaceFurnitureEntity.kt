@@ -3,10 +3,7 @@ package com.app.homear.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.app.homear.domain.model.Superficie
-import com.app.homear.domain.model.LocalFurnitureModel
-import java.io.File
-import java.util.HashSet
+import com.app.homear.domain.model.SpaceFurnitureModel
 
 @Entity(tableName = "space_furniture")
 data class SpaceFurnitureEntity(
@@ -14,50 +11,26 @@ data class SpaceFurnitureEntity(
     @ColumnInfo(name = "id") val id: Int = 0,
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "description") val description: String,
-    @ColumnInfo(name = "material") val material: String,
-    @ColumnInfo(name = "keywords") val keywords: String,
     @ColumnInfo(name = "modelPath") val modelPath: String,
     @ColumnInfo(name = "imagePath") val imagePath: String,
-    @ColumnInfo(name = "height") val height: Float,
-    @ColumnInfo(name = "width") val width: Float,
-    @ColumnInfo(name = "length") val length: Float,
-    @ColumnInfo(name = "superficie") val superficie: Superficie,
-    @ColumnInfo(name = "downloadDate") val downloadDate: String,
-    @ColumnInfo(name = "isDownloaded") val isDownloaded: Boolean = true
 )
 
-fun SpaceFurnitureEntity.toLocalFurnitureModel(): LocalFurnitureModel {
-    return LocalFurnitureModel(
+fun SpaceFurnitureEntity.toSpaceFurnitureModel(): SpaceFurnitureModel {
+    return SpaceFurnitureModel(
         id = this.id,
         name = this.name,
         description = this.description,
-        material = HashSet(this.material.split(",").filter { it.isNotBlank() }),
-        keywords = HashSet(this.keywords.split(",").filter { it.isNotBlank() }),
-        modelFile = File(this.modelPath),
-        imageFile = File(this.imagePath),
-        height = this.height,
-        width = this.width,
-        length = this.length,
-        superficie = this.superficie,
-        downloadDate = this.downloadDate,
-        isDownloaded = this.isDownloaded
+        modelPath = this.modelPath,
+        imagePath = this.imagePath,
     )
 }
 
-fun LocalFurnitureModel.toLocalFurnitureEntity(): SpaceFurnitureEntity {
+fun SpaceFurnitureModel.toSpaceFurnitureEntity(): SpaceFurnitureEntity {
     return SpaceFurnitureEntity(
         id = this.id,
         name = this.name,
         description = this.description,
-        material = this.material.joinToString(","),
-        keywords = this.keywords.joinToString(","),
-        modelPath = this.modelFile.path,
-        imagePath = this.imageFile.path,
-        height = this.height,
-        width = this.width,
-        length = this.length,
-        superficie = this.superficie,
-        downloadDate = this.downloadDate,
-        isDownloaded = this.isDownloaded
+        modelPath = this.modelPath,
+        imagePath = this.imagePath,
     )
 }
