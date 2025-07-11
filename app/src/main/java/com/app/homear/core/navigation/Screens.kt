@@ -52,7 +52,7 @@ object SpacesList
 object CreateProject
 
 @Serializable
-object ProjectDetail
+data class ProjectDetail(val projectId: Int)
 
 @Serializable
 object AddProduct

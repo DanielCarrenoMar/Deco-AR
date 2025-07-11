@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.app.homear.ui.screens.createProject.Espacio
 
 @Composable
 fun CreateSpaceScreen(
@@ -196,8 +197,38 @@ fun CreateSpaceScreen(
             Button(
                 onClick = {
                     viewModel.saveSpace()
+                    // Agregar el espacio al proyecto actual
+                    val espacio = com.app.homear.ui.screens.createProject.Espacio(
+                        nombre = spaceName.value.ifBlank { "Espacio sin nombre" },
+                        cantidadMuebles = furnitureList.size,
+                        imagePath = viewModel.imagePath.value
+                    )
+                    // Aquí necesitamos comunicar con el CreateProjectViewModel
+                    // Por ahora, guardamos en SharedPreferences
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    val currentSpacesJson = sharedPrefHelper.getStringData("temp_project_spaces") ?: "[]"
+                    try {
+                        val jsonArray = org.json.JSONArray(currentSpacesJson)
+                        val newSpaceObj = org.json.JSONObject().apply {
+                            put("nombre", espacio.nombre)
+                            put("cantidadMuebles", espacio.cantidadMuebles)
+                            put("imagePath", espacio.imagePath ?: "")
+                        }
+                        jsonArray.put(newSpaceObj)
+                        sharedPrefHelper.saveStringData("temp_project_spaces", jsonArray.toString())
+                    } catch (e: Exception) {
+                        // Si hay error, crear un nuevo array
+                        val newArray = org.json.JSONArray().apply {
+                            put(org.json.JSONObject().apply {
+                                put("nombre", espacio.nombre)
+                                put("cantidadMuebles", espacio.cantidadMuebles)
+                                put("imagePath", espacio.imagePath ?: "")
+                            })
+                        }
+                        sharedPrefHelper.saveStringData("temp_project_spaces", newArray.toString())
+                    }
                     navigateToCreateProject()
-                          },
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
