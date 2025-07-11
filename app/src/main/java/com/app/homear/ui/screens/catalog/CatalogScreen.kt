@@ -29,6 +29,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.ui.text.TextStyle
 
 import androidx.compose.material.icons.Icons
@@ -38,7 +40,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
+import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
@@ -333,20 +335,35 @@ fun CatalogScreen(
             }
         }
 
-        // Barra de navegación
-        Column(
+        // Barra de navegación y botón de añadir
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .zIndex(1f),
-            verticalArrangement = Arrangement.Bottom
+                .zIndex(1f)
         ) {
-            NavBar(
-                toCamera = navigateToCamera,
-                toTutorial = navigateToTutorial,
-                toCatalog = null,
-                toSpaces = navigateToSpaces,
-                toConfiguration = navigateToConfiguration,
-            )
+            // Botón de añadir producto
+            if (viewModel.isProvider) {
+                AddButton(
+                    onClick = navigateToAddProducto,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 76.dp) // 76dp para que esté por encima del navbar
+                )
+            }
+
+            // Barra de navegación
+            Column(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                verticalArrangement = Arrangement.Bottom
+            ) {
+                NavBar(
+                    toCamera = navigateToCamera,
+                    toTutorial = navigateToTutorial,
+                    toCatalog = null,
+                    toSpaces = navigateToSpaces,
+                    toConfiguration = navigateToConfiguration,
+                )
+            }
         }
 
         // Filter Bottom Sheet
@@ -378,16 +395,6 @@ fun CatalogScreen(
                 profundidadObjeto = "${selectedItem.length}m",
                 materialObjeto = selectedItem.materials.joinToString(", "),
                 imagePath = selectedItem.imagePath
-            )
-        }
-
-        // Agregado: Botón para agregar producto
-        if (viewModel.isProvider) {
-            AddButton(
-                onClick = navigateToAddProducto,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(20.dp)
             )
         }
     }
@@ -1124,13 +1131,19 @@ fun AddButton(
 ) {
     FloatingActionButton(
         onClick = onClick,
-        containerColor = MaterialTheme.colorScheme.primary,
-        modifier = modifier
+        containerColor = Color("#8F006D".toColorInt()),
+        contentColor = Color.White,
+        shape = RoundedCornerShape(percent = 50),
+        elevation = FloatingActionButtonDefaults.elevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 8.dp
+        ),
+        modifier = modifier.size(56.dp)
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "+",
-            tint = MaterialTheme.colorScheme.onPrimary
+            contentDescription = "Añadir producto",
+            modifier = Modifier.size(24.dp)
         )
     }
 }
