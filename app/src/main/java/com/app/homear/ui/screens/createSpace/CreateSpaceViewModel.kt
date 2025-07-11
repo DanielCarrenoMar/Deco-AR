@@ -11,6 +11,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import java.io.File
 import org.json.JSONObject
+import com.app.homear.core.utils.SharedPreferenceHelper
+import org.json.JSONArray
 
 data class FurnitureModel(
     val name: String,
@@ -31,7 +33,7 @@ class CreateSpaceViewModel @Inject constructor(
     init {
         // Al iniciar, buscar la última imagen guardada y su lista de modelos
         _imagePath.value = findLastImage()
-        loadModelsFromJson()
+        loadModelsFromPrefsOrJson()
     }
 
     private fun findLastImage(): String? {
@@ -87,5 +89,29 @@ class CreateSpaceViewModel @Inject constructor(
                 "Lámpara de Pie" to "Lámpara"
             )
         }
+    }
+
+    private fun loadModelsFromPrefsOrJson() {
+        val sharedPrefHelper = SharedPreferenceHelper(context)
+        val jsonString = sharedPrefHelper.getStringData("furniture_list_json")
+        if (!jsonString.isNullOrEmpty()) {
+            try {
+                val modelsArray = JSONArray(jsonString)
+                val modelsList = mutableListOf<Pair<String, String>>()
+                for (i in 0 until modelsArray.length()) {
+                    val modelObject = modelsArray.getJSONObject(i)
+                    val name = modelObject.getString("name")
+                    val path = modelObject.getString("path")
+                    modelsList.add(name to path)
+                }
+                _furnitureList.value = modelsList
+                sharedPrefHelper.saveStringData("furniture_list_json", null) // Limpiar después de usar
+                Log.d("CreateSpaceViewModel", "Lista de modelos cargada desde SharedPreferences: ${modelsList.size} elementos")
+                return
+            } catch (e: Exception) {
+                Log.e("CreateSpaceViewModel", "Error al cargar la lista de modelos desde SharedPreferences: ${e.message}")
+            }
+        }
+        loadModelsFromJson()
     }
 } 

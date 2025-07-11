@@ -101,6 +101,8 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import com.app.homear.core.utils.SharedPreferenceHelper
+import org.json.JSONArray
 
 // Función para encontrar la vista ARSceneView
 fun View.findARSceneView(): ARSceneView? {
@@ -257,6 +259,7 @@ fun CameraScreen(
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val sharedPrefHelper = remember { SharedPreferenceHelper(context) }
     val haveAr by remember { mutableStateOf(viewModel.isArCoreSupported(context)) }
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     val engine = rememberEngine()
@@ -452,8 +455,18 @@ fun CameraScreen(
         ConfirmSpaceCreatedModal(
             onDismiss = { showConfirmSavedModal = false },
             onConfirm = {
+                // Guardar la lista de modelos renderizados en SharedPreferences como JSON
+                val modelsJson = JSONArray().apply {
+                    viewModel.renderedModels.forEach { model ->
+                        val obj = org.json.JSONObject()
+                        obj.put("name", model.name)
+                        obj.put("path", model.path)
+                        put(obj)
+                    }
+                }.toString()
+                sharedPrefHelper.saveStringData("furniture_list_json", modelsJson)
                 showConfirmSavedModal = false
-                navigateToCreateSpace() 
+                navigateToCreateSpace()
             }
         )
     }
