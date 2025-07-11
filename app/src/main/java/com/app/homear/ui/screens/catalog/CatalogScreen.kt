@@ -88,7 +88,7 @@ fun CatalogScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadFurnitureData()
-        viewModel.checkIfProvider()
+        // viewModel.checkIfProvider()
     }
 
     Box(
