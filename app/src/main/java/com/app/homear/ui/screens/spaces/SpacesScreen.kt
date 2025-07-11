@@ -44,7 +44,7 @@ fun SpacesScreen(
     navigateToCatalog: () -> Unit = {},
     navigateToCamera: () -> Unit = {},
     navigateToConfiguration: () -> Unit = {},
-    navigateToProjectDetail: () -> Unit = {}
+    navigateToProjectDetail: () -> Unit = {},
     viewModel: SpacesViewModel = hiltViewModel(),
 ) {
     val searchQuery = remember { mutableStateOf("") }
