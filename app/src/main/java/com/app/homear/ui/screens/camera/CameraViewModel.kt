@@ -204,12 +204,6 @@ class CameraViewModel @Inject constructor(
     private val _areaSideDistance2 = mutableStateOf<Float?>(null)
     val areaSideDistance2 = _areaSideDistance2
 
-    private val _measurementHistory = mutableStateListOf<Float>()
-    val measurementHistory = _measurementHistory
-
-    private val _showHistory = mutableStateOf(false)
-    val showHistory = _showHistory
-
     private val _showCalculateAreaButton = mutableStateOf(false)
     val showCalculateAreaButton = _showCalculateAreaButton
 
@@ -453,25 +447,25 @@ class CameraViewModel @Inject constructor(
         val p2 = anchor2.pose
         val p3 = anchor3.pose
 
-        // Calcular las distancias para formar un rectángulo
+        // Calcular las distancias para formar un rectángulo usando la fórmula correcta de distancia euclidiana
         // Distancia del punto 1 al punto 2 (primer lado)
         val distanceP1P2 = sqrt(
-            (p1.tx() - p2.tx()) * (p1.tx() - p2.tz()) +
-                    (p1.ty() - p3.ty()) * (p1.ty() - p3.ty()) +
-                    (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
+            (p1.tx() - p2.tx()) * (p1.tx() - p2.tx()) +
+            (p1.ty() - p2.ty()) * (p1.ty() - p2.ty()) +
+            (p1.tz() - p2.tz()) * (p1.tz() - p2.tz())
         )
 
         // Distancia del punto 2 al punto 3 (segundo lado)
         val distanceP2P3 = sqrt(
-            (p2.tx() - p3.tx()) * (p2.tx() - p3.tz()) +
-                    (p2.ty() - p3.ty()) * (p2.ty() - p3.ty()) +
-                    (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
+            (p2.tx() - p3.tx()) * (p2.tx() - p3.tx()) +
+            (p2.ty() - p3.ty()) * (p2.ty() - p3.ty()) +
+            (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
         )
 
         // Para un rectángulo: área = lado1 × lado2
         val area = distanceP1P2 * distanceP2P3
 
-        // Almacenar las distancias para mostrarlas en la UI (usar areaSideDistance para área)
+        // Almacenar las distancias para mostrarlas en la UI
         _areaSideDistance1.value = distanceP1P2
         _areaSideDistance2.value = distanceP2P3
 

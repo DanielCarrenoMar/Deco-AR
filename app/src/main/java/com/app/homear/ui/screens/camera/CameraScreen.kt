@@ -112,6 +112,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.window.DialogProperties
 
 // Función para encontrar la vista ARSceneView
 fun View.findARSceneView(): ARSceneView? {
@@ -275,6 +278,7 @@ fun CameraScreen(
     val view = rememberView(engine)
     val currentView = LocalView.current
     var showConfirmSavedModal by remember { mutableStateOf(false) }
+    var showMeasurementsDialog by remember { mutableStateOf(false) }
 
 
     // Función para recortar el bitmap y excluir elementos de UI
@@ -570,7 +574,6 @@ fun CameraScreen(
                                             anchor
                                         )
                                         viewModel.measuredArea.value = area
-                                        viewModel.measurementHistory.add(area)
                                         Log.d("AR_DEBUG", "Tercer punto colocado - Área: ${area}m²")
                                     }
 
@@ -836,66 +839,163 @@ fun CameraScreen(
 
             // Selector de modelos eliminado
 
-            viewModel.measuredDistance.value?.let { distance ->
-                Text(
+            // Actualizar la lógica de mostrar el modal
+            LaunchedEffect(viewModel.measuredDistance.value, viewModel.measuredArea.value) {
+                if (viewModel.measuredDistance.value != null || viewModel.measuredArea.value != null) {
+                    showMeasurementsDialog = true
+                }
+            }
+
+            if (showMeasurementsDialog) {
+                AlertDialog(
+                    onDismissRequest = { 
+                        showMeasurementsDialog = false
+                    },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(top = 640.dp),
-                    text = "Distancia: ${"%.2f".format(distance)} m",
-                    textAlign = TextAlign.Center,
-                    fontSize = 20.sp,
-                    color = Color.Yellow
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    containerColor = Color(0xCC000000),
+                    properties = DialogProperties(dismissOnClickOutside = true),
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Resultados de medición",
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            IconButton(
+                                onClick = { 
+                                    showMeasurementsDialog = false
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cerrar",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    },
+                    text = {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            viewModel.measuredDistance.value?.let { distance ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = "Distancia medida",
+                                        fontSize = 16.sp,
+                                        color = Color(0xFFAAAAAA)
+                                    )
+                                    Text(
+                                        text = "${"%.2f".format(distance)} m",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            viewModel.measuredArea.value?.let { area ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text(
+                                        text = "Medidas del área",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        viewModel.areaSideDistance1.value?.let { side1 ->
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "Ancho",
+                                                    fontSize = 14.sp,
+                                                    color = Color(0xFFAAAAAA)
+                                                )
+                                                Text(
+                                                    text = "${"%.2f".format(side1)} m",
+                                                    fontSize = 20.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color.White
+                                                )
+                                            }
+                                        }
+                                        
+                                        viewModel.areaSideDistance2.value?.let { side2 ->
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "Largo",
+                                                    fontSize = 14.sp,
+                                                    color = Color(0xFFAAAAAA)
+                                                )
+                                                Text(
+                                                    text = "${"%.2f".format(side2)} m",
+                                                    fontSize = 20.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color.White
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    Spacer(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(1.dp)
+                                            .background(Color(0x33FFFFFF))
+                                    )
+                                    
+                                    Text(
+                                        text = "Área total: ${"%.2f".format(area)} m²",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = { 
+                                showMeasurementsDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF8F006D)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            Text(
+                                text = "Cerrar",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                    }
                 )
             }
 
-            viewModel.measuredArea.value?.let { area ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(top = 610.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    viewModel.areaSideDistance1.value?.let { side1 ->
-                        Text(
-                            text = "Lado 1: ${"%.2f".format(side1)} m",
-                            textAlign = TextAlign.Center,
-                            fontSize = 16.sp,
-                            color = Color.Cyan
-                        )
-                    }
-                    viewModel.areaSideDistance2.value?.let { side2 ->
-                        Text(
-                            text = "Lado 2: ${"%.2f".format(side2)} m",
-                            textAlign = TextAlign.Center,
-                            fontSize = 16.sp,
-                            color = Color.Cyan
-                        )
-                    }
-                    Text(
-                        text = "Área: ${"%.2f".format(area)} m²",
-                        textAlign = TextAlign.Center,
-                        fontSize = 18.sp,
-                        color = Color.Yellow
-                    )
-                }
-            }
-
-            if (viewModel.isCalculatingArea.value && viewModel.areaSideDistance1.value != null && viewModel.measuredArea.value == null) {
-                viewModel.areaSideDistance1.value?.let { side1 ->
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.TopCenter)
-                            .padding(top = 640.dp),
-                        text = "Lado 1: ${"%.2f".format(side1)} m",
-                        textAlign = TextAlign.Center,
-                        fontSize = 20.sp,
-                        color = Color.Cyan
-                    )
-                }
-            }
+            // Eliminar los Box anteriores de mediciones y mantener el resto del código
 
             Column(
                 modifier = Modifier
@@ -1252,53 +1352,6 @@ fun CameraScreen(
                             .height(80.dp)
                             .padding(vertical = 5.dp)
                     )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 210.dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Button(onClick = { viewModel.showHistory.value = !viewModel.showHistory.value }) {
-                        Text(text = "Historial")
-                    }
-                    if (viewModel.showHistory.value) {
-                        Box(
-                            modifier = Modifier
-                                .background(Color.DarkGray.copy(alpha = 0.9f))
-                                .padding(8.dp)
-                                .zIndex(2f)
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.Start
-                            ) {
-                                LazyColumn(
-                                    modifier = Modifier
-                                        .height(150.dp)
-                                        .width(200.dp)
-                                ) {
-                                    items(viewModel.measurementHistory) { dist ->
-                                        Text(
-                                            text = "${"%.2f".format(dist)} m²",
-                                            color = Color.White,
-                                            fontSize = 16.sp
-                                        )
-                                    }
-                                }
-                                Button(
-                                    onClick = { viewModel.measurementHistory.clear() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                                    modifier = Modifier.padding(top = 8.dp)
-                                ) {
-                                    Text(text = "Limpiar", color = Color.White)
-                                }
-                            }
-                        }
-                    }
                 }
             }
 
