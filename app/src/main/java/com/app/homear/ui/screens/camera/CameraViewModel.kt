@@ -45,6 +45,13 @@ data class ARModel(
     val modelPath: String,
 )
 
+// Actualizar: Clase para almacenar información de modelos renderizados con contador
+data class RenderedModelInfo(
+    val name: String,
+    val path: String,
+    val count: Int = 1
+)
+
 // Extension for converting FurnitureItem to ARModel
 fun FurnitureItem.toARModel(): ARModel {
     return ARModel(
@@ -106,6 +113,14 @@ class CameraViewModel @Inject constructor(
     // NUEVO: Lista para almacenar modelos colocados en la escena
     private val _placedARModels = mutableStateListOf<PlacedARModel>()
     val placedARModels = _placedARModels
+
+    // Nuevo: Lista de modelos renderizados
+    private val _renderedModels = mutableStateListOf<RenderedModelInfo>()
+    val renderedModels = _renderedModels
+
+    // Nuevo: Estado para mostrar/ocultar el diálogo de lista
+    private val _showModelsList = mutableStateOf(false)
+    val showModelsList = _showModelsList
 
     // Renderizado de Muebles
 
@@ -394,6 +409,11 @@ class CameraViewModel @Inject constructor(
             boundingBoxNode = boundingBoxNode
         )
         _placedARModels.add(placedARModel)
+
+        // Nuevo: Registrar el modelo renderizado
+        selectedModel.value?.let { model ->
+            addRenderedModel(model.name, model.modelPath)
+        }
 
         return anchorNode
     }
@@ -747,6 +767,41 @@ class CameraViewModel @Inject constructor(
         }
     }
 
+    // Actualizar: Métodos para manejar modelos renderizados
+    fun addRenderedModel(name: String, path: String) {
+        val existingModelIndex = _renderedModels.indexOfFirst { it.name == name && it.path == path }
+        if (existingModelIndex != -1) {
+            // Si el modelo existe, incrementar su contador
+            val existingModel = _renderedModels[existingModelIndex]
+            _renderedModels[existingModelIndex] = existingModel.copy(count = existingModel.count + 1)
+        } else {
+            // Si es un nuevo modelo, agregarlo con contador en 1
+            _renderedModels.add(RenderedModelInfo(name, path))
+        }
+    }
+
+    fun removeRenderedModel(name: String) {
+        val modelIndex = _renderedModels.indexOfFirst { it.name == name }
+        if (modelIndex != -1) {
+            val model = _renderedModels[modelIndex]
+            if (model.count > 1) {
+                // Si hay más de una instancia, decrementar el contador
+                _renderedModels[modelIndex] = model.copy(count = model.count - 1)
+            } else {
+                // Si es la última instancia, remover el modelo
+                _renderedModels.removeAt(modelIndex)
+            }
+        }
+    }
+
+    fun clearRenderedModels() {
+        _renderedModels.clear()
+    }
+
+    fun toggleModelsList() {
+        _showModelsList.value = !_showModelsList.value
+    }
+
     // OPTIMIZACIÓN: Validar estado de tracking
     private fun isTrackingValid(anchor: Anchor?): Boolean {
         return anchor != null && anchor.trackingState == TrackingState.TRACKING
@@ -1026,6 +1081,11 @@ class CameraViewModel @Inject constructor(
 
             // 5. Remover de la lista de modelos colocados
             _placedARModels.remove(placedModel)
+
+            // Nuevo: Eliminar el modelo de la lista de renderizados
+            selectedModel.value?.let { model ->
+                removeRenderedModel(model.name)
+            }
 
             Log.d(
                 "AR_DEBUG",

@@ -33,20 +33,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun CreateSpaceScreen(
-    navigateToCamera: () -> Unit
+    navigateToCamera: () -> Unit,
+    viewModel: CreateSpaceViewModel = hiltViewModel()
 ) {
     val spaceName = remember { mutableStateOf("") }
-
-    val dummyCapturedImagePath = "/storage/emulated/0/Pictures/space_1.jpg"
-
-    val dummyFurnitureList = listOf(
-        "Silla Moderna" to "Silla",
-        "Mesa de Comedor" to "Mesa",
-        "Lámpara de Pie" to "Lámpara",
-        "Silla Moderna" to "Silla",
-        "Mesa de Comedor" to "Mesa",
-        "Lámpara de Pie" to "Lámpara"
-    )
+    val furnitureList by viewModel.furnitureList
 
     Box(
         modifier = Modifier
@@ -183,7 +174,7 @@ fun CreateSpaceScreen(
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                items(dummyFurnitureList) { (name, type) ->
+                items(furnitureList) { (name, type) ->
                     FurnitureCard(
                         name = name,
                         type = type,

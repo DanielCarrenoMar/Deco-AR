@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -718,7 +719,7 @@ fun CameraScreen(
 
             // NUEVO: Efecto para actualizar planos detectados y renderizar verticales
             LaunchedEffect(viewModel.planeRenderer.value, viewModel.session.value) {
-                if (viewModel.planeRenderer.value && viewModel.session.value != null) {
+                if (viewModel.planeRenderer.value) {
                     while (viewModel.planeRenderer.value) {
                         viewModel.updateDetectedPlanes(
                             session = viewModel.session.value,
@@ -1401,6 +1402,84 @@ fun CameraScreen(
             Text(text = "ARCore no está soportado en este dispositivo.")
         }
     }
+
+    // Nuevo: Botón para mostrar lista de modelos renderizados
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .zIndex(2f)
+    ) {
+        FloatingActionButton(
+            onClick = { viewModel.toggleModelsList() },
+            modifier = Modifier
+                .padding(end = 16.dp)
+                .size(56.dp)
+                .align(Alignment.TopEnd),
+            containerColor = MaterialTheme.colorScheme.primary
+        ) {
+            Badge(
+                modifier = Modifier.offset(x = 14.dp, y = (-14).dp)
+            ) {
+                Text(text = viewModel.renderedModels.size.toString())
+            }
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data("file:///android_asset/camara/list.svg")
+                    .decoderFactory(SvgDecoder.Factory())
+                    .build(),
+                contentDescription = "Lista de modelos",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+
+    // Nuevo: Diálogo para mostrar la lista de modelos
+    if (viewModel.showModelsList.value) {
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleModelsList() },
+            title = {
+                Text(
+                    text = "Modelos en Escena",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                if (viewModel.renderedModels.isEmpty()) {
+                    Text(
+                        text = "No hay modelos en escena",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    LazyColumn {
+                        items(viewModel.renderedModels) { model ->
+                            ListItem(
+                                headlineContent = { 
+                                    Row(
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(model.name)
+                                        Text(
+                                            text = "x${model.count}",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                },
+                                supportingContent = { Text(model.path) }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.toggleModelsList() }) {
+                    Text("Cerrar")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -1447,4 +1526,97 @@ fun ConfirmSpaceCreatedModal(
             }
         }
     )
+}
+
+// Función para guardar la lista de modelos como JSON
+private fun saveModelsListToJson(
+    context: Context,
+    models: List<RenderedModelInfo>,
+    timestamp: Long
+) {
+    try {
+        val directory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "DecorAR")
+        } else {
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + "/DecorAR")
+        }
+
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+
+        val jsonFile = File(directory, "models_$timestamp.json")
+        val jsonContent = buildString {
+            append("{\n")
+            append("  \"timestamp\": \"$timestamp\",\n")
+            append("  \"models\": [\n")
+            models.forEachIndexed { index, model ->
+                append("    {\n")
+                append("      \"name\": \"${model.name}\",\n")
+                append("      \"type\": \"${model.name.split(" ").lastOrNull() ?: model.name}\"\n")
+                append("    }")
+                if (index < models.size - 1) append(",")
+                append("\n")
+            }
+            append("  ]\n")
+            append("}")
+        }
+
+        jsonFile.writeText(jsonContent)
+        Log.d("CameraScreen", "Lista de modelos guardada en: ${jsonFile.absolutePath}")
+    } catch (e: Exception) {
+        Log.e("CameraScreen", "Error al guardar la lista de modelos: ${e.message}")
+    }
+}
+
+// Modificar la función de captura existente
+private fun captureAndSaveImage(
+    context: Context,
+    bitmap: Bitmap,
+    viewModel: CameraViewModel,
+    onSuccess: () -> Unit
+) {
+    try {
+        val timestamp = System.currentTimeMillis()
+        val directory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "DecorAR")
+        } else {
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + "/DecorAR")
+        }
+
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+
+        val imageFile = File(directory, "space_$timestamp.jpg")
+        val fos = FileOutputStream(imageFile)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+        fos.close()
+
+        // Guardar la lista de modelos
+        saveModelsListToJson(context, viewModel.renderedModels, timestamp)
+
+        // Notificar al sistema de archivos usando MediaStore (método moderno)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, "space_$timestamp.jpg")
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/DecorAR")
+            }
+            context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        } else {
+            // Para versiones anteriores, usar MediaScanner
+            MediaScannerConnection.scanFile(
+                context,
+                arrayOf(imageFile.absolutePath),
+                arrayOf("image/jpeg")
+            ) { path, uri -> 
+                Log.d("CameraScreen", "Escaneo completado: $path")
+            }
+        }
+
+        onSuccess()
+    } catch (e: Exception) {
+        Log.e("CameraScreen", "Error al guardar la imagen: ${e.message}")
+    }
 }
