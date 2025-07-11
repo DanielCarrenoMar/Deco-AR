@@ -12,7 +12,7 @@ import com.app.homear.ui.screens.addProducto.AddProductoScreen
 import com.app.homear.ui.screens.catalog.CatalogScreen
 import com.app.homear.ui.screens.camera.CameraScreen
 import com.app.homear.ui.screens.configuracion.ConfigurationScreen
-import com.app.homear.ui.screens.createspace.CreateSpaceScreen
+import com.app.homear.ui.screens.createSpace.CreateSpaceScreen
 import com.app.homear.ui.screens.editProfile.EditProfileScreen
 import com.app.homear.ui.screens.intro.IntroScreen
 import com.app.homear.ui.screens.loading.LoadingScreen

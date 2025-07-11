@@ -8,8 +8,8 @@ import com.app.homear.domain.model.LocalFurnitureModel
 import java.io.File
 import java.util.HashSet
 
-@Entity(tableName = "local_furniture")
-data class LocalFurnitureEntity(
+@Entity(tableName = "space_furniture")
+data class SpaceFurnitureEntity(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id") val id: Int = 0,
     @ColumnInfo(name = "name") val name: String,
@@ -26,7 +26,7 @@ data class LocalFurnitureEntity(
     @ColumnInfo(name = "isDownloaded") val isDownloaded: Boolean = true
 )
 
-fun LocalFurnitureEntity.toLocalFurnitureModel(): LocalFurnitureModel {
+fun SpaceFurnitureEntity.toLocalFurnitureModel(): LocalFurnitureModel {
     return LocalFurnitureModel(
         id = this.id,
         name = this.name,
@@ -44,8 +44,8 @@ fun LocalFurnitureEntity.toLocalFurnitureModel(): LocalFurnitureModel {
     )
 }
 
-fun LocalFurnitureModel.toLocalFurnitureEntity(): LocalFurnitureEntity {
-    return LocalFurnitureEntity(
+fun LocalFurnitureModel.toLocalFurnitureEntity(): SpaceFurnitureEntity {
+    return SpaceFurnitureEntity(
         id = this.id,
         name = this.name,
         description = this.description,
