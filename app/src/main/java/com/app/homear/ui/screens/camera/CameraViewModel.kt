@@ -37,6 +37,8 @@ import kotlin.math.cos
 
 // IMPORT: FurnitureItem definition
 import com.app.homear.ui.screens.catalog.FurnitureItem
+import java.io.File
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 data class ARModel(
     val name: String,
@@ -61,36 +63,11 @@ data class PlacedARModel(
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
-
-): ViewModel(){
+    @ApplicationContext private val context: Context
+): ViewModel() {
     companion object {
         // Shared singleton list of renderable ARModels in the app
-        val sharedAvailableModels = mutableListOf(
-            ARModel(
-                name = "Mueble Moderno",
-                modelPath = "models/Mueble-1.glb"
-            ),
-            ARModel(
-                name = "BoomBox Retro",
-                modelPath = "models/BoomBox.glb"
-            ),
-            ARModel(
-                name = "Caja Decorativa",
-                modelPath = "models/Box.glb"
-            ),
-            ARModel(
-                name = "Decoración Apple",
-                modelPath = "models/apple.glb"
-            ),
-            ARModel(
-                name = "Pato Decorativo",
-                modelPath = "models/Duck.glb"
-            ),
-            ARModel(
-                name = "Baldosa",
-                modelPath = "models/baldosa.glb"
-            )
-        )
+        val sharedAvailableModels = mutableListOf<ARModel>()
 
         // Function to add new model from FurnitureItem ("+" in catalog)
         fun addARModelFromFurniture(furniture: FurnitureItem) {
@@ -134,9 +111,15 @@ class CameraViewModel @Inject constructor(
 
     private val kModelFile: String
         get() {
-            val path = selectedModel.value?.modelPath ?: "models/Mueble-1.glb"
-            Log.d("AR_DEBUG", "kModelFile getter - Path seleccionado: $path")
-            return path
+            val modelPath = selectedModel.value?.modelPath ?: "models/Mueble-1.glb"
+            // Asegurarnos de que tenemos la ruta completa al archivo en el almacenamiento interno
+            val internalPath = if (modelPath.startsWith("/")) {
+                modelPath
+            } else {
+                File(context.filesDir, "assets/$modelPath").absolutePath
+            }
+            Log.d("AR_DEBUG", "Loading model from: $internalPath")
+            return internalPath
         }
     private val kMaxModelInstances = 10
 
@@ -355,7 +338,20 @@ class CameraViewModel @Inject constructor(
             mutableStateListOf<ModelInstance>().apply {
                 if (isEmpty()) {
                     Log.d("AR_DEBUG", "Cargando nuevo modelo desde archivo: $modelPath")
-                    this += modelLoader.createInstancedModel(modelPath, kMaxModelInstances)
+                    try {
+                        // Intentar cargar el modelo desde el almacenamiento interno
+                        val modelFile = File(modelPath)
+                        if (modelFile.exists()) {
+                            this += modelLoader.createInstancedModel(modelFile, kMaxModelInstances)
+                            Log.d("AR_DEBUG", "Modelo cargado exitosamente desde almacenamiento interno")
+                        } else {
+                            Log.e("AR_DEBUG", "Archivo de modelo no encontrado: $modelPath")
+                            throw IllegalStateException("Modelo no encontrado: $modelPath")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AR_DEBUG", "Error cargando modelo: ${e.message}")
+                        throw e
+                    }
                 }
             }
         }
@@ -363,7 +359,8 @@ class CameraViewModel @Inject constructor(
         // Verificar si hay instancias disponibles, si no, crear más
         if (modelPool.isEmpty()) {
             Log.d("AR_DEBUG", "Pool vacío, creando más instancias para: $modelPath")
-            modelPool += modelLoader.createInstancedModel(modelPath, kMaxModelInstances)
+            val modelFile = File(modelPath)
+            modelPool += modelLoader.createInstancedModel(modelFile, kMaxModelInstances)
         }
 
         val modelNode = ModelNode(

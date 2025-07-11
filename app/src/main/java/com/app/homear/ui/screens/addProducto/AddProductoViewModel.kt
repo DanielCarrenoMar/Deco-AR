@@ -8,67 +8,43 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.homear.domain.model.FurnitureModel
-import com.app.homear.domain.model.Resource
 import com.app.homear.domain.model.Superficie
-import com.app.homear.domain.usecase.firestore.AddFurnitureUseCase
-import com.app.homear.domain.usecase.firestore.GetCurrentUserUseCase
-import com.app.homear.domain.usecase.remoteStorage.UploadImageToRemoteUseCase
-import com.app.homear.domain.usecase.remoteStorage.UploadModelToRemoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.InputStream
 import javax.inject.Inject
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
 data class AddProductState(
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
-    val errorMessage: String? = null,
-    val currentUserId: String? = null
+    val errorMessage: String? = null
+)
+
+data class LocalFurnitureData(
+    val name: String,
+    val description: String,
+    val height: Float,
+    val width: Float,
+    val length: Float,
+    val materials: String,
+    val superficie: String,
+    val modelPath: String,
+    val imagePath: String
 )
 
 @HiltViewModel
 class AddProductoViewModel @Inject constructor(
-    private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val uploadImageToRemoteUseCase: UploadImageToRemoteUseCase,
-    private val uploadModelToRemoteUseCase: UploadModelToRemoteUseCase,
-    private val addFurnitureUseCase: AddFurnitureUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     var state by mutableStateOf(AddProductState())
         private set
-
-    init {
-        getCurrentUser()
-    }
-
-    private fun getCurrentUser() {
-        viewModelScope.launch {
-            getCurrentUserUseCase().collect { result ->
-                when (result) {
-                    is Resource.Success -> {
-                        state = state.copy(currentUserId = result.data?.key)
-                        Log.d("AddProductoViewModel", "Current user ID: ${result.data?.key}")
-                    }
-
-                    is Resource.Error -> {
-                        Log.e(
-                            "AddProductoViewModel",
-                            "Error getting current user: ${result.message}"
-                        )
-                        state = state.copy(errorMessage = "Error al obtener usuario actual")
-                    }
-
-                    is Resource.Loading -> {
-                        // Loading state is handled globally
-                    }
-                }
-            }
-        }
-    }
 
     fun addProduct(
         modelUri: String,
@@ -81,11 +57,6 @@ class AddProductoViewModel @Inject constructor(
         materials: String,
         superficie: Superficie = Superficie.PISO
     ) {
-        if (state.currentUserId == null) {
-            state = state.copy(errorMessage = "Usuario no identificado")
-            return
-        }
-
         viewModelScope.launch {
             state = state.copy(isLoading = true, errorMessage = null)
 
@@ -115,106 +86,53 @@ class AddProductoViewModel @Inject constructor(
                     return@launch
                 }
 
-                // 1. Subir imagen
+                // 1. Copiar imagen a assets/imagen
                 val imageBytes = uriToByteArray(Uri.parse(imageUri))
                 val imageName = "furniture_image_${System.currentTimeMillis()}.jpg"
-                var imageUrl: String? = null
+                val imagePath = "imagen/$imageName"
 
-                uploadImageToRemoteUseCase(imageName, imageBytes).collect { imageResult ->
-                    when (imageResult) {
-                        is Resource.Success -> {
-                            imageUrl = imageResult.data
-                            Log.d("AddProductoViewModel", "Image uploaded successfully: $imageUrl")
-                        }
+                val imageFile = File(context.filesDir, "assets/imagen/$imageName")
+                imageFile.parentFile?.mkdirs()
+                FileOutputStream(imageFile).use { it.write(imageBytes) }
 
-                        is Resource.Error -> {
-                            state = state.copy(
-                                isLoading = false,
-                                errorMessage = "Error al subir imagen: ${imageResult.message}"
-                            )
-                            return@collect
-                        }
+                Log.d("AddProductoViewModel", "Image saved locally: ${imageFile.absolutePath}")
 
-                        is Resource.Loading -> {
-                            Log.d("AddProductoViewModel", "Uploading image...")
-                        }
-                    }
-                }
-
-                if (imageUrl == null) return@launch
-
-                // 2. Subir modelo 3D
+                // 2. Copiar modelo 3D a assets/models
                 val modelBytes = uriToByteArray(Uri.parse(modelUri))
                 val modelName = "furniture_model_${System.currentTimeMillis()}.glb"
-                var modelUrl: String? = null
+                val modelPath = "models/$modelName" // Mantener la ruta relativa para el JSON
 
-                uploadModelToRemoteUseCase(modelName, modelBytes).collect { modelResult ->
-                    when (modelResult) {
-                        is Resource.Success -> {
-                            modelUrl = modelResult.data
-                            Log.d("AddProductoViewModel", "Model uploaded successfully: $modelUrl")
-                        }
+                // Asegurar que la carpeta assets/models existe
+                val assetsModelsDir = File(context.filesDir, "assets/models")
+                assetsModelsDir.mkdirs()
 
-                        is Resource.Error -> {
-                            state = state.copy(
-                                isLoading = false,
-                                errorMessage = "Error al subir modelo: ${modelResult.message}"
-                            )
-                            return@collect
-                        }
+                // Guardar el archivo en la ubicación correcta
+                val modelFile = File(assetsModelsDir, modelName)
+                FileOutputStream(modelFile).use { it.write(modelBytes) }
 
-                        is Resource.Loading -> {
-                            Log.d("AddProductoViewModel", "Uploading model...")
-                        }
-                    }
-                }
+                Log.d("AddProductoViewModel", "Model saved locally: ${modelFile.absolutePath} with relative path: $modelPath")
 
-                if (modelUrl == null) return@launch
-
-                // 3. Crear FurnitureModel
-                val materialsSet = materials.split(",").map { it.trim() }.toHashSet()
-                val keywordsSet = hashSetOf(name.lowercase(), description.lowercase())
-                materialsSet.forEach { keywordsSet.add(it.lowercase()) }
-
-                val furnitureModel = FurnitureModel(
+                // 3. Crear objeto de datos del mueble
+                val furnitureData = LocalFurnitureData(
                     name = name,
                     description = description,
-                    material = materialsSet,
-                    keywords = keywordsSet,
-                    modelFile = File(modelUrl!!),
-                    imageFile = File(imageUrl!!),
                     height = heightFloat,
                     width = widthFloat,
                     length = lengthFloat,
-                    superficie = superficie
+                    materials = materials,
+                    superficie = superficie.name,
+                    modelPath = modelPath,
+                    imagePath = imagePath
                 )
 
-                // 4. Guardar en Firestore
-                addFurnitureUseCase(furnitureModel).collect { result ->
-                    when (result) {
-                        is Resource.Success -> {
-                            state = state.copy(
-                                isLoading = false,
-                                isSuccess = true
-                            )
-                            Log.d(
-                                "AddProductoViewModel",
-                                "Furniture added successfully to Firestore"
-                            )
-                        }
+                // 4. Actualizar JSON con el nuevo mueble
+                updateLocalFurnitureJSON(furnitureData)
 
-                        is Resource.Error -> {
-                            state = state.copy(
-                                isLoading = false,
-                                errorMessage = "Error al guardar en base de datos: ${result.message}"
-                            )
-                        }
-
-                        is Resource.Loading -> {
-                            Log.d("AddProductoViewModel", "Saving to Firestore...")
-                        }
-                    }
-                }
+                state = state.copy(
+                    isLoading = false,
+                    isSuccess = true
+                )
+                Log.d("AddProductoViewModel", "Furniture added successfully to local storage")
 
             } catch (e: Exception) {
                 state = state.copy(
@@ -223,6 +141,56 @@ class AddProductoViewModel @Inject constructor(
                 )
                 Log.e("AddProductoViewModel", "Unexpected error in addProduct", e)
             }
+        }
+    }
+
+    private fun updateLocalFurnitureJSON(newFurniture: LocalFurnitureData) {
+        try {
+            // Asegurar que el directorio existe
+            val assetsDir = File(context.filesDir, "assets")
+            assetsDir.mkdirs()
+
+            // Archivo JSON en almacenamiento interno
+            val jsonFile = File(assetsDir, "models.json")
+            
+            // Leer el contenido existente (del almacenamiento interno o assets)
+            val jsonArray = if (jsonFile.exists()) {
+                // Si existe en almacenamiento interno, leer de ahí
+                val content = jsonFile.readText()
+                if (content.isNotEmpty()) JSONArray(content) else JSONArray()
+            } else {
+                try {
+                    // Si no existe, intentar leer del asset empaquetado
+                    val assetContent = context.assets.open("models.json").bufferedReader().use { it.readText() }
+                    JSONArray(assetContent)
+                } catch (e: Exception) {
+                    // Si no existe el asset, crear nuevo array
+                    JSONArray()
+                }
+            }
+
+            // Crear objeto JSON para el nuevo mueble
+            val furnitureJson = JSONObject().apply {
+                put("name", newFurniture.name)
+                put("description", newFurniture.description)
+                put("height", newFurniture.height)
+                put("width", newFurniture.width)
+                put("length", newFurniture.length)
+                put("materials", newFurniture.materials)
+                put("superficie", newFurniture.superficie)
+                put("modelPath", newFurniture.modelPath)
+                put("imagePath", newFurniture.imagePath)
+            }
+
+            jsonArray.put(furnitureJson)
+
+            // Guardar JSON actualizado en almacenamiento interno
+            jsonFile.writeText(jsonArray.toString(2)) // toString(2) para formato legible
+            Log.d("AddProductoViewModel", "JSON updated successfully: ${jsonFile.absolutePath}")
+
+        } catch (e: Exception) {
+            Log.e("AddProductoViewModel", "Error updating JSON", e)
+            throw e
         }
     }
 

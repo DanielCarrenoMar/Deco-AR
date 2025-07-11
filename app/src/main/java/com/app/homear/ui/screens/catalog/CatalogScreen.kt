@@ -88,7 +88,7 @@ fun CatalogScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadFurnitureData()
-        viewModel.checkIfProvider()
+        // viewModel.checkIfProvider()
     }
 
     Box(
@@ -377,7 +377,7 @@ fun CatalogScreen(
                 imagePath = selectedItem.imagePath
             )
         }
-        
+
         // Agregado: Botón para agregar producto
         if (viewModel.isProvider) {
             AddButton(
@@ -641,12 +641,12 @@ fun DimensionFilter(
                     }
                 }
             )
-            
+
             Text(
                 text = "-",
                 modifier = Modifier.align(Alignment.CenterVertically)
             )
-            
+
             // Max value
             BasicTextField(
                 value = maxText,
