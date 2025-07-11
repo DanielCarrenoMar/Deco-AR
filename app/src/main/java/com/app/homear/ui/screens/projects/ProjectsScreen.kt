@@ -1,4 +1,4 @@
-package com.app.homear.ui.screens.spaces
+package com.app.homear.ui.screens.projects
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,14 +45,14 @@ fun SpacesScreen(
     navigateToCamera: () -> Unit = {},
     navigateToConfiguration: () -> Unit = {},
     navigateToProjectDetail: () -> Unit = {},
-    viewModel: SpacesViewModel = hiltViewModel(),
+    viewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     val searchQuery = remember { mutableStateOf("") }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(viewModel) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            viewModel.loadSpaces()
+            viewModel.loadProjects()
         }
     }
 
@@ -139,11 +139,11 @@ fun SpacesScreen(
                 contentPadding = PaddingValues(bottom = 80.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(viewModel.projectList) { spaceModel ->
+                items(viewModel.projectList) { projectModel ->
                     SpaceCard(
-                        name = spaceModel.name,
-                        user = spaceModel.idUser,
-                        imagePath = spaceModel.imagePath,
+                        name = projectModel.name,
+                        user = projectModel.idUser,
+                        imagePath = projectModel.imagePath,
                         onClick =  navigateToProjectDetail
                     )
                 }

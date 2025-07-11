@@ -1,27 +1,25 @@
-package com.app.homear.ui.screens.spaces
+package com.app.homear.ui.screens.projects
 
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.homear.domain.model.ProjectModel
 import com.app.homear.domain.model.Resource
-import com.app.homear.domain.model.SpaceModel
-import com.app.homear.domain.usecase.space.GetAllSpacesUseCase
+import com.app.homear.domain.usecase.proyect.GetAllProyectUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SpacesViewModel  @Inject constructor(
-    private val getAllSpacesUseCase: GetAllSpacesUseCase
+class ProjectsViewModel  @Inject constructor(
+    private val getAllProyectUseCase: GetAllProyectUseCase
 ): ViewModel()  {
-    private val _projectList = mutableStateOf<List<SpaceModel>>(emptyList())
+    private val _projectList = mutableStateOf<List<ProjectModel>>(emptyList())
     var projectList = _projectList.value
 
-    fun loadSpaces() {
+    fun loadProjects() {
         viewModelScope.launch {
-            getAllSpacesUseCase().collect { resource ->
+            getAllProyectUseCase().collect { resource ->
                 when (resource) {
                     is Resource.Loading -> {
                         // Handle loading state if needed

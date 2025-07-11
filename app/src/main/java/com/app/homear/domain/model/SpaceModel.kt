@@ -5,7 +5,6 @@ data class SpaceModel(
     val idUser: String,
     val name: String,
     val description: String,
-    val listFurniture: List<Int>,
     val imagePath: String,
     val createdDate: String,
     val lastModified: String

@@ -20,7 +20,7 @@ import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
 import com.app.homear.ui.screens.register.RegisterScreen
 import com.app.homear.ui.screens.spaceDetail.SpaceDetailScreen
-import com.app.homear.ui.screens.spaces.SpacesScreen
+import com.app.homear.ui.screens.projects.SpacesScreen
 import com.app.homear.ui.screens.spaceslist.SpacesListScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
 import com.app.homear.ui.screens.start.StartScreen

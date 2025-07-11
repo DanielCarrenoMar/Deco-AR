@@ -2,10 +2,14 @@ package com.app.homear.data.database.repository
 
 
 import com.app.homear.data.database.dao.FurnitureDao
+import com.app.homear.data.database.dao.ProjectDao
 import com.app.homear.data.database.dao.SpaceDao
+import com.app.homear.data.database.dao.SpaceFurnitureDao
 import com.app.homear.data.database.entity.toFurnitureModel
+import com.app.homear.data.database.entity.toProjectModel
 import com.app.homear.data.database.entity.toSpaceModel
 import com.app.homear.domain.model.FurnitureModel
+import com.app.homear.domain.model.ProjectModel
 import com.app.homear.domain.model.SpaceModel
 
 import com.app.homear.domain.model.toFurnitureEntity
@@ -16,7 +20,9 @@ import javax.inject.Inject
 
 class LocalStorageRepositoryImpl @Inject constructor(
     private val furnitureDao: FurnitureDao,
-    private val spaceDao: SpaceDao
+    private val projectDao: ProjectDao,
+    private val spaceDao: SpaceDao,
+    private val spaceFurnitureDao: SpaceFurnitureDao
 ) : LocalStorageRepository {
 
 
@@ -80,6 +86,14 @@ class LocalStorageRepositoryImpl @Inject constructor(
     override suspend fun deleteFurnitureFromId(fModelId: Int): Boolean {
         try {
             return furnitureDao.deleteFurnitureFromId(fModelId) == 1
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    override suspend fun getAllProjects(): List<ProjectModel> {
+        try {
+            return projectDao.getAllProjects().map { spaceEntity -> spaceEntity.toProjectModel() }
         } catch (e: Exception) {
             throw e
         }

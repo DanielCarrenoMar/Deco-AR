@@ -17,7 +17,6 @@ data class SpaceEntity(
     @ColumnInfo(name = "imagePath") val imagePath: String,
     @ColumnInfo(name = "createdDate") val createdDate: String,
     @ColumnInfo(name = "lastModified") val lastModified: String,
-    @ColumnInfo(name = "furnitures") val furnitures: List<Int>
 )
 
 fun SpaceEntity.toSpaceModel(): SpaceModel {
@@ -26,7 +25,6 @@ fun SpaceEntity.toSpaceModel(): SpaceModel {
         idUser = this.idUser,
         name = this.name,
         description = this.description,
-        listFurniture = emptyList(), // Se debe cargar por separado
         imagePath = this.imagePath,
         createdDate = this.createdDate,
         lastModified = this.lastModified
@@ -42,6 +40,5 @@ fun SpaceModel.toSpaceEntity(): SpaceEntity {
         imagePath = this.imagePath,
         createdDate = this.createdDate,
         lastModified = this.lastModified,
-        furnitures = this.listFurniture
     )
 }
