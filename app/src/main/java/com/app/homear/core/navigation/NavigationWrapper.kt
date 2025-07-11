@@ -101,6 +101,7 @@ fun NavigationWrapper() {
                 navigateToCamera = { navController.navigatePop(Camera) },
                 navigateToSpaces = { navController.navigatePop(Spaces) },
                 navigateToConfiguration = { navController.navigatePop(Configuration) },
+                navigateToAddProducto = { navController.navigatePop(AddProduct) },
             )
         }
 
@@ -138,6 +139,16 @@ fun NavigationWrapper() {
         composable<CreateSpace>{
             CreateSpaceScreen (
                 navigateToCamera = { navController.navigatePop(Camera)}
+            )
+        }
+
+        composable<AddProduct> {
+            AddProductoScreen(
+            onCancel = { navController.popBackStack() },
+            onSuccess = { navController.popBackStack() },
+            navigateToEditProfile = { navController.navigatePop(Profile) },
+            navigateToSpacesList = { navController.navigatePop(Spaces) }
+
             )
         }
 

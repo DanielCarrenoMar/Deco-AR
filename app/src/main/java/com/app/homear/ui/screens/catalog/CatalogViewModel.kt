@@ -140,7 +140,7 @@ class CatalogViewModel @Inject constructor(
                                 modelPath = model.modelFile.path,
                                 imagePath = model.imageFile.path, // Ruta temporal
                                 colors = listOf("#8B4513", "#A0522D", "#D2691E"),
-                                materials = model.material,
+                                materials = model.materials,
                                 height = model.height,
                                 width = model.width,
                                 length = model.length,
