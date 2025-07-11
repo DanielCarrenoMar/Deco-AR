@@ -175,10 +175,12 @@ fun CreateSpaceScreen(
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                items(furnitureList) { (name, type) ->
+                items(furnitureList) { furniture ->
                     FurnitureCard(
-                        name = name,
-                        type = type,
+                        name = furniture.name,
+                        type = furniture.type,
+                        description = furniture.description,
+                        imagePath = furniture.imagePath,
                         onClick = { /* Acción al pulsar */ }
                     )
                 }
@@ -202,6 +204,8 @@ fun CreateSpaceScreen(
 fun FurnitureCard(
     name: String,
     type: String,
+    description: String?,
+    imagePath: String?,
     onClick: () -> Unit
 ) {
     Card(
@@ -224,17 +228,32 @@ fun FurnitureCard(
                     .background(Color.LightGray),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.Image,
-                    contentDescription = "Sin imagen",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
+                if (!imagePath.isNullOrEmpty() && File(imagePath).exists()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(File(imagePath))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Imagen del mueble",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Image,
+                        contentDescription = "Sin imagen",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                 Text(type, fontSize = 12.sp, color = Color.Gray)
+                if (!description.isNullOrBlank()) {
+                    Text(description, fontSize = 12.sp, color = Color.DarkGray, maxLines = 2)
+                }
             }
         }
     }

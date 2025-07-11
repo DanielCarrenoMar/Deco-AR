@@ -19,6 +19,13 @@ data class FurnitureModel(
     val type: String
 )
 
+data class FurniturePreviewModel(
+    val name: String,
+    val type: String,
+    val description: String?,
+    val imagePath: String?
+)
+
 @HiltViewModel
 class CreateSpaceViewModel @Inject constructor(
     @ApplicationContext private val context: Context
@@ -27,8 +34,8 @@ class CreateSpaceViewModel @Inject constructor(
     private val _imagePath = mutableStateOf<String?>(null)
     val imagePath: State<String?> = _imagePath
 
-    private val _furnitureList = mutableStateOf<List<Pair<String, String>>>(emptyList())
-    val furnitureList: State<List<Pair<String, String>>> = _furnitureList
+    private val _furnitureList = mutableStateOf<List<FurniturePreviewModel>>(emptyList())
+    val furnitureList: State<List<FurniturePreviewModel>> = _furnitureList
 
     init {
         // Al iniciar, buscar la última imagen guardada y su lista de modelos
@@ -59,9 +66,9 @@ class CreateSpaceViewModel @Inject constructor(
             if (!jsonFile.exists()) {
                 // Si no existe el JSON, usar la lista predeterminada
                 _furnitureList.value = listOf(
-                    "Silla Moderna" to "Silla",
-                    "Mesa de Comedor" to "Mesa",
-                    "Lámpara de Pie" to "Lámpara"
+                    FurniturePreviewModel("Silla Moderna", "Silla", null, null),
+                    FurniturePreviewModel("Mesa de Comedor", "Mesa", null, null),
+                    FurniturePreviewModel("Lámpara de Pie", "Lámpara", null, null)
                 )
                 return
             }
@@ -69,13 +76,21 @@ class CreateSpaceViewModel @Inject constructor(
             val jsonContent = jsonFile.readText()
             val jsonObject = JSONObject(jsonContent)
             val modelsArray = jsonObject.getJSONArray("models")
-            val modelsList = mutableListOf<Pair<String, String>>()
+            val modelsList = mutableListOf<FurniturePreviewModel>()
 
             for (i in 0 until modelsArray.length()) {
                 val modelObject = modelsArray.getJSONObject(i)
                 val name = modelObject.getString("name")
                 val type = modelObject.getString("type")
-                modelsList.add(name to type)
+                val details = getModelDetailsByName(name)
+                modelsList.add(
+                    FurniturePreviewModel(
+                        name = name,
+                        type = type,
+                        description = details?.first,
+                        imagePath = details?.second
+                    )
+                )
             }
 
             _furnitureList.value = modelsList
@@ -84,11 +99,34 @@ class CreateSpaceViewModel @Inject constructor(
             Log.e("CreateSpaceViewModel", "Error al cargar la lista de modelos: ${e.message}")
             // En caso de error, usar la lista predeterminada
             _furnitureList.value = listOf(
-                "Silla Moderna" to "Silla",
-                "Mesa de Comedor" to "Mesa",
-                "Lámpara de Pie" to "Lámpara"
+                FurniturePreviewModel("Silla Moderna", "Silla", null, null),
+                FurniturePreviewModel("Mesa de Comedor", "Mesa", null, null),
+                FurniturePreviewModel("Lámpara de Pie", "Lámpara", null, null)
             )
         }
+    }
+
+    /**
+     * Busca en models.json el modelo por nombre y retorna description e imagePath absolutos
+     */
+    private fun getModelDetailsByName(name: String): Pair<String?, String?>? {
+        try {
+            val internalJsonFile = File(context.filesDir, "assets/models.json")
+            if (!internalJsonFile.exists()) return null
+            val jsonContent = internalJsonFile.readText()
+            val jsonArray = JSONArray(jsonContent)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                if (obj.getString("name") == name) {
+                    val description = obj.optString("description", "")
+                    val imagePath = File(context.filesDir, "assets/" + obj.getString("imagePath")).absolutePath
+                    return description to imagePath
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("CreateSpaceViewModel", "Error buscando modelo en models.json: ${e.message}")
+        }
+        return null
     }
 
     private fun loadModelsFromPrefsOrJson() {
@@ -97,12 +135,20 @@ class CreateSpaceViewModel @Inject constructor(
         if (!jsonString.isNullOrEmpty()) {
             try {
                 val modelsArray = JSONArray(jsonString)
-                val modelsList = mutableListOf<Pair<String, String>>()
+                val modelsList = mutableListOf<FurniturePreviewModel>()
                 for (i in 0 until modelsArray.length()) {
                     val modelObject = modelsArray.getJSONObject(i)
                     val name = modelObject.getString("name")
-                    val path = modelObject.getString("path")
-                    modelsList.add(name to path)
+                    val type = modelObject.getString("path")
+                    val details = getModelDetailsByName(name)
+                    modelsList.add(
+                        FurniturePreviewModel(
+                            name = name,
+                            type = type,
+                            description = details?.first,
+                            imagePath = details?.second
+                        )
+                    )
                 }
                 _furnitureList.value = modelsList
                 sharedPrefHelper.saveStringData("furniture_list_json", null) // Limpiar después de usar
