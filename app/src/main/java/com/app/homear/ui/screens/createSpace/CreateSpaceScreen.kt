@@ -34,6 +34,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun CreateSpaceScreen(
     navigateToCamera: () -> Unit,
+    navigateToCreateProject: () -> Unit,
     viewModel: CreateSpaceViewModel = hiltViewModel()
 ) {
     val spaceName = remember { mutableStateOf("") }
@@ -184,14 +185,14 @@ fun CreateSpaceScreen(
             }
 
             Button(
-                onClick = {},
+                onClick = navigateToCreateProject,
                 colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
             ) {
-                Text("Confirmar", color = Color.White, fontSize = 16.sp)
+                Text("Siguiente", color = Color.White, fontSize = 16.sp)
             }
         }
     }
@@ -238,10 +239,4 @@ fun FurnitureCard(
         }
     }
 }
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun CreateSpaceScreenPreview() {
-    CreateSpaceScreen(
-        navigateToCamera = {}
-    )
-}
+

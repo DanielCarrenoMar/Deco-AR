@@ -48,6 +48,9 @@ object EditProfile
 @Serializable
 object SpacesList
 
+@Serializable
+object CreateProject
+
 
 @Serializable
 object AddProduct

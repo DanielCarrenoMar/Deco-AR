@@ -31,6 +31,7 @@ import coil.request.ImageRequest
 import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.theme.CorporatePurple
 import java.io.File
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun SpacesScreen(
@@ -43,10 +44,10 @@ fun SpacesScreen(
     val searchQuery = remember { mutableStateOf("") }
 
     val dummySpaces = listOf(
-        Triple("Sala Moderna", "Usuario 1", "/storage/emulated/0/Pictures/space_1.jpg"),
-        Triple("Comedor Minimalista", "Usuario 2", null),
-        Triple("Dormitorio Luminoso", "Usuario 3", "/storage/emulated/0/Pictures/space_2.jpg"),
-        Triple("Oficina Compacta", "Usuario 4", null)
+        Triple("Casa de Campo", "Usuario 1", "/storage/emulated/0/Pictures/space_1.jpg"),
+        Triple("Apartamento en Villa Asia", "Usuario 2", null),
+        Triple("Casa en la Playa", "Usuario 3", "/storage/emulated/0/Pictures/space_2.jpg"),
+        Triple("Apartamento Vista el Sol", "Usuario 4", null)
     )
 
     Box(
@@ -62,7 +63,7 @@ fun SpacesScreen(
                 .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
             Text(
-                text = "Espacios",
+                text = "Proyectos",
                 color = Color(0xFF800080),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
@@ -110,7 +111,7 @@ fun SpacesScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Tu próximo espacio está aquí.",
+                text = "Diseña, explora, crea.",
                 style = MaterialTheme.typography.titleMedium,
                 fontSize = 18.sp,
                 color = Color.DarkGray
@@ -217,23 +218,33 @@ fun SpaceCard(
                     .background(Color.White)
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Column {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp), // <- Fuerza altura igual
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
                         text = name,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF333333)
+                        color = Color(0xFF333333),
+                        maxLines = 1, // <- Evita múltiples líneas
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = user,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = Color.Gray,
+                        maxLines = 1, // <- Evita múltiples líneas
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
         }
     }
 }
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

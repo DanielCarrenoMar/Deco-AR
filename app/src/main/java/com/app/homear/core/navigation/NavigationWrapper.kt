@@ -24,6 +24,7 @@ import com.app.homear.ui.screens.spaces.SpacesScreen
 import com.app.homear.ui.screens.spaceslist.SpacesListScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
 import com.app.homear.ui.screens.start.StartScreen
+import com.app.homear.ui.screens.createProject.CreateProjectScreen
 
 /**
  * Navega a una pantalla borrandola de la pila de pantallas
@@ -140,7 +141,8 @@ fun NavigationWrapper() {
 
         composable<CreateSpace>{
             CreateSpaceScreen (
-                navigateToCamera = { navController.navigatePop(Camera)}
+                navigateToCamera = { navController.navigatePop(Camera)},
+                navigateToCreateProject = { navController.navigatePop(CreateProject)}
             )
         }
 
@@ -167,6 +169,14 @@ fun NavigationWrapper() {
                 onSuccess = { navController.navigate(Catalog) },
                 navigateToEditProfile = { navController.navigate(Profile) },
                 navigateToSpacesList = { navController.navigate(SpacesList) }
+            )
+        }
+
+        composable<CreateProject> {
+            CreateProjectScreen(
+                onNavigateBack = { navController.popBackStack() },
+                navigateToCamera = { navController.navigate(Camera) },
+                navigateToSpaces = { navController.navigate(Spaces) }
             )
         }
     }

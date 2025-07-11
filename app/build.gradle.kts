@@ -126,4 +126,5 @@ dependencies {
     implementation (libs.converter.gson)
 
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+
 }
