@@ -1,4 +1,4 @@
-package com.app.homear.ui.screens.createspace
+package com.app.homear.ui.screens.createSpace
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel

@@ -6,7 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import com.app.homear.ui.screens.createspace.CreateSpaceViewModel
+import com.app.homear.ui.screens.createSpace.CreateSpaceViewModel
 import javax.inject.Singleton
 
 @Module

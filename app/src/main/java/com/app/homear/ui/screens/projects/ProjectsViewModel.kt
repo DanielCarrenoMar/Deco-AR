@@ -1,5 +1,6 @@
 package com.app.homear.ui.screens.projects
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,6 +27,7 @@ class ProjectsViewModel  @Inject constructor(
                     }
                     is Resource.Success -> {
                         _projectList.value = resource.data!!
+                        Log.i("ProjectsViewModel", "Projects loaded successfully: ${_projectList.value.size} projects found.")
                     }
                     is Resource.Error -> {
                         // Handle error state if needed

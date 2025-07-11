@@ -27,7 +27,6 @@ import coil.request.ImageRequest
 import com.app.homear.ui.theme.CorporatePurple
 import java.io.File
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.app.homear.ui.screens.createspace.CreateSpaceViewModel
 
 @Composable
 fun CreateSpaceScreen(
