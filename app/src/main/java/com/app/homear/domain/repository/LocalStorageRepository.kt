@@ -3,6 +3,7 @@ package com.app.homear.domain.repository
 import com.app.homear.data.database.entity.FurnitureEntity
 import com.app.homear.domain.model.FurnitureModel
 import com.app.homear.domain.model.ProjectModel
+import com.app.homear.domain.model.SpaceFurnitureModel
 import com.app.homear.domain.model.SpaceModel
 import com.app.homear.domain.model.UserModel
 import com.google.android.gms.tasks.Task
@@ -36,5 +37,29 @@ interface LocalStorageRepository {
     suspend fun deleteProjectFromId(projectId: Int): Boolean
 
     suspend fun getAllSpaces(): List<SpaceModel>
+    suspend fun getSpacesByProjectId(projectId: Int): List<SpaceModel>
+    suspend fun getSpaceById(spaceId: Int): SpaceModel?
+    suspend fun saveSpace(spaceModel: SpaceModel): Long
+    suspend fun updateSpaceById(
+        spaceId: Int,
+        name: String,
+        description: String
+    ): Boolean
+    suspend fun deleteAllSpaces(): Int
+    suspend fun deleteSpaceFromId(spaceId: Int): Boolean
+
+    suspend fun getAllSpacesFurniture(): List<SpaceFurnitureModel>
+    suspend fun getSpacesFurnitureBySpaceId(spaceId: Int): List<SpaceFurnitureModel>
+    suspend fun getSpaceFurnitureById(spaceFurnitureId: Int): SpaceFurnitureModel?
+    suspend fun saveSpaceFurniture(spaceFurnitureModel: SpaceFurnitureModel): Long
+    suspend fun updateSpaceFurnitureById(
+        spaceFurnitureId: Int,
+        name: String,
+        description: String
+    ): Boolean
+    suspend fun deleteAllSpacesFurniture(): Int
+    suspend fun deleteSpaceFurnitureFromId(spaceFurnitureId: Int): Boolean
+
+
 
 }
