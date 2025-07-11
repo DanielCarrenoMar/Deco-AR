@@ -46,6 +46,7 @@ class ProjectsViewModel  @Inject constructor(
                         // Handle loading state if needed
                     }
                     is Resource.Success -> {
+                        val idSaved = resource.data!!
                     }
                     is Resource.Error -> {
                         Log.e("ProjectsViewModel", "Error al guardar el proyecto: ${resource.message}")

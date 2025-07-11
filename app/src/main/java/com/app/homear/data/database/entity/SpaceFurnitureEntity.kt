@@ -18,6 +18,7 @@ data class SpaceFurnitureEntity(
 
 fun SpaceFurnitureEntity.toSpaceFurnitureModel(): SpaceFurnitureModel {
     return SpaceFurnitureModel(
+        id = this.id,
         spaceId = this.spaceId,
         name = this.name,
         description = this.description,
@@ -28,6 +29,7 @@ fun SpaceFurnitureEntity.toSpaceFurnitureModel(): SpaceFurnitureModel {
 
 fun SpaceFurnitureModel.toSpaceFurnitureEntity(): SpaceFurnitureEntity {
     return SpaceFurnitureEntity(
+        id = this.id,
         spaceId = this.spaceId,
         name = this.name,
         description = this.description,
