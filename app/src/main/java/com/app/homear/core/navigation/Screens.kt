@@ -51,6 +51,8 @@ object SpacesList
 @Serializable
 object CreateProject
 
+@Serializable
+object ProjectDetail
 
 @Serializable
 object AddProduct

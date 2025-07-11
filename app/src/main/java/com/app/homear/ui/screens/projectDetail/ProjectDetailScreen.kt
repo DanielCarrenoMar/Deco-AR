@@ -1,4 +1,4 @@
-package com.app.homear.ui.screens.createspace
+package com.app.homear.ui.screens.projectDetail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,35 +10,37 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
-import com.app.homear.R
 import com.app.homear.ui.theme.CorporatePurple
 import java.io.File
-import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
-fun CreateSpaceScreen(
-    navigateToCamera: () -> Unit,
-    navigateToCreateProject: () -> Unit,
-    viewModel: CreateSpaceViewModel = hiltViewModel()
+fun ProjectDetailScreen(
+    onBack: () -> Unit,
+    navigateToSpaceDetail: (String) -> Unit
 ) {
-    val spaceName = remember { mutableStateOf("") }
-    val furnitureList by viewModel.furnitureList
+    val dummyProject = Triple("Proyecto Casa Moderna", "Usuario Admin", "/storage/emulated/0/Pictures/project_main.jpg")
+    val spaceList = listOf(
+        Triple("Sala Principal", "5 muebles", "/storage/emulated/0/Pictures/space_1.jpg"),
+        Triple("Comedor", "3 muebles", "/storage/emulated/0/Pictures/space_2.jpg"),
+        Triple("Habitación Principal", "4 muebles", "/storage/emulated/0/Pictures/space_3.jpg"),
+        Triple("Oficina", "2 muebles", "/storage/emulated/0/Pictures/space_4.jpg")
+    )
 
     Box(
         modifier = Modifier
@@ -52,15 +54,19 @@ fun CreateSpaceScreen(
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
                 .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
+            // Header
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable { navigateToCamera() }
+                        .clickable { onBack() }
                 ) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
@@ -70,43 +76,45 @@ fun CreateSpaceScreen(
                         contentDescription = "Back Button",
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(4.dp),
-                        contentScale = ContentScale.Fit
+                            .padding(4.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = "Crear Espacio",
-                    color = Color.DarkGray,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 32.sp,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.End
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = dummyProject.first,
+                        color = Color.DarkGray,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        textAlign = TextAlign.End
+                    )
+                    Text(
+                        text = "por ${dummyProject.second}",
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.End
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Imagen del proyecto
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
+                    .height(200.dp),
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-                val viewModel: CreateSpaceViewModel = hiltViewModel()
-                val imagePath by viewModel.imagePath
-
-                coil.compose.SubcomposeAsyncImage(
+                SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(imagePath?.let { File(it) })
+                        .data(dummyProject.third?.let { File(it) })
                         .crossfade(true)
                         .build(),
-                    contentDescription = "Imagen del espacio",
+                    contentDescription = "Imagen del proyecto",
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(12.dp)),
@@ -133,7 +141,7 @@ fun CreateSpaceScreen(
                         ) {
                             Icon(
                                 Icons.Filled.Image,
-                                contentDescription = "Sin imagen",
+                                contentDescription = "Error al cargar imagen",
                                 tint = Color.White,
                                 modifier = Modifier.size(40.dp)
                             )
@@ -144,67 +152,47 @@ fun CreateSpaceScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Nombre de Espacio",
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp
-            )
-            OutlinedTextField(
-                value = spaceName.value,
-                onValueChange = { spaceName.value = it },
-                placeholder = { Text("Añadir nombre de espacio") },
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp),
-                shape = RoundedCornerShape(8.dp)
+                    .height(1.dp)
+                    .background(Color(0xFFE0E0E0))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Lista de Muebles",
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp
+                text = "Lista de Espacios",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.DarkGray
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(1),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
+                contentPadding = PaddingValues(bottom = 80.dp),
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(furnitureList) { furniture ->
-                    FurnitureCard(
-                        name = furniture.name,
-                        type = furniture.type,
-                        description = furniture.description,
-                        imagePath = furniture.imagePath,
-                        onClick = { /* Acción al pulsar */ }
+                items(spaceList) { (name, furnitureCount, imagePath) ->
+                    SpaceCard(
+                        name = name,
+                        furnitureCount = furnitureCount,
+                        imagePath = imagePath,
+                        onClick = { navigateToSpaceDetail(name) }
                     )
                 }
-            }
-
-            Button(
-                onClick = navigateToCreateProject,
-                colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-            ) {
-                Text("Siguiente", color = Color.White, fontSize = 16.sp)
             }
         }
     }
 }
 
 @Composable
-fun FurnitureCard(
+fun SpaceCard(
     name: String,
-    type: String,
-    description: String?,
+    furnitureCount: String,
     imagePath: String?,
     onClick: () -> Unit
 ) {
@@ -217,45 +205,72 @@ fun FurnitureCard(
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
-            modifier = Modifier
-                .padding(8.dp),
+            modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            Card(
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.LightGray),
-                contentAlignment = Alignment.Center
+                    .clip(RoundedCornerShape(8.dp)),
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-                if (!imagePath.isNullOrEmpty() && File(imagePath).exists()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(File(imagePath))
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Imagen del mueble",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        Icons.Default.Image,
-                        contentDescription = "Sin imagen",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imagePath?.let { File(it) })
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Imagen del espacio",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = CorporatePurple
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Filled.Image,
+                                contentDescription = "Error al cargar imagen",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                )
             }
+
             Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                Text(type, fontSize = 12.sp, color = Color.Gray)
-                if (!description.isNullOrBlank()) {
-                    Text(description, fontSize = 12.sp, color = Color.DarkGray, maxLines = 2)
-                }
+
+            Column {
+                Text(name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color.DarkGray)
+                Text(furnitureCount, fontSize = 12.sp, color = Color.Gray)
             }
         }
     }
 }
 
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun ProjectDetailScreenPreview() {
+    ProjectDetailScreen(
+        onBack = {},
+        navigateToSpaceDetail = {}
+    )
+}
