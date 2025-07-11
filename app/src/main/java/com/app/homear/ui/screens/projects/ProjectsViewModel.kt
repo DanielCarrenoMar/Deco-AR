@@ -18,7 +18,7 @@ class ProjectsViewModel  @Inject constructor(
     private val saveProjectUseCase: SaveProjectUseCase
 ): ViewModel()  {
     private val _projectList = mutableStateOf<List<ProjectModel>>(emptyList())
-    var projectList = _projectList.value
+    var projectList = _projectList
 
     fun loadProjects() {
         Log.i("ProjectsViewModel", "Loading projects...")

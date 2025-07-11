@@ -150,7 +150,7 @@ fun ProjectsScreen(
                 contentPadding = PaddingValues(bottom = 80.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(viewModel.projectList) { projectModel ->
+                items(viewModel.projectList.value) { projectModel ->
                     SpaceCard(
                         name = projectModel.name,
                         user = projectModel.idUser,
