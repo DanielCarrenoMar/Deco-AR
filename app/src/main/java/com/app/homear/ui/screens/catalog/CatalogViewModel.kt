@@ -11,6 +11,7 @@ import com.app.homear.domain.model.Superficie
 import com.app.homear.ui.screens.camera.CameraViewModel
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.usecase.firestore.GetCurrentUserUseCase
+import com.app.homear.ui.screens.camera.ARModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
@@ -41,11 +42,6 @@ data class FilterState(
     val minLength: Float? = null,
     val maxLength: Float? = null,
     val selectedSuperficie: Superficie? = null
-)
-
-data class ARModel(
-    val name: String,
-    val modelPath: String
 )
 
 @HiltViewModel
@@ -185,7 +181,15 @@ class CatalogViewModel @Inject constructor(
     }
     fun onItemAddToCart(item: FurnitureItem) {
         Log.d("CatalogViewModel", "Item added to favorites/cart: ${item.name}")
-        CameraViewModel.addARModelFromFurniture(item)
+        // Limpiar la lista antes de agregar el nuevo modelo
+        CameraViewModel.sharedAvailableModels.clear()
+        // Agregar solo el modelo seleccionado
+        val arModel = ARModel(
+            name = item.name,
+            modelPath = item.modelPath,
+            imagePath = item.imagePath
+        )
+        CameraViewModel.sharedAvailableModels.add(arModel)
     }
     fun toggleFilters() { showFilters = !showFilters }
     fun updateFilterState(newFilterState: FilterState) { filterState = newFilterState }

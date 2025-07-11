@@ -43,12 +43,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 data class ARModel(
     val name: String,
     val modelPath: String,
+    val imagePath: String? = null
 )
 
 // Actualizar: Clase para almacenar información de modelos renderizados con contador
 data class RenderedModelInfo(
     val name: String,
     val path: String,
+    val imagePath: String? = null,  // Agregamos el campo para la ruta de la imagen
     val count: Int = 1
 )
 
@@ -56,7 +58,8 @@ data class RenderedModelInfo(
 fun FurnitureItem.toARModel(): ARModel {
     return ARModel(
         name = this.name,
-        modelPath = this.modelPath
+        modelPath = this.modelPath,
+        imagePath = this.imagePath
     )
 }
 

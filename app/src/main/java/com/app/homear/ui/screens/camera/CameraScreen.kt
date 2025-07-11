@@ -110,6 +110,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.border
 
+import androidx.compose.material.icons.filled.Image
+
 // Función para encontrar la vista ARSceneView
 fun View.findARSceneView(): ARSceneView? {
     if (this is ARSceneView) {
@@ -1402,28 +1404,7 @@ fun CameraScreen(
                         .zIndex(2f),
                     verticalArrangement = Arrangement.Bottom
                 ) {
-                    // Menú de muebles deslizable
-                    FurnitureBottomMenu(
-                        viewModel = viewModel,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                    
-                    // NavBar debajo del menú de muebles
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset(y = navBarOffset)
-                            .zIndex(1f),
-                        verticalArrangement = Arrangement.Bottom
-                    ) {
-                        NavBar(
-                            toCamera = null,
-                            toTutorial = navigateToTutorial,
-                            toCatalog = navigateToCatalog,
-                            toSpaces = navigateToSpaces,
-                            toConfiguration = navigateToConfiguration,
-                        )
-                    }
+                    FurnitureBottomMenu(viewModel)
                 }
             }
 
@@ -1526,7 +1507,7 @@ private fun FurnitureBottomMenu(
     
     // Animación para el menú deslizable
     val menuHeight by animateDpAsState(
-        targetValue = if (isExpanded) 160.dp else 60.dp,
+        targetValue = if (isExpanded) 200.dp else 60.dp,
         animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
         label = "menuHeight"
     )
@@ -1541,11 +1522,7 @@ private fun FurnitureBottomMenu(
         modifier = modifier
             .fillMaxWidth()
             .height(menuHeight)
-            .background(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-            )
-            .shadow(elevation = 8.dp, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier
@@ -1556,7 +1533,7 @@ private fun FurnitureBottomMenu(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(40.dp),
+                    .height(48.dp), // Aumentamos la altura del header
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1691,93 +1668,55 @@ private fun FurnitureItemCard(
         targetValue = if (isSelected) 1.05f else 1f,
         label = "selectionScale"
     )
-    
-    // Construir la ruta de la imagen basada en el modelo
-    val imagePath = try {
-        // Intentar obtener la imagen del mueble desde el almacenamiento interno
-        val imageFileName = model.modelPath.replace(".glb", ".png")
-        File(context.filesDir, "assets/$imageFileName").absolutePath
-    } catch (e: Exception) {
-        null
-    }
-    
-    Box(
+
+    Card(
         modifier = Modifier
-            .width(80.dp)
-            .height(100.dp)
+            .width(120.dp)
+            .height(80.dp)
             .graphicsLayer(
-                scaleX = scale * selectionScale, 
+                scaleX = scale * selectionScale,
                 scaleY = scale * selectionScale
             )
-            .background(
-                color = if (isSelected) 
-                    MaterialTheme.colorScheme.primaryContainer 
-                else 
-                    MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(12.dp)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onSelect
             )
             .border(
                 width = if (isSelected) 2.dp else 0.dp,
                 color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                 shape = RoundedCornerShape(12.dp)
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) { onSelect() },
-        contentAlignment = Alignment.Center
+            ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(8.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             // Imagen del mueble
+            AsyncImage(
+                model = File(model.imagePath ?: ""),
+                contentDescription = "Imagen de ${model.name}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            
+            // Nombre del mueble (en la parte inferior con fondo semitransparente)
             Box(
                 modifier = Modifier
-                    .size(50.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surface,
-                        shape = RoundedCornerShape(8.dp)
-                    ),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(4.dp)
             ) {
-                if (imagePath != null && File(imagePath).exists()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(File(imagePath))
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Imagen de ${model.name}",
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(6.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    // Icono por defecto si no hay imagen
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = "Sin imagen",
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = model.name,
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            // Nombre del mueble
-            Text(
-                text = model.name,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isSelected) 
-                    MaterialTheme.colorScheme.onPrimaryContainer 
-                else 
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
