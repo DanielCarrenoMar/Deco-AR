@@ -39,7 +39,7 @@ fun SpacesScreen(
     navigateToCatalog: () -> Unit = {},
     navigateToCamera: () -> Unit = {},
     navigateToConfiguration: () -> Unit = {},
-    navigateToSpaceDetail: () -> Unit = {}
+    navigateToProjectDetail: () -> Unit = {}
 ) {
     val searchQuery = remember { mutableStateOf("") }
 
@@ -131,7 +131,7 @@ fun SpacesScreen(
                         name = name,
                         user = user,
                         imagePath = imagePath,
-                        onClick =  navigateToSpaceDetail
+                        onClick =  navigateToProjectDetail
                     )
                 }
             }

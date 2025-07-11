@@ -114,6 +114,7 @@ fun NavigationWrapper() {
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
                 { navController.navigatePop(Configuration) },
+                { navController.navigatePop(ProjectDetail) }
             )
         }
 
