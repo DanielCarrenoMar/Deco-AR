@@ -29,6 +29,7 @@ import coil.request.ImageRequest
 import com.app.homear.R
 import com.app.homear.ui.theme.CorporatePurple
 import java.io.File
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun CreateSpaceScreen(
@@ -105,9 +106,12 @@ fun CreateSpaceScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
+                val viewModel: CreateSpaceViewModel = hiltViewModel()
+                val imagePath by viewModel.imagePath
+
                 coil.compose.SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(File(dummyCapturedImagePath))
+                        .data(imagePath?.let { File(it) })
                         .crossfade(true)
                         .build(),
                     contentDescription = "Imagen del espacio",
