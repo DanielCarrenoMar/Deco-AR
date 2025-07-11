@@ -221,7 +221,7 @@ fun SpaceCard(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp), // <- Fuerza altura igual
+                        .height(48.dp),
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
@@ -229,14 +229,14 @@ fun SpaceCard(
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF333333),
-                        maxLines = 1, // <- Evita múltiples líneas
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = user,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray,
-                        maxLines = 1, // <- Evita múltiples líneas
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
