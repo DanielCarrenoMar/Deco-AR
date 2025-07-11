@@ -367,7 +367,10 @@ fun CatalogScreen(
             ModalVistaMuebleDynamic(
                 isDialogOpen = viewModel.showItemModal,
                 onDismiss = { viewModel.closeItemModal() },
-                onConfirm = { viewModel.confirmItemAction() },
+                onConfirm = { 
+                    viewModel.onItemAddToCart(selectedItem)
+                    viewModel.closeItemModal()
+                },
                 nombreObjeto = selectedItem.name,
                 tipoObjeto = selectedItem.materials.firstOrNull() ?: "Mueble",
                 altoObjeto = "${selectedItem.height}m",

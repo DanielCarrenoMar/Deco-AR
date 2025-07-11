@@ -109,7 +109,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.border
-
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.filled.Image
 
 // Función para encontrar la vista ARSceneView
@@ -831,59 +832,9 @@ fun CameraScreen(
                 }
             }
 
-            Text(
-                modifier = Modifier
-                    .systemBarsPadding()
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp, start = 32.dp, end = 32.dp),
-                textAlign = TextAlign.Center,
-                fontSize = 28.sp,
-                color = Color.White,
-                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?:
-                if (viewModel.isCoatingMode.value) {
-                    "Modo Baldosa: Detectando suelos para colocar baldosa individual..."
-                } else if (viewModel.isCalculatingArea.value) {
-                    when {
-                        viewModel.firstAnchor.value == null -> "Modo Área: Toque el PRIMER punto"
-                        viewModel.secondAnchor.value == null -> "Modo Área: Toque el SEGUNDO punto"
-                        viewModel.thirdAnchor.value == null -> "Modo Área: Toque el TERCER punto"
-                        else -> "Área calculada! Toque para reiniciar medición"
-                    }
-                } else if (viewModel.isMeasuring.value) {
-                    when {
-                        viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
-                        viewModel.secondAnchor.value == null -> "Modo Medición: Toque el SEGUNDO punto"
-                        else -> "Distancia medida! Toque para reiniciar medición"
-                    }
-                } else if (childNodes.isEmpty()) {
-                    "Busque un plano horizontal o vertical"
-                } else {
-                    "Click para agregar"
-                }
-            )
+            // Texto superior eliminado
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 16.dp, top = 16.dp),
-                contentAlignment = Alignment.TopStart
-            ) {
-                // Botón de fotos eliminado - ahora está debajo del selector de modelos
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 48.dp, end = 16.dp)
-                    .zIndex(2f)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    ModelSelector(viewModel = viewModel)
-                }
-            }
+            // Selector de modelos eliminado
 
             viewModel.measuredDistance.value?.let { distance ->
                 Text(
@@ -1418,83 +1369,9 @@ fun CameraScreen(
         }
     }
 
-    // Nuevo: Botón para mostrar lista de modelos renderizados
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .zIndex(2f)
-    ) {
-        FloatingActionButton(
-            onClick = { viewModel.toggleModelsList() },
-            modifier = Modifier
-                .padding(end = 16.dp)
-                .size(56.dp)
-                .align(Alignment.TopEnd),
-            containerColor = MaterialTheme.colorScheme.primary
-        ) {
-            Badge(
-                modifier = Modifier.offset(x = 14.dp, y = (-14).dp)
-            ) {
-                Text(text = viewModel.renderedModels.size.toString())
-            }
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data("file:///android_asset/camara/list.svg")
-                    .decoderFactory(SvgDecoder.Factory())
-                    .build(),
-                contentDescription = "Lista de modelos",
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
+    // Botón de lista de modelos eliminado
 
-    // Nuevo: Diálogo para mostrar la lista de modelos
-    if (viewModel.showModelsList.value) {
-        AlertDialog(
-            onDismissRequest = { viewModel.toggleModelsList() },
-            title = {
-                Text(
-                    text = "Modelos en Escena",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            },
-            text = {
-                if (viewModel.renderedModels.isEmpty()) {
-                    Text(
-                        text = "No hay modelos en escena",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                } else {
-                    LazyColumn {
-                        items(viewModel.renderedModels) { model ->
-                            ListItem(
-                                headlineContent = { 
-                                    Row(
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(model.name)
-                                        Text(
-                                            text = "x${model.count}",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                },
-                                supportingContent = { Text(model.path) }
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { viewModel.toggleModelsList() }) {
-                    Text("Cerrar")
-                }
-            }
-        )
-    }
+    // Diálogo de lista de modelos eliminado
 }
 
 @Composable
@@ -1518,6 +1395,11 @@ private fun FurnitureBottomMenu(
         label = "arrowRotation"
     )
 
+    // Efecto para actualizar la lista cuando cambia sharedAvailableModels
+    LaunchedEffect(CameraViewModel.sharedAvailableModels.size) {
+        viewModel.updateAvailableModels()
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -1533,7 +1415,7 @@ private fun FurnitureBottomMenu(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp), // Aumentamos la altura del header
+                    .height(48.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1567,32 +1449,23 @@ private fun FurnitureBottomMenu(
                     }
                 }
                 
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable { isExpanded = !isExpanded }
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center
+                // Botón de expandir/contraer
+                IconButton(
+                    onClick = { isExpanded = !isExpanded }
                 ) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowUp,
-                        contentDescription = if (isExpanded) "Contraer menú" else "Expandir menú",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .graphicsLayer(rotationZ = arrowRotation),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        contentDescription = if (isExpanded) "Contraer" else "Expandir",
+                        modifier = Modifier.graphicsLayer(rotationZ = arrowRotation)
                     )
                 }
             }
             
-            // Contenido del menú (solo visible cuando está expandido)
+            // Lista horizontal de muebles o mensaje cuando está vacía
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(8.dp))
-                
                 if (viewModel.availableModels.isEmpty()) {
+                    // Mensaje cuando no hay muebles disponibles
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1600,12 +1473,12 @@ private fun FurnitureBottomMenu(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Image,
                                 contentDescription = "Sin muebles",
-                                modifier = Modifier.size(32.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -1615,31 +1488,22 @@ private fun FurnitureBottomMenu(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-                            Text(
-                                text = "Ve al catálogo para agregar muebles",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                textAlign = TextAlign.Center
-                            )
                         }
                     }
                 } else {
-                    // Lista horizontal de muebles
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(vertical = 8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
                     ) {
                         items(viewModel.availableModels) { model ->
-                            FurnitureItemCard(
+                            FurnitureItem(
                                 model = model,
                                 isSelected = viewModel.selectedModel.value?.name == model.name,
                                 onSelect = {
                                     viewModel.selectedModel.value = model
-                                    Log.d("AR_DEBUG", "Mueble seleccionado: ${model.name}")
-                                    // Contraer el menú después de seleccionar
                                     isExpanded = false
                                 },
-                                context = context
+                                viewModel = viewModel
                             )
                         }
                     }
@@ -1650,12 +1514,14 @@ private fun FurnitureBottomMenu(
 }
 
 @Composable
-private fun FurnitureItemCard(
+private fun FurnitureItem(
     model: ARModel,
     isSelected: Boolean,
     onSelect: () -> Unit,
-    context: Context
+    viewModel: CameraViewModel,
+    modifier: Modifier = Modifier
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -1669,6 +1535,39 @@ private fun FurnitureItemCard(
         label = "selectionScale"
     )
 
+    // Si se muestra el diálogo de confirmación
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Eliminar del catálogo") },
+            text = { Text("¿Deseas eliminar '${model.name}' del catálogo de la cámara?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Si el modelo a eliminar es el seleccionado, primero lo deseleccionamos
+                        if (viewModel.selectedModel.value == model) {
+                            viewModel.selectedModel.value = null
+                        }
+                        
+                        // Eliminar el modelo del catálogo
+                        val updatedList = CameraViewModel.sharedAvailableModels.filter { it != model }
+                        CameraViewModel.sharedAvailableModels.clear()
+                        CameraViewModel.sharedAvailableModels.addAll(updatedList)
+                        
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Eliminar", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     Card(
         modifier = Modifier
             .width(120.dp)
@@ -1677,11 +1576,12 @@ private fun FurnitureItemCard(
                 scaleX = scale * selectionScale,
                 scaleY = scale * selectionScale
             )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onSelect
-            )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onSelect() },
+                    onLongPress = { showDeleteDialog = true }
+                )
+            }
             .border(
                 width = if (isSelected) 2.dp else 0.dp,
                 color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,

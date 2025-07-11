@@ -89,15 +89,26 @@ class CameraViewModel @Inject constructor(
         }
     }
 
-    // NUEVO: Lista de modelos disponibles (debe estar antes de selectedModel)
-    val availableModels: MutableList<ARModel> = sharedAvailableModels
+    // NUEVO: Lista de modelos disponibles como State
+    private val _availableModels = mutableStateOf(sharedAvailableModels.toList())
+    val availableModels: List<ARModel>
+        get() = _availableModels.value
 
     // NUEVO: Dimensiones de pantalla para proyección precisa
     private var screenWidth = 800f
     private var screenHeight = 600f
 
+    // Actualizar la lista de modelos disponibles
+    fun updateAvailableModels() {
+        _availableModels.value = sharedAvailableModels.toList()
+        // Si el modelo seleccionado ya no está en la lista, deseleccionarlo
+        if (selectedModel.value != null && !_availableModels.value.contains(selectedModel.value)) {
+            selectedModel.value = null
+        }
+    }
+
     // NUEVO: Modelo seleccionado para colocación
-    var selectedModel = mutableStateOf<ARModel?>(availableModels.firstOrNull())
+    var selectedModel = mutableStateOf<ARModel?>(null)
         set(value) {
             Log.d(
                 "AR_DEBUG",
