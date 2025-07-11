@@ -18,6 +18,7 @@ import com.app.homear.domain.usecase.remoteStorage.DownloadFileFromRemoteByIdUse
 import com.app.homear.domain.usecase.remoteStorage.DownloadFurnitureFromRemoteByNameUseCase
 import com.app.homear.domain.usecase.remoteStorage.DownloadImageFromRemoteByNameUseCase
 import com.app.homear.domain.usecase.remoteStorage.GetAllFurnituresFromRemoteUseCase
+import com.app.homear.domain.usecase.firestore.GetCurrentUserUseCase
 import com.app.homear.ui.screens.camera.CameraViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -29,7 +30,7 @@ import kotlinx.coroutines.sync.withPermit
 import java.io.File
 import javax.inject.Inject
 
-data class FurnitureModel(
+data class FurnitureItem(
     val id: Int,
     val name: String,
     val description: String,
@@ -64,9 +65,11 @@ class CatalogViewModel @Inject constructor(
     private val getAllCollectionFurnitureUseCase: GetAllCollectionFurnitureUseCase,
     private val downloadImageFromRemoteByNameUseCase: DownloadImageFromRemoteByNameUseCase,
     private val downloadFurnitureFromRemoteByNameUseCase: DownloadFurnitureFromRemoteByNameUseCase,
+    private val getTodosLosModelosUseCase: GetAllFurnituresFromRemoteUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
     @ApplicationContext private val context: Context
 ): ViewModel() {
-    var furnitureItems by mutableStateOf<List<FurnitureModel>>(emptyList())
+    var furnitureItems by mutableStateOf<List<FurnitureItem>>(emptyList())
         private set
     var searchQuery by mutableStateOf("")
     var isGridView by mutableStateOf(true)
@@ -74,6 +77,8 @@ class CatalogViewModel @Inject constructor(
         private set
     var showFilters by mutableStateOf(false)
     var filterState by mutableStateOf(FilterState())
+        private set
+    var isProvider by mutableStateOf(false)
         private set
 
     // Available filter options
@@ -83,7 +88,7 @@ class CatalogViewModel @Inject constructor(
     val availableSuperficies: List<Superficie>
         get() = Superficie.values().toList()
 
-    val filteredItems: List<FurnitureModel>
+    val filteredItems: List<FurnitureItem>
         get() = furnitureItems.filter { item ->
             // Search filter
             val matchesSearch = if (searchQuery.isBlank()) true else {
@@ -116,7 +121,7 @@ class CatalogViewModel @Inject constructor(
 
     var showItemModal by mutableStateOf(false)
         private set
-    var selectedItem by mutableStateOf<FurnitureModel?>(null)
+    var selectedItem by mutableStateOf<FurnitureItem?>(null)
         private set
 
     fun loadFurnitureData() {
@@ -124,12 +129,31 @@ class CatalogViewModel @Inject constructor(
             getAllCollectionFurnitureUseCase().collect { result ->
                 when (result) {
                     is Resource.Success -> {
-                        furnitureItems = result.data!!
+                        val furnitureList: List<FurnitureModel> = result.data!!
+
+                        // Crear los items iniciales con rutas temporales
+                        val initialItems = furnitureList.mapIndexed { index, model ->
+                            FurnitureItem(
+                                id = index + 1,
+                                name = model.name,
+                                description = model.description,
+                                modelPath = model.modelFile.path,
+                                imagePath = model.imageFile.path, // Ruta temporal
+                                colors = listOf("#8B4513", "#A0522D", "#D2691E"),
+                                materials = model.material,
+                                height = model.height,
+                                width = model.width,
+                                length = model.length,
+                                superficie = model.superficie
+                            )
+                        }
+
+                        furnitureItems = initialItems
                         isLoading = false
 
                         // Descargar imágenes en paralelo
-                        downloadImagesForFurniture(furnitureItems)
-                        downloadModelsForFurniture(furnitureItems)
+                        downloadImagesForFurniture(furnitureList)
+                        downloadModelsForFurniture(furnitureList)
                     }
 
                     is Resource.Loading -> {
@@ -141,7 +165,35 @@ class CatalogViewModel @Inject constructor(
                             "CatalogViewModel",
                             "Error loading furniture data: ${result.message}"
                         )
-                        furnitureItems = emptyList()
+                        // Agregar datos de prueba como fallback
+                        furnitureItems = listOf(
+                            FurnitureItem(
+                                id = 1,
+                                name = "Mueble de Prueba",
+                                description = "Datos de prueba - Firestore no disponible",
+                                modelPath = "models/test.glb",
+                                imagePath = "images/test.jpg",
+                                colors = listOf("#FF0000", "#00FF00", "#0000FF"),
+                                materials = setOf("Madera", "Metal"),
+                                height = 1.2f,
+                                width = 0.8f,
+                                length = 0.6f,
+                                superficie = Superficie.PISO
+                            ),
+                            FurnitureItem(
+                                id = 2,
+                                name = "Silla de Prueba",
+                                description = "Datos de prueba - Error en carga",
+                                modelPath = "models/test2.glb",
+                                imagePath = "images/test2.jpg",
+                                colors = listOf("#FFD700", "#FFA500", "#FF4500"),
+                                materials = setOf("Plástico", "Tela"),
+                                height = 0.9f,
+                                width = 0.5f,
+                                length = 0.5f,
+                                superficie = Superficie.PISO
+                            )
+                        )
                         isLoading = false
                     }
                 }
@@ -173,7 +225,7 @@ class CatalogViewModel @Inject constructor(
                                 "CatalogViewModel",
                                 "Image found locally: $localImagePath"
                             )
-                            updateFurnitureModelImage(index, localImagePath)
+                            updateFurnitureItemImage(index, localImagePath)
                         } else {
                             // 2. Descargar la imagen usando concurrencia limitada
                             semaphore.withPermit {
@@ -192,7 +244,7 @@ class CatalogViewModel @Inject constructor(
                                                 )
 
                                                 // Actualizar el item con la ruta local
-                                                updateFurnitureModelImage(index, localImagePath)
+                                                updateFurnitureItemImage(index, localImagePath)
                                             }
 
                                             is Resource.Error<*> -> {
@@ -232,7 +284,7 @@ class CatalogViewModel @Inject constructor(
     }
 
     private fun downloadModelsForFurniture(furnitureList: List<FurnitureModel>) {
-        val maxConcurrentDownloads = 10 // Puedes ajustar este valor
+        val maxConcurrentDownloads = 5 // Limitar descargas simultáneas
         val semaphore = Semaphore(maxConcurrentDownloads)
 
         viewModelScope.launch {
@@ -240,64 +292,58 @@ class CatalogViewModel @Inject constructor(
                 val downloadJobs = furnitureList.mapIndexed { index, model ->
                     async {
                         val modelName = model.modelFile.name
+
+                        // Verificar si el modelo ya existe localmente
                         val localModelFile = File(
-                            context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                            modelName
+                            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                            "models/$modelName"
                         )
+
                         if (localModelFile.exists() && localModelFile.isFile) {
-                            // Ya existe local
-                            val localModelPath = localModelFile.absolutePath
-                            updateFurnitureModelModel(index, localModelPath)
+                            // El modelo ya existe localmente, usar esa ruta
+                            val localModelPath = "models/$modelName"
+                            Log.d("CatalogViewModel", "Model found locally: $localModelPath")
+                            updateFurnitureItemModel(index, localModelPath)
                         } else {
+                            // Descargar el modelo usando concurrencia limitada
                             semaphore.withPermit {
                                 try {
                                     downloadFurnitureFromRemoteByNameUseCase(
                                         modelName,
                                         context
-                                    ).collect { result ->
-                                        when (result) {
+                                    ).collect { modelResult ->
+                                        when (modelResult) {
                                             is Resource.Success -> {
-                                                val localModelPath = result.data!!.absolutePath
-                                                updateFurnitureModelModel(index, localModelPath)
+                                                val localModelPath = "models/$modelName"
+                                                Log.d("CatalogViewModel", "Model downloaded successfully: $localModelPath")
+                                                updateFurnitureItemModel(index, localModelPath)
                                             }
-
                                             is Resource.Error<*> -> {
-                                                Log.e(
-                                                    "CatalogViewModel",
-                                                    "Error downloading model $modelName: ${result.message}"
-                                                )
+                                                Log.e("CatalogViewModel", "Error downloading model: ${modelResult.message}")
                                             }
-
-                                            is Resource.Loading -> {
-                                                Log.d(
-                                                    "CatalogViewModel",
-                                                    "Downloading model: $modelName"
-                                                )
-                                            }
+                                            else -> {}
                                         }
                                     }
                                 } catch (e: Exception) {
-                                    Log.e(
-                                        "CatalogViewModel",
-                                        "Error processing model for furniture at index $index",
-                                        e
-                                    )
+                                    Log.e("CatalogViewModel", "Exception downloading model: ${e.message}")
                                 }
                             }
                         }
                     }
                 }
+                // Esperar a que todas las descargas terminen
                 downloadJobs.awaitAll()
             } catch (e: Exception) {
-                Log.e("CatalogViewModel", "Error in downloadModelsForFurniture", e)
+                Log.e("CatalogViewModel", "Error general en descarga de modelos: ${e.message}")
             }
         }
     }
+    
 
-    private fun updateFurnitureModelImage(index: Int, localImagePath: String) {
+    private fun updateFurnitureItemImage(index: Int, localImagePath: String) {
         val currentItems = furnitureItems.toMutableList()
         if (index < currentItems.size) {
-            currentItems[index] = currentItems[index].copy(imageFile = File(localImagePath))
+            currentItems[index] = currentItems[index].copy(imagePath = localImagePath)
             furnitureItems = currentItems
             Log.d(
                 "CatalogViewModel",
@@ -306,15 +352,12 @@ class CatalogViewModel @Inject constructor(
         }
     }
 
-    private fun updateFurnitureModelModel(index: Int, localModelPath: String) {
-        val currentItems = furnitureItems.toMutableList()
-        if (index < currentItems.size) {
-            currentItems[index] = currentItems[index].copy(modelFile = File(localModelPath))
-            furnitureItems = currentItems
-            Log.d(
-                "CatalogViewModel",
-                "Updated furniture item $index with local model path: $localModelPath"
-            )
+    private fun updateFurnitureItemModel(index: Int, modelPath: String) {
+        if (index < furnitureItems.size) {
+            furnitureItems = furnitureItems.toMutableList().apply {
+                this[index] = this[index].copy(modelPath = modelPath)
+            }
+            Log.d("CatalogViewModel", "Updated model path for item $index: $modelPath")
         }
     }
 
@@ -326,13 +369,13 @@ class CatalogViewModel @Inject constructor(
         isGridView = !isGridView
     }
 
-    fun onItemSelected(item: FurnitureModel) {
+    fun onItemSelected(item: FurnitureItem) {
         Log.d("CatalogViewModel", "Item selected: ${item.name}")
         selectedItem = item
         showItemModal = true
     }
 
-    fun onItemAddToCart(item: FurnitureModel) {
+    fun onItemAddToCart(item: FurnitureItem) {
         Log.d("CatalogViewModel", "Item added to favorites/cart: ${item.name}")
         CameraViewModel.addARModelFromFurniture(item)
     }
@@ -373,9 +416,172 @@ class CatalogViewModel @Inject constructor(
         closeItemModal()
     }
 
+    fun checkIfProvider() {
+        viewModelScope.launch {
+            getCurrentUserUseCase().collect { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        val user = result.data
+                        isProvider = user?.type == "PROVIDER"
+                    }
+                    else -> Unit // podrías capturar el error si quieres
+                }
+            }
+        }
+    }
+
+    companion object {
+        // Lista de modelos disponibles en assets
+        private val availableModels = listOf(
+            FurnitureItem(
+                id = 1,
+                name = "BoomBox Retro",
+                description = "Boombox retro con diseño vintage",
+                modelPath = "models/BoomBox.glb",
+                imagePath = "models/BoomBox_0.png",
+                colors = listOf("#000000"),
+                materials = setOf("Plástico", "Metal"),
+                height = 0.3f,
+                width = 0.4f,
+                length = 0.2f,
+                superficie = Superficie.PISO
+            ),
+            FurnitureItem(
+                id = 2,
+                name = "Módulo de Escritorio",
+                description = "Módulo de escritorio moderno",
+                modelPath = "models/modulo_escritorio.glb",
+                imagePath = "models/modulo_escritorio.png",
+                colors = listOf("#8B4513"),
+                materials = setOf("Madera"),
+                height = 0.75f,
+                width = 1.2f,
+                length = 0.6f,
+                superficie = Superficie.PISO
+            ),
+            FurnitureItem(
+                id = 3,
+                name = "Silla Gris",
+                description = "Silla moderna en tono gris",
+                modelPath = "models/silla_gris.glb",
+                imagePath = "models/silla_gris.png",
+                colors = listOf("#808080"),
+                materials = setOf("Metal", "Tela"),
+                height = 0.9f,
+                width = 0.45f,
+                length = 0.45f,
+                superficie = Superficie.PISO
+            ),
+            FurnitureItem(
+                id = 4,
+                name = "Silla de Oficina Verde",
+                description = "Silla ergonómica de oficina",
+                modelPath = "models/silla_de_oficina_verde.glb",
+                imagePath = "models/silla_de_oficina_verde.png",
+                colors = listOf("#008000"),
+                materials = setOf("Metal", "Tela"),
+                height = 1.1f,
+                width = 0.6f,
+                length = 0.6f,
+                superficie = Superficie.PISO
+            ),
+            FurnitureItem(
+                id = 5,
+                name = "Mesa de TV",
+                description = "Mesa de TV en madera",
+                modelPath = "models/mesa_de_tv_madera.glb",
+                imagePath = "models/mesa_de_tv_madera.png",
+                colors = listOf("#8B4513"),
+                materials = setOf("Madera"),
+                height = 0.5f,
+                width = 1.5f,
+                length = 0.4f,
+                superficie = Superficie.PISO
+            ),
+            FurnitureItem(
+                id = 6,
+                name = "Nevera Dos Puertas",
+                description = "Refrigerador de dos puertas",
+                modelPath = "models/nevera_dos_puertas.glb",
+                imagePath = "models/nevera_dos_puertas.png",
+                colors = listOf("#FFFFFF"),
+                materials = setOf("Metal"),
+                height = 1.8f,
+                width = 0.9f,
+                length = 0.7f,
+                superficie = Superficie.PISO
+            ),
+            FurnitureItem(
+                id = 7,
+                name = "Mesa de Noche",
+                description = "Mesa de noche clásica",
+                modelPath = "models/mesa_de_noche.glb",
+                imagePath = "models/mesa_de_noche.png",
+                colors = listOf("#8B4513"),
+                materials = setOf("Madera"),
+                height = 0.6f,
+                width = 0.4f,
+                length = 0.4f,
+                superficie = Superficie.PISO
+            ),
+            FurnitureItem(
+                id = 8,
+                name = "Cama Azul",
+                description = "Cama individual con tapizado azul",
+                modelPath = "models/cama_azul.glb",
+                imagePath = "models/cama_azul.png",
+                colors = listOf("#0000FF"),
+                materials = setOf("Madera", "Tela"),
+                height = 0.5f,
+                width = 2.0f,
+                length = 1.0f,
+                superficie = Superficie.PISO
+            ),
+            FurnitureItem(
+                id = 9,
+                name = "TV Plano",
+                description = "Televisor LED de pantalla plana",
+                modelPath = "models/tv_plano.glb",
+                imagePath = "models/tv_plano.png",
+                colors = listOf("#000000"),
+                materials = setOf("Metal", "Plástico"),
+                height = 0.6f,
+                width = 1.2f,
+                length = 0.1f,
+                superficie = Superficie.PARED
+            ),
+            FurnitureItem(
+                id = 10,
+                name = "Closet de Madera",
+                description = "Armario de madera clásico",
+                modelPath = "models/closet_de_madera.glb",
+                imagePath = "models/closet_de_madera.png",
+                colors = listOf("#8B4513"),
+                materials = setOf("Madera"),
+                height = 2.0f,
+                width = 1.5f,
+                length = 0.6f,
+                superficie = Superficie.PISO
+            )
+        )
+    }
+
     init {
-        // Inicializar con lista vacía - los datos se cargarán desde Firestore
-        furnitureItems = emptyList()
-        Log.d("CatalogViewModel", "ViewModel initialized, will load from Firestore")
+        // Cargar los modelos predefinidos al inicializar
+        loadPredefinedModels()
+    }
+
+    private fun loadPredefinedModels() {
+        viewModelScope.launch {
+            // Agregar los modelos predefinidos a la lista de muebles
+            furnitureItems = availableModels
+            
+            // Cargar cada modelo en el CameraViewModel
+            availableModels.forEach { item ->
+                CameraViewModel.addARModelFromFurniture(item)
+            }
+            
+            isLoading = false
+        }
     }
 }
