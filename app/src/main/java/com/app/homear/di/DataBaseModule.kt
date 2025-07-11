@@ -27,5 +27,9 @@ class DataBaseModule {
 
     @Singleton
     @Provides
-    fun provideCourseDao(db: AppDatabase) = db.getFurnitureDao()
+    fun provideFurnitureDao(db: AppDatabase) = db.getFurnitureDao()
+
+    @Singleton
+    @Provides
+    fun provideSpaceDao(db: AppDatabase) = db.getSpaceDao()
 }

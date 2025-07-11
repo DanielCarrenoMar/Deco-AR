@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,6 +33,10 @@ import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.theme.CorporatePurple
 import java.io.File
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 
 @Composable
 fun SpacesScreen(
@@ -39,9 +44,17 @@ fun SpacesScreen(
     navigateToCatalog: () -> Unit = {},
     navigateToCamera: () -> Unit = {},
     navigateToConfiguration: () -> Unit = {},
-    navigateToSpaceDetail: () -> Unit = {}
+    navigateToSpaceDetail: () -> Unit = {},
+    viewModel: SpacesViewModel = hiltViewModel(),
 ) {
     val searchQuery = remember { mutableStateOf("") }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.loadSpaces()
+        }
+    }
 
     val dummySpaces = listOf(
         Triple("Casa de Campo", "Usuario 1", "/storage/emulated/0/Pictures/space_1.jpg"),
@@ -126,11 +139,11 @@ fun SpacesScreen(
                 contentPadding = PaddingValues(bottom = 80.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(dummySpaces) { (name, user, imagePath) ->
+                items(viewModel.projectList) { spaceModel ->
                     SpaceCard(
-                        name = name,
-                        user = user,
-                        imagePath = imagePath,
+                        name = spaceModel.name,
+                        user = spaceModel.idUser,
+                        imagePath = spaceModel.imagePath,
                         onClick =  navigateToSpaceDetail
                     )
                 }

@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.app.homear.domain.model.SpaceModel
+import java.io.File
 
 @Entity(tableName = "spaces")
 data class SpaceEntity(
@@ -12,9 +13,10 @@ data class SpaceEntity(
     @ColumnInfo(name = "idUser") val idUser: String,
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "description") val description: String,
-    @ColumnInfo(name = "idImageGD") val idImageGD: String,
+    @ColumnInfo(name = "imagePath") val imagePath: String,
     @ColumnInfo(name = "createdDate") val createdDate: String,
-    @ColumnInfo(name = "lastModified") val lastModified: String
+    @ColumnInfo(name = "lastModified") val lastModified: String,
+    @ColumnInfo(name = "furnitures") val furnitures: List<Int>
 )
 
 fun SpaceEntity.toSpaceModel(): SpaceModel {
@@ -24,7 +26,7 @@ fun SpaceEntity.toSpaceModel(): SpaceModel {
         name = this.name,
         description = this.description,
         listFurniture = emptyList(), // Se debe cargar por separado
-        idImageGD = this.idImageGD,
+        imagePath = this.imagePath,
         createdDate = this.createdDate,
         lastModified = this.lastModified
     )
@@ -36,8 +38,9 @@ fun SpaceModel.toSpaceEntity(): SpaceEntity {
         idUser = this.idUser,
         name = this.name,
         description = this.description,
-        idImageGD = this.idImageGD,
+        imagePath = this.imagePath,
         createdDate = this.createdDate,
-        lastModified = this.lastModified
+        lastModified = this.lastModified,
+        furnitures = this.listFurniture
     )
 }
