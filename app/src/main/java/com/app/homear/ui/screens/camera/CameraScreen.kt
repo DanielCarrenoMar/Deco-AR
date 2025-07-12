@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
@@ -103,6 +104,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import com.app.homear.core.utils.SharedPreferenceHelper
 import org.json.JSONArray
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.border
 
 // Función para encontrar la vista ARSceneView
 fun View.findARSceneView(): ARSceneView? {
@@ -1380,6 +1386,7 @@ fun CameraScreen(
                 startNavBarAnimation = true
             }
 
+            // NUEVO: Menú de muebles en la parte inferior
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1392,17 +1399,31 @@ fun CameraScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
-                        .offset(y = navBarOffset)
-                        .zIndex(1f),
+                        .zIndex(2f),
                     verticalArrangement = Arrangement.Bottom
                 ) {
-                    NavBar(
-                        toCamera = null,
-                        toTutorial = navigateToTutorial,
-                        toCatalog = navigateToCatalog,
-                        toSpaces = navigateToSpaces,
-                        toConfiguration = navigateToConfiguration,
+                    // Menú de muebles deslizable
+                    FurnitureBottomMenu(
+                        viewModel = viewModel,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
+                    
+                    // NavBar debajo del menú de muebles
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = navBarOffset)
+                            .zIndex(1f),
+                        verticalArrangement = Arrangement.Bottom
+                    ) {
+                        NavBar(
+                            toCamera = null,
+                            toTutorial = navigateToTutorial,
+                            toCatalog = navigateToCatalog,
+                            toSpaces = navigateToSpaces,
+                            toConfiguration = navigateToConfiguration,
+                        )
+                    }
                 }
             }
 
@@ -1492,6 +1513,272 @@ fun CameraScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun FurnitureBottomMenu(
+    viewModel: CameraViewModel,
+    modifier: Modifier = Modifier
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    
+    // Animación para el menú deslizable
+    val menuHeight by animateDpAsState(
+        targetValue = if (isExpanded) 160.dp else 60.dp,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+        label = "menuHeight"
+    )
+    
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+        label = "arrowRotation"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(menuHeight)
+            .background(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            )
+            .shadow(elevation = 8.dp, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            // Barra superior con título y botón de expandir/contraer
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Muebles Disponibles",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    // Indicador de cantidad de muebles
+                    if (viewModel.availableModels.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(10.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = viewModel.availableModels.size.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clickable { isExpanded = !isExpanded }
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(16.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = if (isExpanded) "Contraer menú" else "Expandir menú",
+                        modifier = Modifier
+                            .size(20.dp)
+                            .graphicsLayer(rotationZ = arrowRotation),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+            
+            // Contenido del menú (solo visible cuando está expandido)
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                if (viewModel.availableModels.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = "Sin muebles",
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "No hay muebles disponibles",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = "Ve al catálogo para agregar muebles",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    // Lista horizontal de muebles
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        items(viewModel.availableModels) { model ->
+                            FurnitureItemCard(
+                                model = model,
+                                isSelected = viewModel.selectedModel.value?.name == model.name,
+                                onSelect = {
+                                    viewModel.selectedModel.value = model
+                                    Log.d("AR_DEBUG", "Mueble seleccionado: ${model.name}")
+                                    // Contraer el menú después de seleccionar
+                                    isExpanded = false
+                                },
+                                context = context
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FurnitureItemCard(
+    model: ARModel,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    context: Context
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        label = "scale"
+    )
+    
+    // Efecto de selección
+    val selectionScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.05f else 1f,
+        label = "selectionScale"
+    )
+    
+    // Construir la ruta de la imagen basada en el modelo
+    val imagePath = try {
+        // Intentar obtener la imagen del mueble desde el almacenamiento interno
+        val imageFileName = model.modelPath.replace(".glb", ".png")
+        File(context.filesDir, "assets/$imageFileName").absolutePath
+    } catch (e: Exception) {
+        null
+    }
+    
+    Box(
+        modifier = Modifier
+            .width(80.dp)
+            .height(100.dp)
+            .graphicsLayer(
+                scaleX = scale * selectionScale, 
+                scaleY = scale * selectionScale
+            )
+            .background(
+                color = if (isSelected) 
+                    MaterialTheme.colorScheme.primaryContainer 
+                else 
+                    MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onSelect() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(8.dp)
+        ) {
+            // Imagen del mueble
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (imagePath != null && File(imagePath).exists()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(File(imagePath))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Imagen de ${model.name}",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(6.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Icono por defecto si no hay imagen
+                    Icon(
+                        imageVector = Icons.Default.Image,
+                        contentDescription = "Sin imagen",
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // Nombre del mueble
+            Text(
+                text = model.name,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isSelected) 
+                    MaterialTheme.colorScheme.onPrimaryContainer 
+                else 
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
