@@ -100,6 +100,8 @@ fun ConfigurationScreen(
 
                 Text(
                     text = "Configuración",
+                    textAlign = TextAlign.Center,
+                    fontSize = 36.sp,
                     color = CorporatePurple,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
