@@ -436,43 +436,6 @@ fun FilterBottomSheet(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Materials Filter
-        if (viewModel.availableMaterials.isNotEmpty()) {
-            Text(
-                text = "Materiales",
-                style = TextStyle(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp,
-                    color = Color.Black
-                ),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            LazyRow(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(viewModel.availableMaterials.toList()) { material ->
-                    FilterChip(
-                        onClick = {
-                            tempFilterState = if (tempFilterState.selectedMaterials.contains(material)) {
-                                tempFilterState.copy(
-                                    selectedMaterials = tempFilterState.selectedMaterials - material
-                                )
-                            } else {
-                                tempFilterState.copy(
-                                    selectedMaterials = tempFilterState.selectedMaterials + material
-                                )
-                            }
-                        },
-                        label = { Text(material) },
-                        selected = tempFilterState.selectedMaterials.contains(material),
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
         // Surface Filter
         Text(
             text = "Superficie",
@@ -484,10 +447,11 @@ fun FilterBottomSheet(
             ),
             modifier = Modifier.padding(bottom = 8.dp)
         )
+        val filteredSuperficies = viewModel.availableSuperficies.filter { it.name != "TODAS" }
         LazyRow(
             modifier = Modifier.fillMaxWidth()
         ) {
-            items(viewModel.availableSuperficies) { superficie ->
+            items(filteredSuperficies) { superficie ->
                 FilterChip(
                     onClick = {
                         tempFilterState = if (tempFilterState.selectedSuperficie == superficie) {
@@ -498,6 +462,39 @@ fun FilterBottomSheet(
                     },
                     label = { Text(superficie.name) },
                     selected = tempFilterState.selectedSuperficie == superficie,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Dejo solo el filtro visual de Material (chips de selección única, debajo de Superficie)
+        Text(
+            text = "Material",
+            style = TextStyle(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                color = Color.Black
+            ),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        val materialOptions = listOf("Madera", "Metal", "Plástico", "Vidrio", "Piedra", "Otro")
+        LazyRow(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(materialOptions) { material ->
+                FilterChip(
+                    onClick = {
+                        tempFilterState = if (tempFilterState.selectedMaterials == setOf(material)) {
+                            tempFilterState.copy(selectedMaterials = emptySet())
+                        } else {
+                            tempFilterState.copy(selectedMaterials = setOf(material))
+                        }
+                    },
+                    label = { Text(material) },
+                    selected = tempFilterState.selectedMaterials == setOf(material),
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
