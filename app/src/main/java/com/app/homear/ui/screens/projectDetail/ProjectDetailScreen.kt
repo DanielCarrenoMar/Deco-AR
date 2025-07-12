@@ -28,19 +28,48 @@ import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.app.homear.ui.theme.CorporatePurple
 import java.io.File
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.app.homear.domain.model.SpaceModel
+import com.app.homear.domain.usecase.space.GetSpacesByProjectIdUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class ProjectDetailViewModel @Inject constructor(
+    private val getSpacesByProjectIdUseCase: GetSpacesByProjectIdUseCase
+) : ViewModel() {
+    private val _spaces = MutableLiveData<List<SpaceModel>>(emptyList())
+    val spaces: LiveData<List<SpaceModel>> = _spaces
+
+    fun loadSpaces(projectId: Int) {
+        viewModelScope.launch {
+            getSpacesByProjectIdUseCase(projectId).collect { resource ->
+                if (resource is com.app.homear.domain.model.Resource.Success) {
+                    _spaces.value = resource.data ?: emptyList()
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun ProjectDetailScreen(
+    projectId: Int,
     onBack: () -> Unit,
-    navigateToSpaceDetail: (String) -> Unit
+    navigateToSpaceDetail: (Int) -> Unit,
+    viewModel: ProjectDetailViewModel = hiltViewModel()
 ) {
-    val dummyProject = Triple("Proyecto Casa Moderna", "Usuario Admin", "/storage/emulated/0/Pictures/project_main.jpg")
-    val spaceList = listOf(
-        Triple("Sala Principal", "5 muebles", "/storage/emulated/0/Pictures/space_1.jpg"),
-        Triple("Comedor", "3 muebles", "/storage/emulated/0/Pictures/space_2.jpg"),
-        Triple("Habitación Principal", "4 muebles", "/storage/emulated/0/Pictures/space_3.jpg"),
-        Triple("Oficina", "2 muebles", "/storage/emulated/0/Pictures/space_4.jpg")
-    )
+    val spaces by viewModel.spaces.observeAsState(emptyList())
+    androidx.compose.runtime.LaunchedEffect(projectId) {
+        viewModel.loadSpaces(projectId)
+    }
 
     Box(
         modifier = Modifier
@@ -82,14 +111,14 @@ fun ProjectDetailScreen(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = dummyProject.first,
+                        text = "Proyecto Casa Moderna",
                         color = Color.DarkGray,
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp,
                         textAlign = TextAlign.End
                     )
                     Text(
-                        text = "por ${dummyProject.second}",
+                        text = "por Usuario Admin",
                         color = Color.Gray,
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp,
@@ -111,7 +140,7 @@ fun ProjectDetailScreen(
             ) {
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(dummyProject.third?.let { File(it) })
+                        .data("file:///android_asset/project_main.jpg") // Assuming a default image for preview
                         .crossfade(true)
                         .build(),
                     contentDescription = "Imagen del proyecto",
@@ -176,12 +205,12 @@ fun ProjectDetailScreen(
                 contentPadding = PaddingValues(bottom = 80.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(spaceList) { (name, furnitureCount, imagePath) ->
+                items(spaces) { space ->
                     SpaceCard(
-                        name = name,
-                        furnitureCount = furnitureCount,
-                        imagePath = imagePath,
-                        onClick = { navigateToSpaceDetail(name) }
+                        name = space.name,
+                        furnitureCount = "${space.description}",
+                        imagePath = space.imagePath,
+                        onClick = { navigateToSpaceDetail(space.id) }
                     )
                 }
             }
@@ -270,6 +299,7 @@ fun SpaceCard(
 @Composable
 fun ProjectDetailScreenPreview() {
     ProjectDetailScreen(
+        projectId = 1, // Provide a dummy projectId for preview
         onBack = {},
         navigateToSpaceDetail = {}
     )

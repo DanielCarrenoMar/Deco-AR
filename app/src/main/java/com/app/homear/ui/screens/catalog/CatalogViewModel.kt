@@ -11,6 +11,7 @@ import com.app.homear.domain.model.Superficie
 import com.app.homear.ui.screens.camera.CameraViewModel
 import com.app.homear.domain.model.Resource
 import com.app.homear.domain.usecase.firestore.GetCurrentUserUseCase
+import com.app.homear.ui.screens.camera.ARModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
@@ -41,11 +42,6 @@ data class FilterState(
     val minLength: Float? = null,
     val maxLength: Float? = null,
     val selectedSuperficie: Superficie? = null
-)
-
-data class ARModel(
-    val name: String,
-    val modelPath: String
 )
 
 @HiltViewModel
@@ -152,8 +148,6 @@ class CatalogViewModel @Inject constructor(
                     )
                 }
                 furnitureItems = items
-                // Registrar en CameraViewModel
-                items.forEach { CameraViewModel.addARModelFromFurniture(it) }
             } catch (e: Exception) {
                 Log.e("CatalogViewModel", "Error leyendo modelos", e)
                 furnitureItems = emptyList()
@@ -184,8 +178,26 @@ class CatalogViewModel @Inject constructor(
         showItemModal = true
     }
     fun onItemAddToCart(item: FurnitureItem) {
-        Log.d("CatalogViewModel", "Item added to favorites/cart: ${item.name}")
-        CameraViewModel.addARModelFromFurniture(item)
+        Log.d("CatalogViewModel", "Item added to AR: ${item.name}")
+        // Crear el modelo AR del mueble seleccionado
+        val arModel = ARModel(
+            name = item.name,
+            modelPath = item.modelPath,
+            imagePath = item.imagePath
+        )
+        
+        // Verificar si el modelo ya existe en la lista
+        val modelExists = CameraViewModel.sharedAvailableModels.any { 
+            it.name == arModel.name && it.modelPath == arModel.modelPath 
+        }
+        
+        // Solo agregar si no existe ya en la lista
+        if (!modelExists) {
+            CameraViewModel.sharedAvailableModels.add(arModel)
+            Log.d("CatalogViewModel", "Mueble agregado al menú AR: ${arModel.name}")
+        } else {
+            Log.d("CatalogViewModel", "El mueble ya existe en el menú AR: ${arModel.name}")
+        }
     }
     fun toggleFilters() { showFilters = !showFilters }
     fun updateFilterState(newFilterState: FilterState) { filterState = newFilterState }
@@ -203,12 +215,5 @@ class CatalogViewModel @Inject constructor(
     fun closeItemModal() {
         showItemModal = false
         selectedItem = null
-    }
-    fun confirmItemAction() {
-        selectedItem?.let { item ->
-            Log.d("CatalogViewModel", "Item confirmed for AR: ${item.name}")
-            // TODO: Navegar a la vista AR con el item seleccionado
-        }
-        closeItemModal()
     }
 }

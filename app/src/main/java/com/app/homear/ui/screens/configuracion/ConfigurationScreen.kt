@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,104 @@ import com.app.homear.ui.component.ModalInfo
 import com.app.homear.ui.component.NavBar
 import com.app.homear.ui.theme.CorporatePurple
 import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.window.Dialog
+
+@Composable
+private fun SignOutConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    isLoading: Boolean
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Cerrar sesión",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF8F006D)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "¿Estás seguro que deseas cerrar sesión?",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF8F006D)
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = SolidColor(Color(0xFF8F006D))
+                        ),
+                        enabled = !isLoading
+                    ) {
+                        Text(
+                            text = "Cancelar",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8F006D),
+                            contentColor = Color.White
+                        ),
+                        enabled = !isLoading
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Confirmar",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun ConfigurationScreen(
@@ -64,6 +164,7 @@ fun ConfigurationScreen(
 
     // Estado para controlar loading de cierre de sesión
     var isSigningOut by remember { mutableStateOf(false) }
+    var showSignOutConfirmation by remember { mutableStateOf(false) }
 
     //informacion de los modales
     val inforHelp = listOf<String>(
@@ -74,8 +175,17 @@ fun ConfigurationScreen(
                 "Agradecemos tu comprensión."
     )
 
-    val infoAboutUs = listOf<String>(
-        "Somos un equipo de estudiantes de la Universidad Católica Andrés Bello (UCAB) Guayana, apasionados por la tecnología y cursando la cátedra de Ingeniería de Software. Este proyecto es el resultado de nuestro esfuerzo y aprendizaje en esta materia, donde aplicamos los conocimientos adquiridos para desarrollar soluciones innovadoras. Nuestro objetivo es demostrar nuestras habilidades y contribuir con ideas frescas en el campo de la ingeniería de software."
+    val infoAboutUs = listOf(
+        "Somos un equipo de estudiantes de la Universidad Católica Andrés Bello (UCAB) Guayana, apasionados por la tecnología y cursando la cátedra de Ingeniería de Software. Este proyecto es el resultado de nuestro esfuerzo y aprendizaje en esta materia, donde aplicamos los conocimientos adquiridos para desarrollar soluciones innovadoras.",
+        "Tecnologías utilizadas:\n" +
+        "• Kotlin y Jetpack Compose para el desarrollo Android\n" +
+        "• Firebase para autenticación y base de datos\n" +
+        "• ARCore para realidad aumentada\n" +
+        "• Material Design 3 para la interfaz de usuario\n" +
+        "• Git y GitHub para control de versiones",
+        "Proyecto de código abierto\n" +
+        "Puedes encontrar el código fuente en GitHub:\n" +
+        "https://github.com/DanielCarrenoMar/Deco-AR/tree/dev"
     )
 
     Box(
@@ -102,6 +212,8 @@ fun ConfigurationScreen(
 
                 Text(
                     text = "Configuración",
+                    textAlign = TextAlign.Center,
+                    fontSize = 36.sp,
                     color = CorporatePurple,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
@@ -152,22 +264,27 @@ fun ConfigurationScreen(
                     OptionConfiguracion(
                         nombre = "Cerrar sesión",
                         iconPath = "file:///android_asset/configuracion/logout.svg",
-                        onClick = {
-                            if (!isSigningOut) {
+                        onClick = { showSignOutConfirmation = true }
+                    )
+
+                    if (showSignOutConfirmation) {
+                        SignOutConfirmationDialog(
+                            onDismiss = { showSignOutConfirmation = false },
+                            onConfirm = {
                                 isSigningOut = true
                                 viewModel.signOut { success ->
                                     isSigningOut = false
                                     if (success) {
-                                        // Navegar a intro/login/splash
+                                        showSignOutConfirmation = false
                                         navigateToIntro()
                                     }
-                                    // Si quieres, puedes manejar toast/error aquí
                                 }
-                            }
-                        }
-                    )
+                            },
+                            isLoading = isSigningOut
+                        )
+                    }
+
                     if (isSigningOut) {
-                        // Indicador simple de progreso (puedes ajustar estilo)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -199,27 +316,38 @@ fun ConfigurationScreen(
                     onClick = { isModalHelpOpen = true }
                 )
                 //modal de ayuda
-                ModalInfo(
-                    isDialogOpen = isModalHelpOpen,
-                    onDismiss = {isModalHelpOpen = false},
-                    titulo = "Ayuda",
-                    informacion = inforHelp,
-                    isList = false
-                )
+                if (isModalHelpOpen) {
+                    ModalInfo(
+                        title = "Ayuda",
+                        info = inforHelp,
+                        onDismiss = { isModalHelpOpen = false },
+                        githubUrl = null
+                    )
+                }
 
                 OptionConfiguracion(
                     nombre = "Sobre nosotros",
                     iconPath = "file:///android_asset/configuracion/about.svg",
-                    onClick = {isModalAboutUsOpen = true},
+                    onClick = { isModalAboutUsOpen = true },
                 )
                 //modal sobre nosotros
-                ModalInfo(
-                    isDialogOpen = isModalAboutUsOpen,
-                    onDismiss = {isModalAboutUsOpen = false},
-                    titulo = "Sobre Nosotros",
-                    informacion = infoAboutUs,
-                    isList = false
-                )
+                if (isModalAboutUsOpen) {
+                    ModalInfo(
+                        title = "Sobre nosotros",
+                        info = listOf(
+                            "Somos un equipo de estudiantes de la Universidad Católica Andrés Bello (UCAB) Guayana, apasionados por la tecnología y cursando la cátedra de Ingeniería de Software. Este proyecto es el resultado de nuestro esfuerzo y aprendizaje en esta materia, donde aplicamos los conocimientos adquiridos para desarrollar soluciones innovadoras.",
+                            "Tecnologías utilizadas:\n" +
+                            "• Kotlin y Jetpack Compose para el desarrollo Android\n" +
+                            "• Firebase para autenticación y base de datos\n" +
+                            "• ARCore para realidad aumentada\n" +
+                            "• Material Design 3 para la interfaz de usuario\n" +
+                            "• Git y GitHub para control de versiones",
+                            "¡Proyecto de código abierto!\nExplora nuestro código, contribuye y aprende con nosotros."
+                        ),
+                        onDismiss = { isModalAboutUsOpen = false },
+                        githubUrl = "https://github.com/DanielCarrenoMar/Deco-AR/tree/dev"
+                    )
+                }
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }

@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -45,7 +47,8 @@ fun ProjectsScreen(
     navigateToCatalog: () -> Unit = {},
     navigateToCamera: () -> Unit = {},
     navigateToConfiguration: () -> Unit = {},
-    navigateToProjectDetail: () -> Unit = {},
+    navigateToProjectDetail: (Int) -> Unit = {},
+    navigateToCreateProject: () -> Unit = {},
     viewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     val searchQuery = remember { mutableStateOf("") }
@@ -76,15 +79,33 @@ fun ProjectsScreen(
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
                 .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
-            Text(
-                text = "Proyectos",
-                color = Color(0xFF800080),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                fontSize = 36.sp,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Proyectos",
+                    color = Color(0xFF800080),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 36.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Botón para crear nuevo proyecto
+                FloatingActionButton(
+                    onClick = { navigateToCreateProject() },
+                    modifier = Modifier.size(48.dp),
+                    containerColor = CorporatePurple,
+                    contentColor = Color.White
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Crear proyecto"
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -133,20 +154,69 @@ fun ProjectsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 80.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(viewModel.projectList.value) { projectModel ->
+            if (viewModel.projectList.value.isEmpty()) {
+                // Mostrar mensaje cuando no hay proyectos
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Image,
+                            contentDescription = "Sin proyectos",
+                            modifier = Modifier.size(64.dp),
+                            tint = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No tienes proyectos aún",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Crea tu primer proyecto para comenzar a diseñar",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = { navigateToCreateProject() },
+                            colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = "Crear proyecto",
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Crear mi primer proyecto", color = Color.White)
+                        }
+                    }
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                                    items(viewModel.projectList.value) { projectModel ->
                     SpaceCard(
                         name = projectModel.name,
                         user = projectModel.idUser,
                         imagePath = projectModel.imagePath,
-                        onClick =  navigateToProjectDetail
+                        onClick = { navigateToProjectDetail(projectModel.id) }
                     )
+                }
                 }
             }
         }
@@ -263,5 +333,7 @@ fun SpaceCard(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun SpacesScreenPreview() {
-    ProjectsScreen()
+    ProjectsScreen(
+        navigateToCreateProject = {}
+    )
 }

@@ -109,6 +109,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.window.DialogProperties
 
 // Función para encontrar la vista ARSceneView
 fun View.findARSceneView(): ARSceneView? {
@@ -272,6 +278,7 @@ fun CameraScreen(
     val view = rememberView(engine)
     val currentView = LocalView.current
     var showConfirmSavedModal by remember { mutableStateOf(false) }
+    var showMeasurementsDialog by remember { mutableStateOf(false) }
 
 
     // Función para recortar el bitmap y excluir elementos de UI
@@ -567,7 +574,6 @@ fun CameraScreen(
                                             anchor
                                         )
                                         viewModel.measuredArea.value = area
-                                        viewModel.measurementHistory.add(area)
                                         Log.d("AR_DEBUG", "Tercer punto colocado - Área: ${area}m²")
                                     }
 
@@ -829,120 +835,167 @@ fun CameraScreen(
                 }
             }
 
-            Text(
-                modifier = Modifier
-                    .systemBarsPadding()
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp, start = 32.dp, end = 32.dp),
-                textAlign = TextAlign.Center,
-                fontSize = 28.sp,
-                color = Color.White,
-                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?:
-                if (viewModel.isCoatingMode.value) {
-                    "Modo Baldosa: Detectando suelos para colocar baldosa individual..."
-                } else if (viewModel.isCalculatingArea.value) {
-                    when {
-                        viewModel.firstAnchor.value == null -> "Modo Área: Toque el PRIMER punto"
-                        viewModel.secondAnchor.value == null -> "Modo Área: Toque el SEGUNDO punto"
-                        viewModel.thirdAnchor.value == null -> "Modo Área: Toque el TERCER punto"
-                        else -> "Área calculada! Toque para reiniciar medición"
-                    }
-                } else if (viewModel.isMeasuring.value) {
-                    when {
-                        viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
-                        viewModel.secondAnchor.value == null -> "Modo Medición: Toque el SEGUNDO punto"
-                        else -> "Distancia medida! Toque para reiniciar medición"
-                    }
-                } else if (childNodes.isEmpty()) {
-                    "Busque un plano horizontal o vertical"
-                } else {
-                    "Click para agregar"
-                }
-            )
+            // Texto superior eliminado
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 16.dp, top = 16.dp),
-                contentAlignment = Alignment.TopStart
-            ) {
-                // Botón de fotos eliminado - ahora está debajo del selector de modelos
-            }
+            // Selector de modelos eliminado
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 48.dp, end = 16.dp)
-                    .zIndex(2f)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    ModelSelector(viewModel = viewModel)
+            // Actualizar la lógica de mostrar el modal
+            LaunchedEffect(viewModel.measuredDistance.value, viewModel.measuredArea.value) {
+                if (viewModel.measuredDistance.value != null || viewModel.measuredArea.value != null) {
+                    showMeasurementsDialog = true
                 }
             }
 
-            viewModel.measuredDistance.value?.let { distance ->
-                Text(
+            if (showMeasurementsDialog) {
+                AlertDialog(
+                    onDismissRequest = { 
+                        showMeasurementsDialog = false
+                    },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(top = 640.dp),
-                    text = "Distancia: ${"%.2f".format(distance)} m",
-                    textAlign = TextAlign.Center,
-                    fontSize = 20.sp,
-                    color = Color.Yellow
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    containerColor = Color(0xCC000000),
+                    properties = DialogProperties(dismissOnClickOutside = true),
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Resultados de medición",
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            IconButton(
+                                onClick = { 
+                                    showMeasurementsDialog = false
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cerrar",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    },
+                    text = {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            viewModel.measuredDistance.value?.let { distance ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = "Distancia medida",
+                                        fontSize = 16.sp,
+                                        color = Color(0xFFAAAAAA)
+                                    )
+                                    Text(
+                                        text = "${"%.2f".format(distance)} m",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            viewModel.measuredArea.value?.let { area ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text(
+                                        text = "Medidas del área",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        viewModel.areaSideDistance1.value?.let { side1 ->
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "Ancho",
+                                                    fontSize = 14.sp,
+                                                    color = Color(0xFFAAAAAA)
+                                                )
+                                                Text(
+                                                    text = "${"%.2f".format(side1)} m",
+                                                    fontSize = 20.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color.White
+                                                )
+                                            }
+                                        }
+                                        
+                                        viewModel.areaSideDistance2.value?.let { side2 ->
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "Largo",
+                                                    fontSize = 14.sp,
+                                                    color = Color(0xFFAAAAAA)
+                                                )
+                                                Text(
+                                                    text = "${"%.2f".format(side2)} m",
+                                                    fontSize = 20.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color.White
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    Spacer(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(1.dp)
+                                            .background(Color(0x33FFFFFF))
+                                    )
+                                    
+                                    Text(
+                                        text = "Área total: ${"%.2f".format(area)} m²",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = { 
+                                showMeasurementsDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF8F006D)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            Text(
+                                text = "Cerrar",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                    }
                 )
             }
 
-            viewModel.measuredArea.value?.let { area ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(top = 610.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    viewModel.areaSideDistance1.value?.let { side1 ->
-                        Text(
-                            text = "Lado 1: ${"%.2f".format(side1)} m",
-                            textAlign = TextAlign.Center,
-                            fontSize = 16.sp,
-                            color = Color.Cyan
-                        )
-                    }
-                    viewModel.areaSideDistance2.value?.let { side2 ->
-                        Text(
-                            text = "Lado 2: ${"%.2f".format(side2)} m",
-                            textAlign = TextAlign.Center,
-                            fontSize = 16.sp,
-                            color = Color.Cyan
-                        )
-                    }
-                    Text(
-                        text = "Área: ${"%.2f".format(area)} m²",
-                        textAlign = TextAlign.Center,
-                        fontSize = 18.sp,
-                        color = Color.Yellow
-                    )
-                }
-            }
-
-            if (viewModel.isCalculatingArea.value && viewModel.areaSideDistance1.value != null && viewModel.measuredArea.value == null) {
-                viewModel.areaSideDistance1.value?.let { side1 ->
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.TopCenter)
-                            .padding(top = 640.dp),
-                        text = "Lado 1: ${"%.2f".format(side1)} m",
-                        textAlign = TextAlign.Center,
-                        fontSize = 20.sp,
-                        color = Color.Cyan
-                    )
-                }
-            }
+            // Eliminar los Box anteriores de mediciones y mantener el resto del código
 
             Column(
                 modifier = Modifier
@@ -1302,53 +1355,6 @@ fun CameraScreen(
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 210.dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Button(onClick = { viewModel.showHistory.value = !viewModel.showHistory.value }) {
-                        Text(text = "Historial")
-                    }
-                    if (viewModel.showHistory.value) {
-                        Box(
-                            modifier = Modifier
-                                .background(Color.DarkGray.copy(alpha = 0.9f))
-                                .padding(8.dp)
-                                .zIndex(2f)
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.Start
-                            ) {
-                                LazyColumn(
-                                    modifier = Modifier
-                                        .height(150.dp)
-                                        .width(200.dp)
-                                ) {
-                                    items(viewModel.measurementHistory) { dist ->
-                                        Text(
-                                            text = "${"%.2f".format(dist)} m²",
-                                            color = Color.White,
-                                            fontSize = 16.sp
-                                        )
-                                    }
-                                }
-                                Button(
-                                    onClick = { viewModel.measurementHistory.clear() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                                    modifier = Modifier.padding(top = 8.dp)
-                                ) {
-                                    Text(text = "Limpiar", color = Color.White)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // NUEVO: Modal de confirmación para eliminar modelo
             viewModel.selectedPlacedModel.value?.let { selectedModel ->
                 AlertDialog(
@@ -1402,28 +1408,7 @@ fun CameraScreen(
                         .zIndex(2f),
                     verticalArrangement = Arrangement.Bottom
                 ) {
-                    // Menú de muebles deslizable
-                    FurnitureBottomMenu(
-                        viewModel = viewModel,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                    
-                    // NavBar debajo del menú de muebles
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset(y = navBarOffset)
-                            .zIndex(1f),
-                        verticalArrangement = Arrangement.Bottom
-                    ) {
-                        NavBar(
-                            toCamera = null,
-                            toTutorial = navigateToTutorial,
-                            toCatalog = navigateToCatalog,
-                            toSpaces = navigateToSpaces,
-                            toConfiguration = navigateToConfiguration,
-                        )
-                    }
+                    FurnitureBottomMenu(viewModel)
                 }
             }
 
@@ -1437,83 +1422,9 @@ fun CameraScreen(
         }
     }
 
-    // Nuevo: Botón para mostrar lista de modelos renderizados
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .zIndex(2f)
-    ) {
-        FloatingActionButton(
-            onClick = { viewModel.toggleModelsList() },
-            modifier = Modifier
-                .padding(end = 16.dp)
-                .size(56.dp)
-                .align(Alignment.TopEnd),
-            containerColor = MaterialTheme.colorScheme.primary
-        ) {
-            Badge(
-                modifier = Modifier.offset(x = 14.dp, y = (-14).dp)
-            ) {
-                Text(text = viewModel.renderedModels.size.toString())
-            }
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data("file:///android_asset/camara/list.svg")
-                    .decoderFactory(SvgDecoder.Factory())
-                    .build(),
-                contentDescription = "Lista de modelos",
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
+    // Botón de lista de modelos eliminado
 
-    // Nuevo: Diálogo para mostrar la lista de modelos
-    if (viewModel.showModelsList.value) {
-        AlertDialog(
-            onDismissRequest = { viewModel.toggleModelsList() },
-            title = {
-                Text(
-                    text = "Modelos en Escena",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            },
-            text = {
-                if (viewModel.renderedModels.isEmpty()) {
-                    Text(
-                        text = "No hay modelos en escena",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                } else {
-                    LazyColumn {
-                        items(viewModel.renderedModels) { model ->
-                            ListItem(
-                                headlineContent = { 
-                                    Row(
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(model.name)
-                                        Text(
-                                            text = "x${model.count}",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                },
-                                supportingContent = { Text(model.path) }
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { viewModel.toggleModelsList() }) {
-                    Text("Cerrar")
-                }
-            }
-        )
-    }
+    // Diálogo de lista de modelos eliminado
 }
 
 @Composable
@@ -1526,7 +1437,7 @@ private fun FurnitureBottomMenu(
     
     // Animación para el menú deslizable
     val menuHeight by animateDpAsState(
-        targetValue = if (isExpanded) 160.dp else 60.dp,
+        targetValue = if (isExpanded) 200.dp else 60.dp,
         animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
         label = "menuHeight"
     )
@@ -1537,15 +1448,16 @@ private fun FurnitureBottomMenu(
         label = "arrowRotation"
     )
 
+    // Efecto para actualizar la lista cuando cambia sharedAvailableModels
+    LaunchedEffect(CameraViewModel.sharedAvailableModels.size) {
+        viewModel.updateAvailableModels()
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(menuHeight)
-            .background(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-            )
-            .shadow(elevation = 8.dp, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier
@@ -1556,7 +1468,7 @@ private fun FurnitureBottomMenu(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(40.dp),
+                    .height(48.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1590,32 +1502,23 @@ private fun FurnitureBottomMenu(
                     }
                 }
                 
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable { isExpanded = !isExpanded }
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center
+                // Botón de expandir/contraer
+                IconButton(
+                    onClick = { isExpanded = !isExpanded }
                 ) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowUp,
-                        contentDescription = if (isExpanded) "Contraer menú" else "Expandir menú",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .graphicsLayer(rotationZ = arrowRotation),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        contentDescription = if (isExpanded) "Contraer" else "Expandir",
+                        modifier = Modifier.graphicsLayer(rotationZ = arrowRotation)
                     )
                 }
             }
             
-            // Contenido del menú (solo visible cuando está expandido)
+            // Lista horizontal de muebles o mensaje cuando está vacía
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(8.dp))
-                
                 if (viewModel.availableModels.isEmpty()) {
+                    // Mensaje cuando no hay muebles disponibles
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1623,12 +1526,12 @@ private fun FurnitureBottomMenu(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Image,
                                 contentDescription = "Sin muebles",
-                                modifier = Modifier.size(32.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -1638,31 +1541,22 @@ private fun FurnitureBottomMenu(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-                            Text(
-                                text = "Ve al catálogo para agregar muebles",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                textAlign = TextAlign.Center
-                            )
                         }
                     }
                 } else {
-                    // Lista horizontal de muebles
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(vertical = 8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
                     ) {
                         items(viewModel.availableModels) { model ->
-                            FurnitureItemCard(
+                            FurnitureItem(
                                 model = model,
                                 isSelected = viewModel.selectedModel.value?.name == model.name,
                                 onSelect = {
                                     viewModel.selectedModel.value = model
-                                    Log.d("AR_DEBUG", "Mueble seleccionado: ${model.name}")
-                                    // Contraer el menú después de seleccionar
                                     isExpanded = false
                                 },
-                                context = context
+                                viewModel = viewModel
                             )
                         }
                     }
@@ -1673,12 +1567,14 @@ private fun FurnitureBottomMenu(
 }
 
 @Composable
-private fun FurnitureItemCard(
+private fun FurnitureItem(
     model: ARModel,
     isSelected: Boolean,
     onSelect: () -> Unit,
-    context: Context
+    viewModel: CameraViewModel,
+    modifier: Modifier = Modifier
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -1691,93 +1587,89 @@ private fun FurnitureItemCard(
         targetValue = if (isSelected) 1.05f else 1f,
         label = "selectionScale"
     )
-    
-    // Construir la ruta de la imagen basada en el modelo
-    val imagePath = try {
-        // Intentar obtener la imagen del mueble desde el almacenamiento interno
-        val imageFileName = model.modelPath.replace(".glb", ".png")
-        File(context.filesDir, "assets/$imageFileName").absolutePath
-    } catch (e: Exception) {
-        null
+
+    // Si se muestra el diálogo de confirmación
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Eliminar del catálogo") },
+            text = { Text("¿Deseas eliminar '${model.name}' del catálogo de la cámara?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Si el modelo a eliminar es el seleccionado, primero lo deseleccionamos
+                        if (viewModel.selectedModel.value == model) {
+                            viewModel.selectedModel.value = null
+                        }
+                        
+                        // Eliminar el modelo del catálogo
+                        val updatedList = CameraViewModel.sharedAvailableModels.filter { it != model }
+                        CameraViewModel.sharedAvailableModels.clear()
+                        CameraViewModel.sharedAvailableModels.addAll(updatedList)
+                        
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Eliminar", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
-    
-    Box(
+
+    Card(
         modifier = Modifier
-            .width(80.dp)
-            .height(100.dp)
+            .width(120.dp)
+            .height(80.dp)
             .graphicsLayer(
-                scaleX = scale * selectionScale, 
+                scaleX = scale * selectionScale,
                 scaleY = scale * selectionScale
             )
-            .background(
-                color = if (isSelected) 
-                    MaterialTheme.colorScheme.primaryContainer 
-                else 
-                    MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(12.dp)
-            )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onSelect() },
+                    onLongPress = { showDeleteDialog = true }
+                )
+            }
             .border(
                 width = if (isSelected) 2.dp else 0.dp,
                 color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                 shape = RoundedCornerShape(12.dp)
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) { onSelect() },
-        contentAlignment = Alignment.Center
+            ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(8.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             // Imagen del mueble
+            AsyncImage(
+                model = File(model.imagePath ?: ""),
+                contentDescription = "Imagen de ${model.name}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            
+            // Nombre del mueble (en la parte inferior con fondo semitransparente)
             Box(
                 modifier = Modifier
-                    .size(50.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surface,
-                        shape = RoundedCornerShape(8.dp)
-                    ),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(4.dp)
             ) {
-                if (imagePath != null && File(imagePath).exists()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(File(imagePath))
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Imagen de ${model.name}",
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(6.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    // Icono por defecto si no hay imagen
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = "Sin imagen",
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = model.name,
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            // Nombre del mueble
-            Text(
-                text = model.name,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isSelected) 
-                    MaterialTheme.colorScheme.onPrimaryContainer 
-                else 
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }

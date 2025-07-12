@@ -48,6 +48,8 @@ interface LocalStorageRepository {
     suspend fun deleteAllSpaces(): Int
     suspend fun deleteSpaceFromId(spaceId: Int): Boolean
 
+    suspend fun saveSpaceList(spaceList: List<SpaceModel>)
+
     suspend fun getAllSpacesFurniture(): List<SpaceFurnitureModel>
     suspend fun getSpacesFurnitureBySpaceId(spaceId: Int): List<SpaceFurnitureModel>
     suspend fun getSpaceFurnitureById(spaceFurnitureId: Int): SpaceFurnitureModel?

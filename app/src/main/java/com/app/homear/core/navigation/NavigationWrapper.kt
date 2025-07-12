@@ -120,7 +120,8 @@ fun NavigationWrapper() {
                 { navController.navigatePop(Catalog) },
                 { navController.navigatePop(Camera) },
                 { navController.navigatePop(Configuration) },
-                { navController.navigatePop(ProjectDetail) }
+                { projectId -> navController.navigate(ProjectDetail(projectId)) },
+                { navController.navigate(CreateProject) }
             )
         }
 
@@ -156,8 +157,8 @@ fun NavigationWrapper() {
 
         composable<CreateSpace>{
             CreateSpaceScreen (
-                navigateToCamera = { navController.navigatePop(Camera)},
-                navigateToCreateProject = { navController.navigatePop(CreateProject)}
+                navigateToCamera = { navController.navigate(Camera)},
+                navigateToCreateProject = { navController.popBackStack()}
             )
         }
 
@@ -196,10 +197,12 @@ fun NavigationWrapper() {
             )
         }
 
-        composable<ProjectDetail> {
+        composable<ProjectDetail> { backStackEntry ->
+            val projectId = backStackEntry.arguments?.getInt("projectId") ?: 1
             ProjectDetailScreen(
+                projectId = projectId,
                 onBack = { navController.popBackStack() },
-                navigateToSpaceDetail = { navController.navigate(SpaceDetail) }
+                navigateToSpaceDetail = { spaceId -> navController.navigate(SpaceDetail) }
             )
         }
     }

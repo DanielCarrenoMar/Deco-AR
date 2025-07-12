@@ -43,12 +43,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 data class ARModel(
     val name: String,
     val modelPath: String,
+    val imagePath: String? = null
 )
 
 // Actualizar: Clase para almacenar información de modelos renderizados con contador
 data class RenderedModelInfo(
     val name: String,
     val path: String,
+    val imagePath: String? = null,  // Agregamos el campo para la ruta de la imagen
     val count: Int = 1
 )
 
@@ -56,7 +58,8 @@ data class RenderedModelInfo(
 fun FurnitureItem.toARModel(): ARModel {
     return ARModel(
         name = this.name,
-        modelPath = this.modelPath
+        modelPath = this.modelPath,
+        imagePath = this.imagePath
     )
 }
 
@@ -86,15 +89,26 @@ class CameraViewModel @Inject constructor(
         }
     }
 
-    // NUEVO: Lista de modelos disponibles (debe estar antes de selectedModel)
-    val availableModels: MutableList<ARModel> = sharedAvailableModels
+    // NUEVO: Lista de modelos disponibles como State
+    private val _availableModels = mutableStateOf(sharedAvailableModels.toList())
+    val availableModels: List<ARModel>
+        get() = _availableModels.value
 
     // NUEVO: Dimensiones de pantalla para proyección precisa
     private var screenWidth = 800f
     private var screenHeight = 600f
 
+    // Actualizar la lista de modelos disponibles
+    fun updateAvailableModels() {
+        _availableModels.value = sharedAvailableModels.toList()
+        // Si el modelo seleccionado ya no está en la lista, deseleccionarlo
+        if (selectedModel.value != null && !_availableModels.value.contains(selectedModel.value)) {
+            selectedModel.value = null
+        }
+    }
+
     // NUEVO: Modelo seleccionado para colocación
-    var selectedModel = mutableStateOf<ARModel?>(availableModels.firstOrNull())
+    var selectedModel = mutableStateOf<ARModel?>(null)
         set(value) {
             Log.d(
                 "AR_DEBUG",
@@ -189,12 +203,6 @@ class CameraViewModel @Inject constructor(
 
     private val _areaSideDistance2 = mutableStateOf<Float?>(null)
     val areaSideDistance2 = _areaSideDistance2
-
-    private val _measurementHistory = mutableStateListOf<Float>()
-    val measurementHistory = _measurementHistory
-
-    private val _showHistory = mutableStateOf(false)
-    val showHistory = _showHistory
 
     private val _showCalculateAreaButton = mutableStateOf(false)
     val showCalculateAreaButton = _showCalculateAreaButton
@@ -439,25 +447,25 @@ class CameraViewModel @Inject constructor(
         val p2 = anchor2.pose
         val p3 = anchor3.pose
 
-        // Calcular las distancias para formar un rectángulo
+        // Calcular las distancias para formar un rectángulo usando la fórmula correcta de distancia euclidiana
         // Distancia del punto 1 al punto 2 (primer lado)
         val distanceP1P2 = sqrt(
-            (p1.tx() - p2.tx()) * (p1.tx() - p2.tz()) +
-                    (p1.ty() - p3.ty()) * (p1.ty() - p3.ty()) +
-                    (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
+            (p1.tx() - p2.tx()) * (p1.tx() - p2.tx()) +
+            (p1.ty() - p2.ty()) * (p1.ty() - p2.ty()) +
+            (p1.tz() - p2.tz()) * (p1.tz() - p2.tz())
         )
 
         // Distancia del punto 2 al punto 3 (segundo lado)
         val distanceP2P3 = sqrt(
-            (p2.tx() - p3.tx()) * (p2.tx() - p3.tz()) +
-                    (p2.ty() - p3.ty()) * (p2.ty() - p3.ty()) +
-                    (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
+            (p2.tx() - p3.tx()) * (p2.tx() - p3.tx()) +
+            (p2.ty() - p3.ty()) * (p2.ty() - p3.ty()) +
+            (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
         )
 
         // Para un rectángulo: área = lado1 × lado2
         val area = distanceP1P2 * distanceP2P3
 
-        // Almacenar las distancias para mostrarlas en la UI (usar areaSideDistance para área)
+        // Almacenar las distancias para mostrarlas en la UI
         _areaSideDistance1.value = distanceP1P2
         _areaSideDistance2.value = distanceP2P3
 
