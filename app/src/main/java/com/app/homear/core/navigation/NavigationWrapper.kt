@@ -82,7 +82,13 @@ fun NavigationWrapper() {
             TutorialScreen (
                 onHowItWorksClick = { /* Aquí puedes navegar a un tutorial o modal */ },
                 { navController.navigatePop(Catalog) },
-                { navController.navigatePop(Camera) },
+                { 
+                    // Guardar el origen antes de navegar a la cámara
+                    val context = navController.context
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", "tutorial")
+                    navController.navigatePop(Camera) 
+                },
                 { navController.navigatePop(Project) },
                 { navController.navigatePop(Configuration) },
             )
@@ -91,17 +97,42 @@ fun NavigationWrapper() {
         composable<Camera> {
             CameraScreen(
                 { navController.navigatePop(Tutorial) },
-                { navController.navigate(Catalog) },
-                { navController.navigatePop(Project) },
-                { navController.navigatePop(Configuration) },
+                { 
+                    // Guardar el origen antes de navegar a la cámara
+                    val context = navController.context
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", "catalog")
+                    navController.navigate(Catalog) 
+                },
+                { 
+                    // Guardar el origen antes de navegar a la cámara
+                    val context = navController.context
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", "spaces")
+                    navController.navigatePop(Project) 
+                },
+                { 
+                    // Guardar el origen antes de navegar a la cámara
+                    val context = navController.context
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", "configuration")
+                    navController.navigatePop(Configuration) 
+                },
                 { navController.navigatePop(CreateSpace) },
+                { navController.navigate(CreateProject) }
             )
         }
 
         composable<Catalog> {
             CatalogScreen (
                 navigateToTutorial = { navController.navigatePop(Tutorial) },
-                navigateToCamera = { navController.navigatePop(Camera) },
+                navigateToCamera = { 
+                    // Guardar el origen antes de navegar a la cámara
+                    val context = navController.context
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", "catalog")
+                    navController.navigatePop(Camera) 
+                },
                 navigateToSpaces = { navController.navigatePop(Project) },
                 navigateToConfiguration = {navController.navigatePop(Configuration)},
                 navigateToAddProducto = { navController.navigatePop(AddProduct) },
@@ -112,7 +143,13 @@ fun NavigationWrapper() {
             ProjectsScreen (
                 { navController.navigatePop(Tutorial) },
                 { navController.navigatePop(Catalog) },
-                { navController.navigatePop(Camera) },
+                { 
+                    // Guardar el origen antes de navegar a la cámara
+                    val context = navController.context
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", "spaces")
+                    navController.navigatePop(Camera) 
+                },
                 { navController.navigatePop(Configuration) },
                 { projectId -> navController.navigate(ProjectDetail(projectId)) },
                 { navController.navigate(CreateProject) }
@@ -123,7 +160,13 @@ fun NavigationWrapper() {
             ConfigurationScreen(
                 { navController.navigatePop(Tutorial) },
                 { navController.navigatePop(Catalog) },
-                { navController.navigatePop(Camera) },
+                { 
+                    // Guardar el origen antes de navegar a la cámara
+                    val context = navController.context
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", "configuration")
+                    navController.navigatePop(Camera) 
+                },
                 { navController.navigatePop(Project) },
                 navigateToProfile = { navController.navigatePop(Profile) },
                 navigateToIntro = { navController.navigatePop(Intro) },
@@ -134,7 +177,13 @@ fun NavigationWrapper() {
             ProfileScreen(
                 navigateToTutorial = { navController.navigatePop(Tutorial) },
                 navigateToCatalog = { navController.navigatePop(Catalog) },
-                navigateToCamera = { navController.navigatePop(Camera) },
+                { 
+                    // Guardar el origen antes de navegar a la cámara
+                    val context = navController.context
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", "profile")
+                    navController.navigatePop(Camera) 
+                },
                 navigateToSpaces = { navController.navigatePop(Project) },
                 navigateToLogin = { navController.navigatePop(Login) },
                 navigateToRegister = { navController.navigatePop(Register) },
@@ -149,8 +198,10 @@ fun NavigationWrapper() {
             )
         }
 
-        composable<SpaceDetail>{
-            SpaceDetailScreen (
+        composable<SpaceDetail> { backStackEntry ->
+            val spaceId = backStackEntry.arguments?.getInt("spaceId") ?: 1
+            SpaceDetailScreen(
+                spaceId = spaceId,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -163,7 +214,7 @@ fun NavigationWrapper() {
         composable<SpacesList> {
             SpacesListScreen(
                 onBack = { navController.popBackStack() }, // Regresa a la pantalla anterior (Profile)
-               navigateToSpacesDetails = { navController.navigate(SpaceDetail) }
+               navigateToSpacesDetails = { spaceId -> navController.navigate(SpaceDetail(spaceId)) }
             )
         }
         composable<AddProduct>        {
@@ -178,7 +229,13 @@ fun NavigationWrapper() {
         composable<CreateProject> {
             CreateProjectScreen(
                 onNavigateBack = { navController.popBackStack() },
-                navigateToCamera = { navController.navigate(Camera) },
+                navigateToCamera = { 
+                    // Guardar el origen antes de navegar a la cámara
+                    val context = navController.context
+                    val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", "create_project")
+                    navController.navigate(Camera) 
+                },
                 navigateToSpaces = { navController.navigate(Project) }
             )
         }
@@ -188,7 +245,7 @@ fun NavigationWrapper() {
             ProjectDetailScreen(
                 projectId = projectId,
                 onBack = { navController.popBackStack() },
-                navigateToSpaceDetail = { spaceId -> navController.navigate(SpaceDetail) }
+                navigateToSpaceDetail = { spaceId -> navController.navigate(SpaceDetail(spaceId)) }
             )
         }
     }

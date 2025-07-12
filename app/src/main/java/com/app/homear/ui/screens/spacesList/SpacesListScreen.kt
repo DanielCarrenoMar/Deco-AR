@@ -32,15 +32,15 @@ import java.io.File
 @Composable
 fun SpacesListScreen(
     onBack: () -> Unit = {},
-    navigateToSpacesDetails: () -> Unit = {}
+    navigateToSpacesDetails: (Int) -> Unit = {}
 ) {
     val dummySpaces = listOf(
-        Triple("Sala Moderna", "Usuario 1", "/storage/emulated/0/Pictures/space_1.jpg"),
-        Triple("Comedor Minimalista", "Usuario 2", "/storage/emulated/0/Pictures/space_2.jpg"),
-        Triple("Dormitorio Luminoso", "Usuario 3", "/storage/emulated/0/Pictures/space_3.jpg"),
-        Triple("Oficina Compacta", "Usuario 4", "/storage/emulated/0/Pictures/space_4.jpg"),
-        Triple("Balcón Verde", "Usuario 5", "/storage/emulated/0/Pictures/space_5.jpg"),
-        Triple("Estudio Cálido", "Usuario 6", "/storage/emulated/0/Pictures/space_6.jpg")
+        Triple(1, "Sala Moderna", "/storage/emulated/0/Pictures/space_1.jpg"),
+        Triple(2, "Comedor Minimalista", "/storage/emulated/0/Pictures/space_2.jpg"),
+        Triple(3, "Dormitorio Luminoso", "/storage/emulated/0/Pictures/space_3.jpg"),
+        Triple(4, "Oficina Compacta", "/storage/emulated/0/Pictures/space_4.jpg"),
+        Triple(5, "Balcón Verde", "/storage/emulated/0/Pictures/space_5.jpg"),
+        Triple(6, "Estudio Cálido", "/storage/emulated/0/Pictures/space_6.jpg")
     )
 
     Box(
@@ -101,12 +101,12 @@ fun SpacesListScreen(
                 contentPadding = PaddingValues(bottom = 80.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(dummySpaces) { (name, user, imagePath) ->
+                items(dummySpaces) { (id, name, imagePath) ->
                     SpaceCard(
                         name = name,
-                        user = user,
+                        user = "Usuario $id",
                         imagePath = imagePath,
-                        navigateToSpacesDetails = navigateToSpacesDetails
+                        navigateToSpacesDetails = { navigateToSpacesDetails(id) }
                     )
                 }
             }

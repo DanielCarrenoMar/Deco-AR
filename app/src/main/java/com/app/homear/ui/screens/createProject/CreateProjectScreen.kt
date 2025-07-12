@@ -29,6 +29,8 @@ import coil.request.ImageRequest
 import com.app.homear.ui.theme.CorporatePurple
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.homear.ui.screens.createProject.Espacio
+import androidx.compose.ui.layout.ContentScale
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,10 +40,6 @@ fun CreateProjectScreen(
     navigateToSpaces: () -> Unit = {},
     viewModel: CreateProjectViewModel = hiltViewModel()
 ) {
-    val opciones = listOf("Sala", "Cocina", "Comedor", "Habitación")
-    var expanded by remember { mutableStateOf(false) }
-    var selectedOptionText by remember { mutableStateOf("") }
-    
     // Efecto para manejar la navegación cuando se crea el proyecto
     LaunchedEffect(viewModel.isProjectCreated.value) {
         if (viewModel.isProjectCreated.value) {
@@ -99,72 +97,6 @@ fun CreateProjectScreen(
                     color = Color.DarkGray,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.End
-                )
-            }
-        }
-
-        item {
-            Text(
-                text = "Elegir imagen predeterminada",
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp
-            )
-        }
-
-        item {
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = selectedOptionText,
-                    onValueChange = {},
-                    label = { Text("Nombre Espacio") },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Desplegar",
-                            modifier = Modifier.clickable { expanded = !expanded }
-                        )
-                    },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    opciones.forEach { seleccion ->
-                        DropdownMenuItem(
-                            text = { Text(seleccion) },
-                            onClick = {
-                                selectedOptionText = seleccion
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .background(Color.LightGray, RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data("file:///android_asset/icons/gallery.svg")
-                        .decoderFactory(SvgDecoder.Factory())
-                        .build(),
-                    contentDescription = "Imagen predeterminada",
-                    modifier = Modifier.size(64.dp)
                 )
             }
         }
@@ -264,14 +196,26 @@ fun CreateProjectScreen(
                         .background(Color.LightGray, RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data("file:///android_asset/icons/gallery.svg")
-                            .decoderFactory(SvgDecoder.Factory())
-                            .build(),
-                        contentDescription = "Imagen espacio",
-                        modifier = Modifier.size(32.dp)
-                    )
+                    if (espacio.imagePath != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(File(espacio.imagePath))
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Imagen espacio",
+                            modifier = Modifier.size(60.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data("file:///android_asset/icons/gallery.svg")
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Imagen espacio",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))

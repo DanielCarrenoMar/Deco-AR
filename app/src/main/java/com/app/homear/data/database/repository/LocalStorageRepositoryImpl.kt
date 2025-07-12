@@ -22,6 +22,9 @@ import com.app.homear.domain.repository.LocalStorageRepository
 
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import com.app.homear.domain.model.Resource
 
 class LocalStorageRepositoryImpl @Inject constructor(
     private val furnitureDao: FurnitureDao,
@@ -104,14 +107,7 @@ class LocalStorageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getProjectById(projectId: Int): ProjectModel? {
-        try {
-            val projectEntity = projectDao.getProjectById(projectId) ?: return null
-            return projectEntity.toProjectModel()
-        } catch (e: Exception) {
-            throw e
-        }
-    }
+
 
     override suspend fun saveProject(projectModel: ProjectModel): Long {
         try {
@@ -172,14 +168,7 @@ class LocalStorageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSpaceById(spaceId: Int): SpaceModel? {
-        try {
-            val spaceEntity = spaceDao.getSpaceById(spaceId) ?: return null
-            return spaceEntity.toSpaceModel()
-        } catch (e: Exception) {
-            throw e
-        }
-    }
+
 
     override suspend fun saveSpace(spaceModel: SpaceModel): Long {
         try {
@@ -220,6 +209,34 @@ class LocalStorageRepositoryImpl @Inject constructor(
             spaceDao.insertSpaceList(spaceList.map { it.toSpaceEntity() })
         } catch (e: Exception) {
             throw e
+        }
+    }
+
+    override fun getProjectById(projectId: Int): Flow<Resource<ProjectModel>> = flow {
+        try {
+            emit(Resource.Loading())
+            val projectEntity = projectDao.getProjectById(projectId)
+            if (projectEntity != null) {
+                emit(Resource.Success(projectEntity.toProjectModel()))
+            } else {
+                emit(Resource.Error("Proyecto no encontrado"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.message ?: "Error desconocido"))
+        }
+    }
+
+    override fun getSpaceById(spaceId: Int): Flow<Resource<SpaceModel>> = flow {
+        try {
+            emit(Resource.Loading())
+            val spaceEntity = spaceDao.getSpaceById(spaceId)
+            if (spaceEntity != null) {
+                emit(Resource.Success(spaceEntity.toSpaceModel()))
+            } else {
+                emit(Resource.Error("Espacio no encontrado"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.message ?: "Error desconocido"))
         }
     }
 

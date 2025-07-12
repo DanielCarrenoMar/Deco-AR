@@ -264,6 +264,7 @@ fun CameraScreen(
     navigateToSpaces: () -> Unit,
     navigateToConfiguration: () -> Unit,
     navigateToCreateSpace: () -> Unit,
+    navigateToCreateProject: () -> Unit,
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -275,6 +276,33 @@ fun CameraScreen(
     val currentView = LocalView.current
     var showConfirmSavedModal by remember { mutableStateOf(false) }
 
+    // Función para determinar a dónde regresar
+    fun getBackNavigation(): () -> Unit {
+        val origin = sharedPrefHelper.getStringData("camera_navigation_origin") ?: "tutorial"
+        return when (origin) {
+            "create_project" -> { 
+                // Para create_project, usar popBackStack en lugar de navegar hacia adelante
+                { 
+                    // Limpiar el origen de navegación
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", null)
+                    // Usar popBackStack para regresar a la pantalla anterior
+                    (context as? Activity)?.onBackPressed()
+                }
+            }
+            "create_space" -> navigateToCreateSpace
+            "tutorial" -> navigateToTutorial
+            "catalog" -> navigateToCatalog
+            "spaces" -> navigateToSpaces
+            "configuration" -> navigateToConfiguration
+            "profile" -> navigateToTutorial // Profile no tiene navegación directa, regresa a tutorial
+            else -> navigateToTutorial
+        }
+    }
+
+    // Función para manejar el regreso
+    fun handleBackNavigation() {
+        getBackNavigation().invoke()
+    }
 
     // Función para recortar el bitmap y excluir elementos de UI
     fun cropBitmapToARContent(originalBitmap: Bitmap, rootView: View): Bitmap {
@@ -813,7 +841,7 @@ fun CameraScreen(
                             interactionSource = interactionSourceBack,
                             indication = null
                         ) {
-                            navigateToTutorial()
+                            handleBackNavigation()
                         },
                     contentAlignment = Alignment.Center
                 ) {

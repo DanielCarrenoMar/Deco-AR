@@ -69,7 +69,12 @@ fun CreateSpaceScreen(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable { navigateToCamera() }
+                        .clickable { 
+                            // Guardar el origen antes de navegar a la cámara
+                            val sharedPrefHelper = com.app.homear.core.utils.SharedPreferenceHelper(context)
+                            sharedPrefHelper.saveStringData("camera_navigation_origin", "create_space")
+                            navigateToCamera() 
+                        }
                 ) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)

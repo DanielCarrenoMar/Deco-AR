@@ -40,7 +40,7 @@ object Project
 object CreateSpace
 
 @Serializable
-object SpaceDetail
+data class SpaceDetail(val spaceId: Int)
 
 @Serializable
 object EditProfile

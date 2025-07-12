@@ -10,6 +10,8 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseUser
 import java.io.File
+import kotlinx.coroutines.flow.Flow
+import com.app.homear.domain.model.Resource
 
 interface LocalStorageRepository {
 
@@ -26,7 +28,6 @@ interface LocalStorageRepository {
     suspend fun deleteFurnitureFromId(fModelId: Int): Boolean
 
     suspend fun getAllProjects(): List<ProjectModel>
-    suspend fun getProjectById(projectId: Int): ProjectModel?
     suspend fun saveProject(projectModel: ProjectModel): Long
     suspend fun updateProjectById(
         projectId: Int,
@@ -38,7 +39,6 @@ interface LocalStorageRepository {
 
     suspend fun getAllSpaces(): List<SpaceModel>
     suspend fun getSpacesByProjectId(projectId: Int): List<SpaceModel>
-    suspend fun getSpaceById(spaceId: Int): SpaceModel?
     suspend fun saveSpace(spaceModel: SpaceModel): Long
     suspend fun updateSpaceById(
         spaceId: Int,
@@ -62,6 +62,8 @@ interface LocalStorageRepository {
     suspend fun deleteAllSpacesFurniture(): Int
     suspend fun deleteSpaceFurnitureFromId(spaceFurnitureId: Int): Boolean
 
-
+    fun getProjectById(projectId: Int): Flow<Resource<ProjectModel>>
+    
+    fun getSpaceById(spaceId: Int): Flow<Resource<SpaceModel>>
 
 }

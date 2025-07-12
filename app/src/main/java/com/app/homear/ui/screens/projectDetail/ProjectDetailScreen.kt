@@ -37,16 +37,32 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.homear.domain.model.SpaceModel
 import com.app.homear.domain.usecase.space.GetSpacesByProjectIdUseCase
+import com.app.homear.domain.usecase.proyect.GetProjectByIdUseCase
+import com.app.homear.domain.model.ProjectModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ProjectDetailViewModel @Inject constructor(
-    private val getSpacesByProjectIdUseCase: GetSpacesByProjectIdUseCase
+    private val getSpacesByProjectIdUseCase: GetSpacesByProjectIdUseCase,
+    private val getProjectByIdUseCase: GetProjectByIdUseCase
 ) : ViewModel() {
     private val _spaces = MutableLiveData<List<SpaceModel>>(emptyList())
     val spaces: LiveData<List<SpaceModel>> = _spaces
+    
+    private val _project = MutableLiveData<ProjectModel?>(null)
+    val project: LiveData<ProjectModel?> = _project
+
+    fun loadProject(projectId: Int) {
+        viewModelScope.launch {
+            getProjectByIdUseCase(projectId).collect { resource ->
+                if (resource is com.app.homear.domain.model.Resource.Success) {
+                    _project.value = resource.data
+                }
+            }
+        }
+    }
 
     fun loadSpaces(projectId: Int) {
         viewModelScope.launch {
@@ -67,7 +83,10 @@ fun ProjectDetailScreen(
     viewModel: ProjectDetailViewModel = hiltViewModel()
 ) {
     val spaces by viewModel.spaces.observeAsState(emptyList())
+    val project by viewModel.project.observeAsState(null)
+    
     androidx.compose.runtime.LaunchedEffect(projectId) {
+        viewModel.loadProject(projectId)
         viewModel.loadSpaces(projectId)
     }
 
@@ -111,14 +130,14 @@ fun ProjectDetailScreen(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "Proyecto Casa Moderna",
+                        text = project?.name ?: "Cargando...",
                         color = Color.DarkGray,
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp,
                         textAlign = TextAlign.End
                     )
                     Text(
-                        text = "por Usuario Admin",
+                        text = "por ${project?.idUser ?: "Cargando..."}",
                         color = Color.Gray,
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp,
@@ -138,45 +157,61 @@ fun ProjectDetailScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-                SubcomposeAsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data("file:///android_asset/project_main.jpg") // Assuming a default image for preview
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Imagen del proyecto",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop,
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.LightGray),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(32.dp),
-                                color = CorporatePurple
-                            )
+                if (project?.imagePath?.isNotEmpty() == true) {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(File(project!!.imagePath))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Imagen del proyecto",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.LightGray),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    color = CorporatePurple
+                                )
+                            }
+                        },
+                        error = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.LightGray),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.Image,
+                                    contentDescription = "Error al cargar imagen",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
                         }
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.LightGray),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Filled.Image,
-                                contentDescription = "Error al cargar imagen",
-                                tint = Color.White,
-                                modifier = Modifier.size(40.dp)
-                            )
-                        }
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.LightGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Image,
+                            contentDescription = "Sin imagen",
+                            tint = Color.White,
+                            modifier = Modifier.size(40.dp)
+                        )
                     }
-                )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
