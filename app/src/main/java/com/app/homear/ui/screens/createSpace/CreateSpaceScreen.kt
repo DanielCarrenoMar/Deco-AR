@@ -38,7 +38,6 @@ fun CreateSpaceScreen(
     navigateToCreateProject: () -> Unit,
     viewModel: CreateSpaceViewModel = hiltViewModel()
 ) {
-    val spaceName = remember { mutableStateOf("") }
     val furnitureList by viewModel.furnitureList
     val context = LocalContext.current
 
@@ -163,8 +162,8 @@ fun CreateSpaceScreen(
                 fontSize = 14.sp
             )
             OutlinedTextField(
-                value = spaceName.value,
-                onValueChange = { spaceName.value = it },
+                value = viewModel.spaceName.value,
+                onValueChange = { viewModel.spaceName.value = it },
                 placeholder = { Text("Añadir nombre de espacio") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -191,7 +190,7 @@ fun CreateSpaceScreen(
                 items(furnitureList) { furniture ->
                     FurnitureCard(
                         name = furniture.name,
-                        type = furniture.type,
+                        type = furniture.type, //Ubicacion del modelo
                         description = furniture.description,
                         imagePath = furniture.imagePath,
                         onClick = { /* Acción al pulsar */ }
@@ -204,7 +203,7 @@ fun CreateSpaceScreen(
                     viewModel.saveSpace()
                     // Agregar el espacio al proyecto actual
                     val espacio = com.app.homear.ui.screens.createProject.Espacio(
-                        nombre = spaceName.value.ifBlank { "Espacio sin nombre" },
+                        nombre = viewModel.spaceName.value.ifBlank { "Espacio sin nombre" },
                         cantidadMuebles = furnitureList.size,
                         imagePath = viewModel.imagePath.value
                     )

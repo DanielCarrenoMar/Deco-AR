@@ -14,8 +14,10 @@ import java.io.File
 import org.json.JSONObject
 import com.app.homear.core.utils.SharedPreferenceHelper
 import com.app.homear.domain.model.Resource
+import com.app.homear.domain.model.SpaceFurnitureModel
 import com.app.homear.domain.model.SpaceModel
 import com.app.homear.domain.usecase.space.SaveSpaceUseCase
+import com.app.homear.domain.usecase.spaceFurniture.SaveSpaceFurnitureUseCase
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 
@@ -34,10 +36,14 @@ data class FurniturePreviewModel(
 @HiltViewModel
 class CreateSpaceViewModel @Inject constructor(
     private val saveSpaceUseCase: SaveSpaceUseCase,
+    private val saveSpaceFurnitureUseCase: SaveSpaceFurnitureUseCase
 ) : ViewModel() {
 
     private val _imagePath = mutableStateOf<String?>(null)
-    val imagePath: State<String?> = _imagePath
+    val imagePath = _imagePath
+
+    private val _spaceName = mutableStateOf<String>("")
+    val spaceName = _spaceName
 
     private val _furnitureList = mutableStateOf<List<FurniturePreviewModel>>(emptyList())
     val furnitureList: State<List<FurniturePreviewModel>> = _furnitureList
@@ -49,14 +55,14 @@ class CreateSpaceViewModel @Inject constructor(
     }
 
     fun saveSpace(){
-        /*viewModelScope.launch {
+        viewModelScope.launch {
             val currentDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
             val spaceModel = SpaceModel(
                 id = -1, // No hace falta ID al guardar, se genera automáticamente
-                projectId = projectId.value ?: -1,
-                idUser = userId.value ?: "",
-                name = name.value ?: "",
-                description = description.value ?: "",
+                projectId = -1,
+                idUser = "dafault_user",
+                name = _spaceName.value.ifBlank { "Espacio sin nombre" },
+                description = "Sin descripcion",
                 imagePath = imagePath.value ?: "",
                 createdDate = currentDate,
                 lastModified = currentDate
@@ -69,13 +75,36 @@ class CreateSpaceViewModel @Inject constructor(
                     }
                     is Resource.Success -> {
                         val idSaved = resource.data!!
+                        for (furniture in _furnitureList.value) {
+                            val furnitureModel = SpaceFurnitureModel(
+                                id = -1, // No hace falta ID al guardar, se genera automáticamente
+                                spaceId = idSaved.toInt(),
+                                name = furniture.name,
+                                imagePath = furniture.imagePath ?: "",
+                                modelPath = furniture.type,
+                                description = furniture.description ?: "Sin descripción",
+                            )
+                            saveSpaceFurnitureUseCase(furnitureModel).collect { furnitureResource ->
+                                when (furnitureResource) {
+                                    is Resource.Loading -> {
+                                        // Handle loading state if needed
+                                    }
+                                    is Resource.Success -> {
+                                        Log.d("ProjectsViewModel", "Proyecto guardado correctamente: ${furnitureModel.name}")
+                                    }
+                                    is Resource.Error -> {
+                                        Log.e("ProjectsViewModel", "Error al guardar el mueble: ${furnitureResource.message}")
+                                    }
+                                }
+                            }
+                        }
                     }
                     is Resource.Error -> {
                         Log.e("ProjectsViewModel", "Error al guardar el proyecto: ${resource.message}")
                     }
                 }
             }
-        }*/
+        }
     }
 
     private fun findLastImage(): String? {
