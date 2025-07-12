@@ -687,13 +687,14 @@ fun CameraScreen(
                                         }
                                     } else {
                                         // Modo normal: crear modelo seleccionado
-                                        childNodes += viewModel.createAnchorNode(
+                                        val anchorNode = viewModel.createAnchorNode(
                                             engine = engine,
                                             modelLoader = modelLoader,
                                             materialLoader = materialLoader,
                                             modelInstances = viewModel.modelInstances,
                                             anchor = anchor
                                         )
+                                        if (anchorNode != null) childNodes +=anchorNode
                                         // Deseleccionar cualquier modelo previamente seleccionado
                                         viewModel.selectModelForDeletion(null)
                                     }

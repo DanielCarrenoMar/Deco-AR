@@ -350,7 +350,7 @@ class CameraViewModel @Inject constructor(
         materialLoader: MaterialLoader,
         modelInstances: MutableList<ModelInstance>,
         anchor: Anchor
-    ): AnchorNode {
+    ): AnchorNode? {
         Log.d("AR_DEBUG", "Entrando a createAnchorNode")
 
         val anchorNode = AnchorNode(engine = engine, anchor = anchor)
@@ -369,7 +369,7 @@ class CameraViewModel @Inject constructor(
                             Log.d("AR_DEBUG", "Modelo cargado exitosamente desde almacenamiento interno")
                         } else {
                             Log.e("AR_DEBUG", "Archivo de modelo no encontrado: $modelPath")
-                            //throw IllegalStateException("Modelo no encontrado: $modelPath")
+                            return null
                         }
                     } catch (e: Exception) {
                         Log.e("AR_DEBUG", "Error cargando modelo: ${e.message}")
