@@ -17,6 +17,7 @@ import java.util.*
 import com.app.homear.core.utils.SharedPreferenceHelper
 import com.app.homear.domain.model.SpaceModel
 import com.app.homear.domain.repository.LocalStorageRepository
+import com.app.homear.domain.usecase.space.SaveSpaceUseCase
 
 data class Espacio(
     val nombre: String,
@@ -27,8 +28,7 @@ data class Espacio(
 @HiltViewModel
 class CreateProjectViewModel @Inject constructor(
     private val saveProjectUseCase: SaveProjectUseCase,
-    @ApplicationContext private val context: Context,
-    private val localStorageRepository: LocalStorageRepository
+    private val saveSpaceUseCase: SaveSpaceUseCase,
 ) : ViewModel() {
     
     private val _projectName = mutableStateOf("")
@@ -52,22 +52,22 @@ class CreateProjectViewModel @Inject constructor(
     private val _spacesList = mutableStateOf<List<Espacio>>(emptyList())
     val spacesList = _spacesList
     
-    fun updateProjectName(name: String) {
+    fun updateProjectName(context: Context,name: String) {
         _projectName.value = name
-        saveProjectState() // Guardar automáticamente
+        saveProjectState(context) // Guardar automáticamente
     }
     
-    fun updateProjectDescription(description: String) {
+    fun updateProjectDescription(context: Context,description: String) {
         _projectDescription.value = description
-        saveProjectState() // Guardar automáticamente
+        saveProjectState(context) // Guardar automáticamente
     }
     
-    fun updateProjectImagePath(imagePath: String) {
+    fun updateProjectImagePath(context: Context, imagePath: String) {
         _projectImagePath.value = imagePath
-        saveProjectState() // Guardar automáticamente
+        saveProjectState(context) // Guardar automáticamente
     }
     
-    fun createProject(userId: String = "default_user") {
+    fun createProject(context: Context, userId: String = "default_user") {
         if (_projectName.value.isBlank()) {
             _errorMessage.value = "El nombre del proyecto es requerido"
             return
@@ -101,7 +101,7 @@ class CreateProjectViewModel @Inject constructor(
                         if (projectId != -1) {
                             saveSpacesForProject(projectId, userId)
                         }
-                        clearSavedProjectState() // Limpiar estado guardado
+                        clearSavedProjectState(context) // Limpiar estado guardado
                         Log.d("CreateProjectViewModel", "Proyecto creado exitosamente con ID: ${resource.data}")
                     }
                     is Resource.Error -> {
@@ -114,11 +114,12 @@ class CreateProjectViewModel @Inject constructor(
         }
     }
 
-    private suspend fun saveSpacesForProject(projectId: Int, userId: String) {
+    private fun saveSpacesForProject(projectId: Int, userId: String) {
         val currentDate = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-        val spaces = _spacesList.value.map { espacio ->
-            SpaceModel(
-                id = 0,
+        viewModelScope.launch {
+        for (espacio in _spacesList.value) {
+            val spaceModel = SpaceModel(
+                id = 0, // Se auto-genera en la base de datos
                 projectId = projectId,
                 idUser = userId,
                 name = espacio.nombre,
@@ -127,11 +128,25 @@ class CreateProjectViewModel @Inject constructor(
                 createdDate = currentDate,
                 lastModified = currentDate
             )
+            saveSpaceUseCase(spaceModel).collect { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _isLoading.value = true
+                    }
+                    is Resource.Success -> {
+                        Log.d("CreateProjectViewModel", "Espacio guardado exitosamente")
+                    }
+                    is Resource.Error -> {
+                        Log.e("CreateProjectViewModel", "Error al guardar espacio: ${resource.message}")
+                    }
+                }
+            }
+            }
         }
-        localStorageRepository.saveSpaceList(spaces)
+
     }
     
-    fun resetState() {
+    fun resetState(context: Context) {
         _projectName.value = ""
         _projectDescription.value = ""
         _projectImagePath.value = ""
@@ -139,7 +154,7 @@ class CreateProjectViewModel @Inject constructor(
         _isProjectCreated.value = false
         _errorMessage.value = null
         _spacesList.value = emptyList()
-        clearSavedProjectState() // Limpiar estado guardado
+        clearSavedProjectState(context) // Limpiar estado guardado
     }
     
     // Función para preservar el estado actual
@@ -155,7 +170,7 @@ class CreateProjectViewModel @Inject constructor(
     }
     
     // Función para guardar el estado actual del proyecto
-    fun saveProjectState() {
+    fun saveProjectState(context: Context) {
         val sharedPrefHelper = SharedPreferenceHelper(context)
         sharedPrefHelper.saveStringData("temp_project_name", _projectName.value)
         sharedPrefHelper.saveStringData("temp_project_description", _projectDescription.value)
@@ -163,7 +178,7 @@ class CreateProjectViewModel @Inject constructor(
     }
     
     // Función para restaurar el estado del proyecto
-    fun restoreProjectState() {
+    fun restoreProjectState(context: Context) {
         val sharedPrefHelper = SharedPreferenceHelper(context)
         val savedName = sharedPrefHelper.getStringData("temp_project_name")
         val savedDescription = sharedPrefHelper.getStringData("temp_project_description")
@@ -181,24 +196,24 @@ class CreateProjectViewModel @Inject constructor(
     }
     
     // Función para limpiar el estado temporal guardado
-    fun clearSavedProjectState() {
+    fun clearSavedProjectState(context: Context) {
         val sharedPrefHelper = SharedPreferenceHelper(context)
         sharedPrefHelper.saveStringData("temp_project_name", null)
         sharedPrefHelper.saveStringData("temp_project_description", null)
         sharedPrefHelper.saveStringData("temp_project_image_path", null)
-        clearSavedSpacesList()
+        clearSavedSpacesList(context)
     }
     
     // Función para agregar un espacio a la lista
-    fun addSpace(espacio: Espacio) {
+    fun addSpace(context: Context, espacio: Espacio) {
         val currentList = _spacesList.value.toMutableList()
         currentList.add(espacio)
         _spacesList.value = currentList
-        saveSpacesList()
+        saveSpacesList(context)
     }
     
     // Función para guardar la lista de espacios
-    private fun saveSpacesList() {
+    private fun saveSpacesList(context: Context) {
         val sharedPrefHelper = SharedPreferenceHelper(context)
         val spacesJson = org.json.JSONArray().apply {
             _spacesList.value.forEach { espacio ->
@@ -213,7 +228,7 @@ class CreateProjectViewModel @Inject constructor(
     }
     
     // Función para restaurar la lista de espacios
-    fun restoreSpacesList() {
+    fun restoreSpacesList(context: Context) {
         val sharedPrefHelper = SharedPreferenceHelper(context)
         val spacesJson = sharedPrefHelper.getStringData("temp_project_spaces")
         if (!spacesJson.isNullOrEmpty()) {
@@ -238,7 +253,7 @@ class CreateProjectViewModel @Inject constructor(
     }
     
     // Función para limpiar la lista de espacios guardada
-    fun clearSavedSpacesList() {
+    fun clearSavedSpacesList(context: Context) {
         val sharedPrefHelper = SharedPreferenceHelper(context)
         sharedPrefHelper.saveStringData("temp_project_spaces", null)
     }

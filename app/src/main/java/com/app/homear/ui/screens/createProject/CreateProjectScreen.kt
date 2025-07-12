@@ -40,18 +40,20 @@ fun CreateProjectScreen(
     navigateToSpaces: () -> Unit = {},
     viewModel: CreateProjectViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+
     // Efecto para manejar la navegación cuando se crea el proyecto
     LaunchedEffect(viewModel.isProjectCreated.value) {
         if (viewModel.isProjectCreated.value) {
             navigateToSpaces()
-            viewModel.resetState()
+            viewModel.resetState(context)
         }
     }
     
     // Efecto para restaurar el estado cuando se regresa de la cámara
     LaunchedEffect(Unit) {
-        viewModel.restoreProjectState()
-        viewModel.restoreSpacesList()
+        viewModel.restoreProjectState(context)
+        viewModel.restoreSpacesList(context)
         viewModel.clearCreationState()
     }
 
@@ -110,7 +112,7 @@ fun CreateProjectScreen(
 
             OutlinedTextField(
                 value = viewModel.projectName.value,
-                onValueChange = { viewModel.updateProjectName(it) },
+                onValueChange = { viewModel.updateProjectName(context,it) },
                 placeholder = { Text(text = "Ingresa el nombre del proyecto") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -128,7 +130,7 @@ fun CreateProjectScreen(
 
             OutlinedTextField(
                 value = viewModel.projectDescription.value,
-                onValueChange = { viewModel.updateProjectDescription(it) },
+                onValueChange = { viewModel.updateProjectDescription(context,it) },
                 placeholder = { Text(text = "Describe tu proyecto (opcional)") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -264,7 +266,7 @@ fun CreateProjectScreen(
         
         item {
             Button(
-                onClick = { viewModel.createProject() },
+                onClick = { viewModel.createProject(context) },
                 colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier

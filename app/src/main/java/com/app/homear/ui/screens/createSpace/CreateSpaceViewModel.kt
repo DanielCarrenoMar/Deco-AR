@@ -75,6 +75,8 @@ class CreateSpaceViewModel @Inject constructor(
                     }
                     is Resource.Success -> {
                         val idSaved = resource.data!!
+                        Log.d("ProjectsViewModel", "Proyecto guardado correctamente con ID: $idSaved")
+                        Log.d("ProjectsViewModel", "Guardando muebles con cantidad de: ${_furnitureList.value.size}")
                         for (furniture in _furnitureList.value) {
                             val furnitureModel = SpaceFurnitureModel(
                                 id = -1, // No hace falta ID al guardar, se genera automáticamente

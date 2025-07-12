@@ -21,9 +21,6 @@ interface SpaceDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSpace(space: SpaceEntity): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSpaceList(spaceList: List<SpaceEntity>)
-
     @Update
     suspend fun updateSpace(space: SpaceEntity): Int
 

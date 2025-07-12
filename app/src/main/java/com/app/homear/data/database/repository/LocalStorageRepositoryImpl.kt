@@ -204,14 +204,6 @@ class LocalStorageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveSpaceList(spaceList: List<SpaceModel>) {
-        try {
-            spaceDao.insertSpaceList(spaceList.map { it.toSpaceEntity() })
-        } catch (e: Exception) {
-            throw e
-        }
-    }
-
     override fun getProjectById(projectId: Int): Flow<Resource<ProjectModel>> = flow {
         try {
             emit(Resource.Loading())

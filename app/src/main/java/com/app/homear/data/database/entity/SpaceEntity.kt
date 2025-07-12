@@ -34,7 +34,6 @@ fun SpaceEntity.toSpaceModel(): SpaceModel {
 
 fun SpaceModel.toSpaceEntity(): SpaceEntity {
     return SpaceEntity(
-        id = this.id,
         projectId = this.projectId,
         idUser = this.idUser,
         name = this.name,

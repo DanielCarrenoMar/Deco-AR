@@ -29,7 +29,6 @@ fun SpaceFurnitureEntity.toSpaceFurnitureModel(): SpaceFurnitureModel {
 
 fun SpaceFurnitureModel.toSpaceFurnitureEntity(): SpaceFurnitureEntity {
     return SpaceFurnitureEntity(
-        id = this.id,
         spaceId = this.spaceId,
         name = this.name,
         description = this.description,
