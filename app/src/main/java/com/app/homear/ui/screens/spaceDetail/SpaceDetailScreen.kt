@@ -29,19 +29,7 @@ import coil.request.ImageRequest
 import com.app.homear.ui.theme.CorporatePurple
 import java.io.File
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.compose.runtime.livedata.observeAsState
-import com.app.homear.domain.model.SpaceModel
-import com.app.homear.domain.model.SpaceFurnitureModel
-import com.app.homear.domain.usecase.space.GetSpaceByIdUseCase
-import com.app.homear.domain.usecase.spaceFurniture.GetSpaceFurnituresBySpaceIdUseCase
-import com.app.homear.ui.screens.projectDetail.SpaceDetailViewModel
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @Composable
 fun SpaceDetailScreen(

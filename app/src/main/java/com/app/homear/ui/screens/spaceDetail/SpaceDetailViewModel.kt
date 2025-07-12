@@ -1,4 +1,4 @@
-package com.app.homear.ui.screens.projectDetail
+package com.app.homear.ui.screens.spaceDetail
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -6,9 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.homear.domain.model.SpaceFurnitureModel
 import com.app.homear.domain.model.SpaceModel
-import com.app.homear.domain.usecase.proyect.SaveProjectUseCase
 import com.app.homear.domain.usecase.space.GetSpaceByIdUseCase
-import com.app.homear.domain.usecase.space.SaveSpaceUseCase
 import com.app.homear.domain.usecase.spaceFurniture.GetSpaceFurnituresBySpaceIdUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -54,7 +52,7 @@ class SpaceDetailViewModel @Inject constructor(
 
     fun loadFurniture(spaceId: Int) {
         viewModelScope.launch {
-            getSpaceFurnituresBySpaceIdUseCase(spaceId).collect { resource ->
+            getSpaceFurnituresBySpaceIdUseCase(spaceId-1).collect { resource ->
                 when (resource) {
                     is com.app.homear.domain.model.Resource.Loading -> {
                         _isLoading.value = true
