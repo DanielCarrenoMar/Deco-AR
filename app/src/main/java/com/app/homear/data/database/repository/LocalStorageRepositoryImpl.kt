@@ -166,7 +166,7 @@ class LocalStorageRepositoryImpl @Inject constructor(
 
     override suspend fun getSpacesByProjectId(projectId: Int): List<SpaceModel> {
         try {
-            return spaceDao.getAllSpaces().filter { it.projectId == projectId }.map { it.toSpaceModel() }
+            return spaceDao.getSpacesByProjectId(projectId).map { it.toSpaceModel() }
         } catch (e: Exception) {
             throw e
         }
@@ -225,7 +225,7 @@ class LocalStorageRepositoryImpl @Inject constructor(
 
     override suspend fun getSpacesFurnitureBySpaceId(spaceId: Int): List<SpaceFurnitureModel> {
         try {
-            return spaceFurnitureDao.getAllLocalFurniture().filter { it.spaceId == spaceId }.map { it.toSpaceFurnitureModel() }
+            return spaceFurnitureDao.getSpaceFurnituresBySpaceId(spaceId).map { it.toSpaceFurnitureModel() }
         } catch (e: Exception) {
             throw e
         }

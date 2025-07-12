@@ -15,6 +15,9 @@ interface SpaceDao {
     @Query("SELECT * FROM spaces WHERE idUser = :userId")
     suspend fun getSpacesByUserId(userId: String): List<SpaceEntity>
 
+    @Query("SELECT * FROM spaces WHERE projectId = :projectId")
+    suspend fun getSpacesByProjectId(projectId: Int): List<SpaceEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSpace(space: SpaceEntity): Long
 

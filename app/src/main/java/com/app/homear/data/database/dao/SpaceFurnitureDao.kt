@@ -1,6 +1,7 @@
 package com.app.homear.data.database.dao
 
 import androidx.room.*
+import com.app.homear.data.database.entity.SpaceEntity
 import com.app.homear.data.database.entity.SpaceFurnitureEntity
 
 @Dao
@@ -8,6 +9,9 @@ interface SpaceFurnitureDao {
 
     @Query("SELECT * FROM space_furniture")
     suspend fun getAllLocalFurniture(): List<SpaceFurnitureEntity>
+
+    @Query("SELECT * FROM space_furniture WHERE spaceId = :spaceId")
+    suspend fun getSpaceFurnituresBySpaceId(spaceId: Int): List<SpaceFurnitureEntity>
 
     @Query("SELECT * FROM space_furniture WHERE id = :id")
     suspend fun getLocalFurnitureById(id: Int): SpaceFurnitureEntity?
