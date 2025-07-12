@@ -11,6 +11,10 @@ import com.app.homear.domain.model.UserModel
 import com.app.homear.domain.usecase.firestore.GetCurrentUserUseCase
 import com.app.homear.domain.usecase.auth.SingOutUseCase
 import com.app.homear.domain.usecase.auth.IsLoggedInUseCase
+import com.app.homear.domain.usecase.proyect.DeleteAllProyectUseCase
+import com.app.homear.domain.usecase.space.DeleteAllSpacesUseCase
+import com.app.homear.domain.usecase.spaceFurniture.DeleteAllSpaceFurnituresUseCase
+import com.app.homear.domain.usecase.spaceFurniture.SaveSpaceFurnitureUseCase
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -29,6 +33,9 @@ class ConfigurationViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val isLoggedInUseCase: IsLoggedInUseCase,
     private val singOutUseCase: SingOutUseCase,
+    private val deleteAllProjectsUseCase: DeleteAllProyectUseCase,
+    private val deleteAllSpacesUseCase: DeleteAllSpacesUseCase,
+    private val deleteAllSpacesFurnitureUseCase: DeleteAllSpaceFurnituresUseCase
 ): ViewModel() {
 
     var state by mutableStateOf(ConfigurationState())
@@ -36,6 +43,50 @@ class ConfigurationViewModel @Inject constructor(
 
     init {
         loadUserSession()
+    }
+
+    fun deleteAllProjectandSpaces(){
+        viewModelScope.launch {
+            deleteAllProjectsUseCase().collect { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        Log.d("ConfigurationViewModel", "Se borraron ${result.data!!} proyectos")
+                    }
+                    is Resource.Error -> {
+                        Log.e("ConfigurationViewModel", "Error deleting projects: ${result.message}")
+                    }
+                    is Resource.Loading -> {
+                        // Puedes manejar el estado de carga si lo deseas
+                    }
+                }
+            }
+            deleteAllSpacesUseCase().collect { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        Log.d("ConfigurationViewModel", "Se borraron ${result.data!!} espacios")
+                    }
+                    is Resource.Error -> {
+                        Log.e("ConfigurationViewModel", "Error deleting spaces: ${result.message}")
+                    }
+                    is Resource.Loading -> {
+                        // Puedes manejar el estado de carga si lo deseas
+                    }
+                }
+            }
+            deleteAllSpacesFurnitureUseCase().collect { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        Log.d("ConfigurationViewModel", "Se borraron ${result.data!!} muebles de espacios")
+                    }
+                    is Resource.Error -> {
+                        Log.e("ConfigurationViewModel", "Error deleting space furniture: ${result.message}")
+                    }
+                    is Resource.Loading -> {
+                        // Puedes manejar el estado de carga si lo deseas
+                    }
+                }
+            }
+        }
     }
 
     fun loadUserSession() {

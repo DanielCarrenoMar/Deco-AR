@@ -348,6 +348,19 @@ fun ConfigurationScreen(
                         githubUrl = "https://github.com/DanielCarrenoMar/Deco-AR/tree/dev"
                     )
                 }
+                Spacer(modifier = Modifier.height(32.dp))
+                Text(
+                    text = "Zona de Peligro",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF222222),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OptionConfiguracion(
+                    nombre = "Borrar Proyectos",
+                    iconPath = "file:///android_asset/configuracion/about.svg",
+                    onClick = { viewModel.deleteAllProjectandSpaces() }
+                )
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }
