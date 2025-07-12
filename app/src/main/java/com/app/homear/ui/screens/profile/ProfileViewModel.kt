@@ -75,6 +75,10 @@ class ProfileViewModel @Inject constructor(
         state = state.copy(errorMessage = null)
     }
 
+    fun clearUser() {
+        state = state.copy(user = null)
+    }
+
     // Función para simular logout (puedes implementar la lógica real según tu auth)
     fun logout() {
         state = state.copy(

@@ -35,7 +35,8 @@ data class LocalFurnitureData(
     val materials: String,
     val superficie: String,
     val modelPath: String,
-    val imagePath: String
+    val imagePath: String,
+    val proveedorEmail: String
 )
 
 @HiltViewModel
@@ -55,7 +56,8 @@ class AddProductoViewModel @Inject constructor(
         width: String,
         length: String,
         materials: String,
-        superficie: Superficie = Superficie.PISO
+        superficie: Superficie = Superficie.PISO,
+        proveedorEmail: String
     ) {
         viewModelScope.launch {
             state = state.copy(isLoading = true, errorMessage = null)
@@ -64,7 +66,7 @@ class AddProductoViewModel @Inject constructor(
                 // Validar campos requeridos
                 if (modelUri.isEmpty() || imageUri.isEmpty() || name.isEmpty() ||
                     description.isEmpty() || height.isEmpty() || width.isEmpty() ||
-                    length.isEmpty() || materials.isEmpty()
+                    length.isEmpty() || materials.isEmpty() || proveedorEmail.isEmpty()
                 ) {
                     state = state.copy(
                         isLoading = false,
@@ -122,7 +124,8 @@ class AddProductoViewModel @Inject constructor(
                     materials = materials,
                     superficie = superficie.name,
                     modelPath = modelPath,
-                    imagePath = imagePath
+                    imagePath = imagePath,
+                    proveedorEmail = proveedorEmail
                 )
 
                 // 4. Actualizar JSON con el nuevo mueble
@@ -180,6 +183,7 @@ class AddProductoViewModel @Inject constructor(
                 put("superficie", newFurniture.superficie)
                 put("modelPath", newFurniture.modelPath)
                 put("imagePath", newFurniture.imagePath)
+                put("proveedorEmail", newFurniture.proveedorEmail)
             }
 
             jsonArray.put(furnitureJson)

@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -51,8 +52,9 @@ fun ConfigurationScreen(
     navigateToCatalog: () -> Unit,
     navigateToCamera: () -> Unit,
     navigateToSpaces: () -> Unit,
-    navigateToProfile: () -> Unit, // agregado
-    navigateToIntro: () -> Unit, // NUEVA: Navegación cuando cierre sesión
+    navigateToProfile: () -> Unit,
+    navigateToProfileProv: () -> Unit,
+    navigateToIntro: () -> Unit,
     viewModel: ConfigurationViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -117,7 +119,13 @@ fun ConfigurationScreen(
                         name = viewModel.state.user!!.name,
                         email = viewModel.state.user!!.email,
                         role = viewModel.state.user!!.type,
-                        navigateToProfile = navigateToProfile
+                        navigateToProfile = { 
+                            if (viewModel.state.user!!.type.lowercase() == "provider") {
+                                navigateToProfileProv()
+                            } else {
+                                navigateToProfile()
+                            }
+                        }
                     )
                 } else {
                     UnauthenticatedProfileCard(
@@ -312,7 +320,7 @@ fun UnauthenticatedProfileCard(
 @Composable
 fun UserProfileCard(
     name: String,
-    email: String ,
+    email: String,
     role: String,
     navigateToProfile: () -> Unit
 ) {
@@ -340,43 +348,49 @@ fun UserProfileCard(
             )
             .padding(18.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                contentDescription = "Imagen de usuario",
-                modifier = Modifier
-                    .size(64.dp)
-                    .background(Color.White, RoundedCornerShape(50))
-                    .padding(4.dp),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(18.dp))
-            Column {
-                Text(
-                    text = name,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = email,
-                    fontSize = 15.sp,
-                    color = Color(0xFFE0E0E0)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Box(
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.iconoperfil),
+                    contentDescription = "Imagen de usuario",
                     modifier = Modifier
-                        .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 2.dp)
-                ) {
+                        .size(56.dp)
+                        .background(Color.White, RoundedCornerShape(50))
+                        .padding(8.dp),
+                    contentScale = ContentScale.Crop
+                )
+                Column {
+                    Text(
+                        text = name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = email,
+                        fontSize = 14.sp,
+                        color = Color(0xFFE0E0E0)
+                    )
                     Text(
                         text = role,
-                        fontSize = 13.sp,
-                        color = Color(0xFF6D6D6D),
-                        fontWeight = FontWeight.Medium
+                        fontSize = 12.sp,
+                        color = Color(0xFFE0E0E0)
                     )
                 }
             }
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = "Ir al perfil",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }

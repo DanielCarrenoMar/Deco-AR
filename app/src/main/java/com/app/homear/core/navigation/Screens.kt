@@ -56,3 +56,6 @@ object ProjectDetail
 
 @Serializable
 object AddProduct
+
+@Serializable
+object ProfileProv
