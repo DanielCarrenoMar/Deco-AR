@@ -42,8 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
-import com.app.homear.ui.component.ModalInfo
-import com.app.homear.ui.component.ModalInfo
+import com.app.homear.ui.component.TutorialCarousel
 import com.app.homear.ui.component.NavBar
 
 val CustomPurple = Color(0xFF54124E)
@@ -60,12 +59,12 @@ fun TutorialScreen(
 ) {
     val context = LocalContext.current
     var isModalOpen by remember { mutableStateOf(false) }
-    val stepsTutorial = listOf<String>(
-        "Paso 1: Explora el Catálogo: Abre la aplicación y navega por nuestro extenso catálogo de muebles. Tómate tu tiempo para explorar las diferentes categorías y estilos.",
-        "Paso 2: Selecciona tus Favoritos: Cuando encuentres un mueble que te interese, selecciónalo. Puedes elegir varios para probar diferentes opciones.",
-        "Paso 3: Abre la Cámara: Ve a la sección \"Cámara\" dentro de la aplicación. Esto activará la función de realidad aumentada (AR) y abrirá la cámara de tu dispositivo.",
-        "Paso 4: Abre el Almacén de Muebles: En la pantalla de la cámara, verás un almacén o galería de tus muebles seleccionados.",
-        "Paso 5: Arrastra y Visualiza: Simplemente arrastra el mueble que deseas probar desde el almacén hacia el espacio real que se muestra en tu cámara. ¡Verás cómo el mueble aparece en tu entorno como si estuviera allí!"
+    val stepsTutorial = listOf(
+        "Explora el Catálogo: Abre la aplicación y navega por nuestro extenso catálogo de muebles. Tómate tu tiempo para explorar las diferentes categorías y estilos.",
+        "Selecciona tus Favoritos: Cuando encuentres un mueble que te interese, selecciónalo. Puedes elegir varios para probar diferentes opciones.",
+        "Abre la Cámara: Ve a la sección \"Cámara\" dentro de la aplicación. Esto activará la función de realidad aumentada (AR) y abrirá la cámara de tu dispositivo.",
+        "Abre el Almacén de Muebles: En la pantalla de la cámara, verás un almacén o galería de tus muebles seleccionados.",
+        "Arrastra y Visualiza: Simplemente arrastra el mueble que deseas probar desde el almacén hacia el espacio real que se muestra en tu cámara. ¡Verás cómo el mueble aparece en tu entorno como si estuviera allí!"
     )
 
     Box(
@@ -90,13 +89,11 @@ fun TutorialScreen(
                 )
             }
     ) {
-        //modal de tutorial
-        ModalInfo(
+        // Reemplazar ModalInfo por TutorialCarousel
+        TutorialCarousel(
             isDialogOpen = isModalOpen,
-            onDismiss = {isModalOpen = false},
-            titulo = "Tutorial",
-            informacion = stepsTutorial,
-            isList = true
+            onDismiss = { isModalOpen = false },
+            steps = stepsTutorial
         )
 
         // Título decorAR

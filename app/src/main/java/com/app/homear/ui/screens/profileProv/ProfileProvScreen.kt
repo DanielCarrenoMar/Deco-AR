@@ -22,61 +22,60 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.annotation.DrawableRes
-import androidx.compose.material3.Text
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedButton
-import com.app.homear.R
-import com.app.homear.ui.theme.ColorVerde
-import com.app.homear.ui.theme.CorporatePurple
-import com.app.homear.ui.theme.Typography
-import com.app.homear.ui.theme.HomeARTheme
-
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-
-// Eliminamos la importación de NavBar ya que no la usaremos por ahora
-// import com.app.homear.ui.component.NavBar
+import androidx.annotation.DrawableRes
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-
-
-// Si UserModel ya está en com.app.homear.domain.model, asegúrate de importar esa.
-// Por ahora, se mantiene la definición local para el ejemplo.
-// data class UserModel(...) // Ya está definida en ProfileProvedorViewModel.kt
-
+import coil.compose.AsyncImage
+import com.app.homear.R
+import com.app.homear.domain.model.UserModel
+import com.app.homear.ui.theme.ColorVerde
+import com.app.homear.ui.theme.CorporatePurple
+import com.app.homear.ui.theme.HomeARTheme
+import com.app.homear.ui.screens.profileProv.ProfileProvedorUiState
+import com.app.homear.ui.screens.profileProv.ProfileProvViewModel
+import android.content.Context
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import org.json.JSONArray
+import java.io.File
 
 @Composable
 fun ProfileProvScreen(
-    // Eliminamos todos los parámetros de navegación ya que no hay NavBar ni conexión por ahora
+    user: UserModel,
     viewModel: ProfileProvViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(user) {
+        viewModel.loadProvedorProfile(user)
+    }
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    // Filtra muebles para el usuario
+    val cardsList = remember(user.email) {
+        loadProveedorFurnitureCards(context, user.email)
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
-        // Eliminamos verticalArrangement.SpaceBetween si la NavBar no está presente
+            .padding(
+                top = androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues()
+                    .calculateTopPadding()
+            )
     ) {
         Column(
             modifier = Modifier
@@ -90,20 +89,18 @@ fun ProfileProvScreen(
                     .height(200.dp)
                     .background(ColorVerde)
             )
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .offset(y = (-90).dp)
                     .padding(horizontal = 16.dp)
             ) {
-                Card(
+                androidx.compose.material3.Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
                     if (uiState.isLoading) {
-                        // Estado de carga
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -111,151 +108,68 @@ fun ProfileProvScreen(
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(
+                            androidx.compose.material3.CircularProgressIndicator(
                                 color = CorporatePurple,
                                 modifier = Modifier.size(40.dp)
                             )
                         }
-                    } else if (uiState.isAuthenticated && uiState.user != null) {
-                        // Usuario autenticado - mostrar perfil de proveedor
-                        AuthenticatedProvedorProfileContent(
-                            user = uiState.user!!,
-                            onEditProfile = { /* TODO: Implementar navegación a edición de perfil de proveedor */ },
-                            onLogout = { viewModel.logout() }
-                        )
+                    } else if (uiState.isAuthenticated) {
+                        // Mostrar datos del usuario real
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.iconoperfil),
+                                contentDescription = "Foto de perfil de proveedor",
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(CircleShape)
+                                    .border(
+                                        2.dp,
+                                        androidx.compose.material3.MaterialTheme.colorScheme.surface,
+                                        CircleShape
+                                    ),
+                                contentScale = ContentScale.Crop
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            androidx.compose.material3.Text(
+                                text = user.name,
+                                style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
+                                color = Color.Black
+                            )
+                            androidx.compose.material3.Text(
+                                text = user.email,
+                                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                            androidx.compose.material3.Text(
+                                text = "Tipo: ${user.type}",
+                                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     } else {
-                        // Usuario no autenticado (o error) - mostrar opciones de login/registro
-                        // Los callbacks aquí no harán nada por ahora
                         UnauthenticatedProfileContent(
-                            onLogin = { /* No hay navegación */ },
-                            onRegister = { /* No hay navegación */ },
+                            onLogin = { /* No navegación */ },
+                            onRegister = { /* No navegación */ },
                             errorMessage = uiState.errorMessage,
-                            onRetry = { viewModel.refreshUser() }
+                            onRetry = { viewModel.refreshUser(user) }
                         )
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(20.dp))
-
-            // Mostrar secciones solo si el usuario está autenticado
             if (uiState.isAuthenticated) {
-                // Título "Lista de muebles subidos"
-                FurnitureSectionDesignOnly(
-                    title = "Lista de muebles subidos", //
-                    items = getSampleFurnitureItems()
+                FurnitureSectionDesignOnlyReal(
+                    title = "Lista de muebles subidos",
+                    items = cardsList
                 )
-
                 Spacer(modifier = Modifier.height(16.dp))
-
-                // Título "Lista de espacios"
-                FurnitureSectionDesignOnly(
-                    title = "Lista de espacios", //
-                    items = getSampleFurnitureItems()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-
-        // ELIMINADA: NavBar de aquí
-        /*
-        NavBar(
-            toCamera = navigateToCamera,
-            toTutorial = navigateToTutorial,
-            toCatalog = navigateToCatalog,
-            toSpaces = navigateToSpaces,
-            toConfiguration = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                )
-        )
-        */
-    }
-}
-
-// Los siguientes composables (AuthenticatedProvedorProfileContent, UnauthenticatedProfileContent,
-// FurnitureSectionDesignOnly, FurnitureCardDesignOnly, FurnitureItem, getSampleFurnitureItems)
-// son compartidos y se mantienen sin cambios, ya que su lógica visual es la misma.
-
-@Composable
-fun AuthenticatedProvedorProfileContent(
-    user: UserModel,
-    onEditProfile: () -> Unit,
-    onLogout: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.iconoperfil), //
-            contentDescription = "Foto de perfil de proveedor",
-            modifier = Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
-            contentScale = ContentScale.Crop
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = user.name, //
-            style = MaterialTheme.typography.headlineSmall,
-            color = Color.Black
-        )
-        Text(
-            text = user.email, //
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
-        )
-
-        Text(
-            text = "Tipo: ${user.type}",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(
-                onClick = onEditProfile,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(40.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
-                shape = RoundedCornerShape(20.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-            ) {
-                Text(
-                    text = "Editar perfil", //
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-
-            OutlinedButton(
-                onClick = onLogout,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(40.dp),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Text(
-                    text = "Cerrar sesión",
-                    color = CorporatePurple,
-                    style = MaterialTheme.typography.labelLarge
-                )
             }
         }
     }
@@ -285,41 +199,45 @@ fun UnauthenticatedProfileContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
+        androidx.compose.material3.Text(
             text = "¡Bienvenido a HomeAR!",
-            style = MaterialTheme.typography.headlineSmall,
+            style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
             color = Color.Black,
             textAlign = TextAlign.Center
         )
 
-        Text(
+        androidx.compose.material3.Text(
             text = "Inicia sesión o regístrate para acceder a todas las funciones",
-            style = MaterialTheme.typography.bodyMedium,
+            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
             color = Color.Gray,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
         )
 
         if (errorMessage != null) {
-            Card(
+            androidx.compose.material3.Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = Color(
+                        0xFFFFEBEE
+                    )
+                ),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
+                    androidx.compose.material3.Text(
                         text = "Error al cargar el perfil",
-                        style = MaterialTheme.typography.titleSmall,
+                        style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
                         color = Color(0xFFD32F2F)
                     )
-                    Text(
+                    androidx.compose.material3.Text(
                         text = errorMessage,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                         color = Color(0xFFD32F2F),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(top = 4.dp)
@@ -327,13 +245,13 @@ fun UnauthenticatedProfileContent(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedButton(
+                    androidx.compose.material3.OutlinedButton(
                         onClick = onRetry,
-                        colors = ButtonDefaults.outlinedButtonColors(
+                        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                             contentColor = Color(0xFFD32F2F)
                         )
                     ) {
-                        Text("Reintentar")
+                        androidx.compose.material3.Text("Reintentar")
                     }
                 }
             }
@@ -345,68 +263,82 @@ fun UnauthenticatedProfileContent(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Button(
+            androidx.compose.material3.Button(
                 onClick = onLogin,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = CorporatePurple),
                 shape = RoundedCornerShape(24.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                elevation = androidx.compose.material3.ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
-                Text(
+                androidx.compose.material3.Text(
                     text = "Iniciar Sesión",
                     color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
             }
 
-            OutlinedButton(
+            androidx.compose.material3.OutlinedButton(
                 onClick = onRegister,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = CorporatePurple
-                )
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Text(
+                androidx.compose.material3.Text(
                     text = "Registrarse",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
             }
         }
     }
 }
 
+data class FurnitureItemProveedor(
+    val name: String,
+    val materials: String,
+    val imagePath: String
+)
 
-@Composable
-fun FurnitureSectionDesignOnly(title: String, items: List<FurnitureItem>) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                color = Color.Black
-            )
-            Image(
-                painter = painterResource(id = R.drawable.iconoflecha), //
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
+fun loadProveedorFurnitureCards(context: Context, email: String): List<FurnitureItemProveedor> {
+    val file = File(context.filesDir, "assets/models.json")
+    if (!file.exists()) return emptyList()
+    val content = file.readText()
+    val array = JSONArray(content)
+    val result = mutableListOf<FurnitureItemProveedor>()
+    for (i in 0 until array.length()) {
+        val obj = array.getJSONObject(i)
+        if (obj.optString("proveedorEmail") == email) {
+            result.add(
+                FurnitureItemProveedor(
+                    name = obj.optString("name"),
+                    materials = obj.optString("materials"),
+                    imagePath = File(
+                        context.filesDir,
+                        "assets/" + obj.optString("imagePath")
+                    ).absolutePath
+                )
             )
         }
-        Spacer(modifier = Modifier.height(16.dp))
+    }
+    return result
+}
 
+@Composable
+fun FurnitureSectionDesignOnlyReal(title: String, items: List<FurnitureItemProveedor>) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        androidx.compose.material3.Text(
+            text = title,
+            style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
+            color = Color.Black
+        )
+        Spacer(modifier = Modifier.height(16.dp))
         LazyRow {
             items(items) { item ->
-                FurnitureCardDesignOnly(item = item)
+                FurnitureCardDesignOnlyReal(item)
                 Spacer(modifier = Modifier.width(12.dp))
             }
         }
@@ -414,13 +346,13 @@ fun FurnitureSectionDesignOnly(title: String, items: List<FurnitureItem>) {
 }
 
 @Composable
-fun FurnitureCardDesignOnly(item: FurnitureItem) {
-    Card(
+fun FurnitureCardDesignOnlyReal(item: FurnitureItemProveedor) {
+    androidx.compose.material3.Card(
         modifier = Modifier
             .width(150.dp)
             .height(180.dp),
         shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -428,26 +360,24 @@ fun FurnitureCardDesignOnly(item: FurnitureItem) {
                 .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = item.imageResId), //
+            AsyncImage(
+                model = item.imagePath,
                 contentDescription = null,
                 modifier = Modifier
                     .size(100.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
+            androidx.compose.material3.Text(
                 text = item.name,
-                style = MaterialTheme.typography.titleMedium,
+                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
                 maxLines = 1
             )
-            Text(
-                text = item.type,
-                style = MaterialTheme.typography.bodySmall,
+            androidx.compose.material3.Text(
+                text = item.materials,
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
             )
@@ -455,116 +385,16 @@ fun FurnitureCardDesignOnly(item: FurnitureItem) {
     }
 }
 
-data class FurnitureItem(
-    val name: String,
-    val type: String,
-    @DrawableRes val imageResId: Int
-)
-
-fun getSampleFurnitureItems(): List<FurnitureItem> {
-    return listOf(
-        FurnitureItem("Nombre del Objeto", "Tipo de mueble", R.drawable.sillaxd), //
-        FurnitureItem("Nombre del Objeto", "Tipo de mueble", R.drawable.sillaxd), //
-        FurnitureItem("Nombre del Objeto", "Tipo de mueble", R.drawable.sillaxd), //
-        FurnitureItem("Nombre del Objeto", "Tipo de mueble", R.drawable.sillaxd), //
-        FurnitureItem("Nombre del Objeto", "Tipo de mueble", R.drawable.sillaxd) //
-    )
-}
-
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 fun ProfileProvedorScreenPreview() {
     HomeARTheme {
-        // Simular el estado del ViewModel para que muestre el contenido deseado en el preview
-        val simulatedUser = UserModel(
-            name = "Petrolina Sinforosa", //
-            email = "petrolina2025@gmail.com", //
+        val previewUser = UserModel(
+            name = "Petrolina Sinforosa",
+            email = "petrolina2025@gmail.com",
             type = "Proveedor",
-            profileImageUrl = null
+            key = "PREVIEW"
         )
-        val simulatedUiState = ProfileProvedorUiState(
-            isLoading = false,
-            isAuthenticated = true,
-            user = simulatedUser,
-            errorMessage = null
-        )
-
-        // El Column principal ya no necesita verticalArrangement.SpaceBetween si la NavBar no está
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .zIndex(1f)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(ColorVerde)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = (-90).dp)
-                        .padding(horizontal = 16.dp)
-                ) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                    ) {
-                        // Usamos directamente el composable AuthenticatedProvedorProfileContent
-                        // para el preview
-                        AuthenticatedProvedorProfileContent(
-                            user = simulatedUiState.user!!,
-                            onEditProfile = { /* No-op for preview */ },
-                            onLogout = { /* No-op for preview */ }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                if (simulatedUiState.isAuthenticated) {
-                    // Título "Lista de muebles subidos"
-                    FurnitureSectionDesignOnly(
-                        title = "Lista de muebles subidos", //
-                        items = getSampleFurnitureItems()
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Título "Lista de espacios"
-                    FurnitureSectionDesignOnly(
-                        title = "Lista de espacios", //
-                        items = getSampleFurnitureItems()
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-
-            // ELIMINADA: NavBar del preview también
-            /*
-            NavBar(
-                toCamera = { /* No-op for preview */ },
-                toTutorial = { /* No-op for preview */ },
-                toCatalog = { /* No-op for preview */ },
-                toSpaces = { /* No-op for preview */ },
-                toConfiguration = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                    )
-            )
-            */
-        }
+        ProfileProvScreen(user = previewUser)
     }
 }

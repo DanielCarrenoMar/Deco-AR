@@ -4,10 +4,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.app.homear.domain.model.UserModel
 import com.app.homear.ui.screens.addProducto.AddProductoScreen
 import com.app.homear.ui.screens.catalog.CatalogScreen
 import com.app.homear.ui.screens.camera.CameraScreen
@@ -18,6 +20,7 @@ import com.app.homear.ui.screens.intro.IntroScreen
 import com.app.homear.ui.screens.loading.LoadingScreen
 import com.app.homear.ui.screens.login.LoginScreen
 import com.app.homear.ui.screens.profile.ProfileScreen
+import com.app.homear.ui.screens.profileProv.ProfileProvScreen
 import com.app.homear.ui.screens.register.RegisterScreen
 import com.app.homear.ui.screens.spaceDetail.SpaceDetailScreen
 import com.app.homear.ui.screens.projects.ProjectsScreen
@@ -25,6 +28,7 @@ import com.app.homear.ui.screens.spaceslist.SpacesListScreen
 import com.app.homear.ui.screens.tutorial.TutorialScreen
 import com.app.homear.ui.screens.start.StartScreen
 import com.app.homear.ui.screens.createProject.CreateProjectScreen
+import com.app.homear.ui.screens.profile.ProfileViewModel
 import com.app.homear.ui.screens.projectDetail.ProjectDetailScreen
 
 /**
@@ -39,6 +43,8 @@ fun NavController.navigatePop(route: Any) {
 @Composable
 fun NavigationWrapper() {
     val navController = rememberNavController()
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val user by profileViewModel.state::user
     NavHost(
         navController = navController,
         startDestination = Intro, // En que pagina inicia
@@ -169,6 +175,7 @@ fun NavigationWrapper() {
                 },
                 { navController.navigatePop(Project) },
                 navigateToProfile = { navController.navigatePop(Profile) },
+                navigateToProfileProv = { navController.navigatePop(ProfileProv) },
                 navigateToIntro = { navController.navigatePop(Intro) },
             )
         }
@@ -187,7 +194,13 @@ fun NavigationWrapper() {
                 navigateToSpaces = { navController.navigatePop(Project) },
                 navigateToLogin = { navController.navigatePop(Login) },
                 navigateToRegister = { navController.navigatePop(Register) },
-                navigateToEditProfile = { navController.navigate(EditProfile) } // Nuevo callback
+                navigateToEditProfile = { navController.navigate(EditProfile) }
+            )
+        }
+
+        composable<ProfileProv> {
+            ProfileProvScreen(
+                user = user ?: UserModel.DEFAULT
             )
         }
 
@@ -217,12 +230,13 @@ fun NavigationWrapper() {
                navigateToSpacesDetails = { spaceId -> navController.navigate(SpaceDetail(spaceId)) }
             )
         }
-        composable<AddProduct>        {
+        composable<AddProduct> {
             AddProductoScreen(
-                onCancel = { navController.popBackStack() } ,// Regresa a la pantalla anterior (Profile)
+                onCancel = { navController.popBackStack() },
                 onSuccess = { navController.navigate(Catalog) },
                 navigateToEditProfile = { navController.navigate(Profile) },
-                navigateToSpacesList = { navController.navigate(SpacesList) }
+                navigateToSpacesList = { navController.navigate(SpacesList) },
+                user = user ?: UserModel.DEFAULT // Usar default solo si aún no está cargado el real
             )
         }
 

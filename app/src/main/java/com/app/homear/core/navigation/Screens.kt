@@ -56,3 +56,6 @@ data class ProjectDetail(val projectId: Int)
 
 @Serializable
 object AddProduct
+
+@Serializable
+object ProfileProv

@@ -148,8 +148,6 @@ class CatalogViewModel @Inject constructor(
                     )
                 }
                 furnitureItems = items
-                // Registrar en CameraViewModel
-                items.forEach { CameraViewModel.addARModelFromFurniture(it) }
             } catch (e: Exception) {
                 Log.e("CatalogViewModel", "Error leyendo modelos", e)
                 furnitureItems = emptyList()
@@ -180,16 +178,26 @@ class CatalogViewModel @Inject constructor(
         showItemModal = true
     }
     fun onItemAddToCart(item: FurnitureItem) {
-        Log.d("CatalogViewModel", "Item added to favorites/cart: ${item.name}")
-        // Limpiar la lista antes de agregar el nuevo modelo
-        CameraViewModel.sharedAvailableModels.clear()
-        // Agregar solo el modelo seleccionado
+        Log.d("CatalogViewModel", "Item added to AR: ${item.name}")
+        // Crear el modelo AR del mueble seleccionado
         val arModel = ARModel(
             name = item.name,
             modelPath = item.modelPath,
             imagePath = item.imagePath
         )
-        CameraViewModel.sharedAvailableModels.add(arModel)
+        
+        // Verificar si el modelo ya existe en la lista
+        val modelExists = CameraViewModel.sharedAvailableModels.any { 
+            it.name == arModel.name && it.modelPath == arModel.modelPath 
+        }
+        
+        // Solo agregar si no existe ya en la lista
+        if (!modelExists) {
+            CameraViewModel.sharedAvailableModels.add(arModel)
+            Log.d("CatalogViewModel", "Mueble agregado al menú AR: ${arModel.name}")
+        } else {
+            Log.d("CatalogViewModel", "El mueble ya existe en el menú AR: ${arModel.name}")
+        }
     }
     fun toggleFilters() { showFilters = !showFilters }
     fun updateFilterState(newFilterState: FilterState) { filterState = newFilterState }
@@ -207,12 +215,5 @@ class CatalogViewModel @Inject constructor(
     fun closeItemModal() {
         showItemModal = false
         selectedItem = null
-    }
-    fun confirmItemAction() {
-        selectedItem?.let { item ->
-            Log.d("CatalogViewModel", "Item confirmed for AR: ${item.name}")
-            // TODO: Navegar a la vista AR con el item seleccionado
-        }
-        closeItemModal()
     }
 }

@@ -38,8 +38,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.homear.domain.model.Superficie
+import com.app.homear.domain.model.UserModel
 import com.app.homear.ui.component.FilePicker
 import com.app.homear.ui.component.InputData
+import android.app.Application
+import androidx.compose.ui.platform.LocalContext
+import com.app.homear.core.ModelJsonManager
+import org.json.JSONObject
 
 @Composable
 fun AddProductoScreen(
@@ -48,6 +53,7 @@ fun AddProductoScreen(
     navigateToEditProfile: () -> Unit,
     navigateToSpacesList: () -> Unit,
     viewModel: AddProductoViewModel = hiltViewModel(),
+    user: UserModel // Corrección del parámetro y tipo para proveer email
 ) {
     // Variables para captar datos
     var fileUriModelo by remember { mutableStateOf("") }
@@ -66,9 +72,33 @@ fun AddProductoScreen(
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showErrorDialog by remember { mutableStateOf(false) }
 
+    // Para obtener contexto de la aplicación
+    val context = LocalContext.current.applicationContext
+
+    // Al lanzar la pantalla (o en el primer uso), asegúrate de copiar el modelo si no existe
+    LaunchedEffect(Unit) {
+        ModelJsonManager.copyModelJsonIfNeeded(context)
+    }
+
     // Observar cambios en el estado
     LaunchedEffect(viewModel.state.isSuccess) {
         if (viewModel.state.isSuccess) {
+            // --- NUEVO: Agregar al model.json local ---
+            val productJson = JSONObject().apply {
+                put("modelUri", fileUriModelo)
+                put("imageUri", fileUriImage)
+                put("name", name.value)
+                put("description", description.value)
+                put("height", alto.value)
+                put("width", ancho.value)
+                put("length", profundidad.value)
+                put("materials", material.value)
+                put("superficie", Superficie.PISO.name) // cambiar si quieres selector luego
+                put("createdAt", System.currentTimeMillis()) // campo opcional de timestamp
+                put("proveedorEmail", user.email)
+            }
+            ModelJsonManager.addFurniture(context, productJson)
+            // ---
             showSuccessDialog = true
         }
     }
@@ -101,7 +131,8 @@ fun AddProductoScreen(
                 width = ancho.value,
                 length = profundidad.value,
                 materials = material.value,
-                superficie = Superficie.PISO // Por defecto, podrías agregar un selector
+                superficie = Superficie.PISO, // Por defecto, podrías agregar un selector
+                proveedorEmail = user.email
             )
         }
     }
