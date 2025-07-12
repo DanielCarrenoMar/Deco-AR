@@ -30,8 +30,14 @@ object ModelJsonManager {
      */
     fun readModelJson(context: Context): JSONArray {
         val file = File(context.filesDir, FILE_NAME)
-        val content = file.readText()
-        return JSONArray(content)
+        val content = file.readText().trim()
+        return if (content.startsWith("{")) {
+            // Caso objeto raíz con propiedad "models"
+            val jsonObject = JSONObject(content)
+            jsonObject.getJSONArray("models")
+        } else {
+            JSONArray(content)
+        }
     }
 
     /**
