@@ -369,7 +369,7 @@ class CameraViewModel @Inject constructor(
                             Log.d("AR_DEBUG", "Modelo cargado exitosamente desde almacenamiento interno")
                         } else {
                             Log.e("AR_DEBUG", "Archivo de modelo no encontrado: $modelPath")
-                            throw IllegalStateException("Modelo no encontrado: $modelPath")
+                            //throw IllegalStateException("Modelo no encontrado: $modelPath")
                         }
                     } catch (e: Exception) {
                         Log.e("AR_DEBUG", "Error cargando modelo: ${e.message}")
