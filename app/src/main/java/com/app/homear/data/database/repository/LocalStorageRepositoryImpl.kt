@@ -215,6 +215,14 @@ class LocalStorageRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun saveSpaceList(spaceList: List<SpaceModel>) {
+        try {
+            spaceDao.insertSpaceList(spaceList.map { it.toSpaceEntity() })
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
     override suspend fun getAllSpacesFurniture(): List<SpaceFurnitureModel> {
         try {
             return spaceFurnitureDao.getAllLocalFurniture().map { it.toSpaceFurnitureModel() }

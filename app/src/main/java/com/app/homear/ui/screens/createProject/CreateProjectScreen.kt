@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,34 +27,34 @@ import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.app.homear.ui.theme.CorporatePurple
-
-data class Espacio(
-    val nombre: String,
-    val cantidadMuebles: Int
-)
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.app.homear.ui.screens.createProject.Espacio
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateProjectScreen(
     onNavigateBack: () -> Unit = {},
     navigateToCamera: () -> Unit = {},
-    navigateToSpaces: () -> Unit = {}
+    navigateToSpaces: () -> Unit = {},
+    viewModel: CreateProjectViewModel = hiltViewModel()
 ) {
     val opciones = listOf("Sala", "Cocina", "Comedor", "Habitación")
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionText by remember { mutableStateOf("") }
-    var nombreEspacio by remember { mutableStateOf(TextFieldValue("")) }
-    var espacios by remember { mutableStateOf(listOf<Espacio>()) }
-
-    // 🚀 Datos de prueba
+    
+    // Efecto para manejar la navegación cuando se crea el proyecto
+    LaunchedEffect(viewModel.isProjectCreated.value) {
+        if (viewModel.isProjectCreated.value) {
+            navigateToSpaces()
+            viewModel.resetState()
+        }
+    }
+    
+    // Efecto para restaurar el estado cuando se regresa de la cámara
     LaunchedEffect(Unit) {
-        espacios = listOf(
-            Espacio("Sala Principal", 5),
-            Espacio("Comedor Familiar", 3),
-            Espacio("Habitación Principal", 4),
-            Espacio("Oficina", 2),
-            Espacio("Cocina Moderna", 6)
-        )
+        viewModel.restoreProjectState()
+        viewModel.restoreSpacesList()
+        viewModel.clearCreationState()
     }
 
     LazyColumn(
@@ -176,13 +177,33 @@ fun CreateProjectScreen(
             )
 
             OutlinedTextField(
-                value = nombreEspacio,
-                onValueChange = { nombreEspacio = it },
-                placeholder = { Text(text = "Añadir nombre de espacio") },
+                value = viewModel.projectName.value,
+                onValueChange = { viewModel.updateProjectName(it) },
+                placeholder = { Text(text = "Ingresa el nombre del proyecto") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
                 shape = RoundedCornerShape(8.dp)
+            )
+        }
+        
+        item {
+            Text(
+                text = "Descripción del Proyecto",
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            )
+
+            OutlinedTextField(
+                value = viewModel.projectDescription.value,
+                onValueChange = { viewModel.updateProjectDescription(it) },
+                placeholder = { Text(text = "Describe tu proyecto (opcional)") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                shape = RoundedCornerShape(8.dp),
+                minLines = 3,
+                maxLines = 5
             )
         }
 
@@ -193,8 +214,44 @@ fun CreateProjectScreen(
                 fontSize = 14.sp
             )
         }
+        
+        if (viewModel.spacesList.value.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Image,
+                            contentDescription = "Sin espacios",
+                            modifier = Modifier.size(48.dp),
+                            tint = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "No hay espacios agregados",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Usa el botón 'Agregar espacio' para comenzar",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
 
-        items(espacios) { espacio ->
+        items(viewModel.spacesList.value) { espacio ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -250,19 +307,39 @@ fun CreateProjectScreen(
         }
 
         item {
+            // Mostrar mensaje de error si existe
+            viewModel.errorMessage.value?.let { error ->
+                Text(
+                    text = error,
+                    color = Color.Red,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
+        
+        item {
             Button(
-                onClick = { navigateToSpaces() },
+                onClick = { viewModel.createProject() },
                 colors = ButtonDefaults.buttonColors(containerColor = CorporatePurple),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .height(48.dp),
+                enabled = !viewModel.isLoading.value
             ) {
-                Text(
-                    text = "Confirmar",
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
+                if (viewModel.isLoading.value) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Text(
+                        text = "Crear Proyecto",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
             }
         }
     }
