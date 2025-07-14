@@ -6,6 +6,8 @@
 
 Una aplicación donde los decoradores de interiores pueden mostrar sus ideas, asi como buscar inspiracion de otros usuarios. Evita que tus clientes tengan que imaginar como quedaria su nueva casa amueblada y muestraselos directamente usando la realidad aumentada.
 
+Creado como proyecto de la materia *Ingenieria de Software* en el cuarto semestre de la [UCAB](https://www.ucab.edu.ve/).
+
 ## Características ⭐
 - Visualización de muebles en realidad aumentada
 - Carga de muebles personalizados
