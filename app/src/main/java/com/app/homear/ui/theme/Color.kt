@@ -2,6 +2,7 @@ package com.app.homear.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val ColorVerde = Color(0xff00664b)
 val CorporatePurple = Color(0xFF7E1B75)
 
 val Purple80 = Color(0xFFD0BCFF)

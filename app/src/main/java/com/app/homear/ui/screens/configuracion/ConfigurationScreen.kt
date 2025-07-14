@@ -3,90 +3,191 @@ package com.app.homear.ui.screens.configuracion
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.app.homear.ui.component.NavBar
-import com.app.homear.ui.screens.profile.ProfileViewModel
-import com.app.homear.R
-import kotlinx.coroutines.launch
-import androidx.compose.foundation.Image
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import com.app.homear.R
+import com.app.homear.ui.component.ModalInfo
+import com.app.homear.ui.component.NavBar
+import com.app.homear.ui.theme.CorporatePurple
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.window.Dialog
+
+@Composable
+private fun SignOutConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    isLoading: Boolean
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Cerrar sesión",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF8F006D)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "¿Estás seguro que deseas cerrar sesión?",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF8F006D)
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = SolidColor(Color(0xFF8F006D))
+                        ),
+                        enabled = !isLoading
+                    ) {
+                        Text(
+                            text = "Cancelar",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8F006D),
+                            contentColor = Color.White
+                        ),
+                        enabled = !isLoading
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Confirmar",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun ConfigurationScreen(
     navigateToTutorial: () -> Unit,
     navigateToCatalog: () -> Unit,
     navigateToCamera: () -> Unit,
+    navigateToSpaces: () -> Unit,
     navigateToProfile: () -> Unit,
+    navigateToProfileProv: () -> Unit,
+    navigateToIntro: () -> Unit,
     viewModel: ConfigurationViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    
+    //variables que controlan los modales
+    var isModalHelpOpen by remember { mutableStateOf(false) }
+    var isModalAboutUsOpen by remember { mutableStateOf(false) }
+
+    // Estado para controlar loading de cierre de sesión
+    var isSigningOut by remember { mutableStateOf(false) }
+    var showSignOutConfirmation by remember { mutableStateOf(false) }
+
+    //informacion de los modales
+    val inforHelp = listOf<String>(
+        "¡Hola!\n" +
+                "\n" +
+                "Lamentamos informarte que, por el momento, no contamos con soporte o una implementación específica para ayudas dentro de nuestra plataforma. Estamos trabajando para integrar estas funcionalidades en el futuro y mejorar tu experiencia.\n" +
+                "\n" +
+                "Agradecemos tu comprensión."
+    )
+
+    val infoAboutUs = listOf(
+        "Somos un equipo de estudiantes de la Universidad Católica Andrés Bello (UCAB) Guayana, apasionados por la tecnología y cursando la cátedra de Ingeniería de Software. Este proyecto es el resultado de nuestro esfuerzo y aprendizaje en esta materia, donde aplicamos los conocimientos adquiridos para desarrollar soluciones innovadoras.",
+        "Tecnologías utilizadas:\n" +
+        "• Kotlin y Jetpack Compose para el desarrollo Android\n" +
+        "• Firebase para autenticación y base de datos\n" +
+        "• ARCore para realidad aumentada\n" +
+        "• Material Design 3 para la interfaz de usuario\n" +
+        "• Git y GitHub para control de versiones",
+        "Proyecto de código abierto\n" +
+        "Puedes encontrar el código fuente en GitHub:\n" +
+        "https://github.com/DanielCarrenoMar/Deco-AR/tree/dev"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -107,12 +208,13 @@ fun ConfigurationScreen(
                     .padding(horizontal = 18.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                Spacer(modifier = Modifier.height(16.dp)) // Igual que catálogo
-                
-                // Título centrado como en el catálogo
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
                     text = "Configuración",
-                    color = com.app.homear.ui.theme.CorporatePurple,
+                    textAlign = TextAlign.Center,
+                    fontSize = 36.sp,
+                    color = CorporatePurple,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
@@ -120,54 +222,87 @@ fun ConfigurationScreen(
                         .padding(bottom = 24.dp)
                         .wrapContentWidth(Alignment.CenterHorizontally)
                 )
-                
-                // Card de usuario elegante
-                UserProfileCard(
-                    name = "Juan Pérez",
-                    email = "juan.perez@gmail.com",
-                    role = "Usuario"
-                )
+
+                // Mostrar diferente ProfileCard según el estado de autenticación
+                if (viewModel.state.isLoading) {
+                    LoadingProfileCard()
+                } else if (viewModel.state.isAuthenticated && viewModel.state.user != null) {
+                    UserProfileCard(
+                        name = viewModel.state.user!!.name,
+                        email = viewModel.state.user!!.email,
+                        role = viewModel.state.user!!.type,
+                        navigateToProfile = { 
+                            if (viewModel.state.user!!.type.lowercase() == "provider") {
+                                navigateToProfileProv()
+                            } else {
+                                navigateToProfile()
+                            }
+                        }
+                    )
+                } else {
+                    UnauthenticatedProfileCard(
+                        navigateToProfile = navigateToProfile
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
-                // Agrupación: Preferencias
-                Text(
-                    text = "Preferencias",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp,
-                    color = Color(0xFF222222),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OptionConfiguracionCheck(
-                    nombre = "Notificaciones",
-                    iconPath = "file:///android_asset/configuracion/toggle.svg",
-                    active = true
-                )
-                OptionConfiguracionDropMenu(
-                    nombre = "Idioma",
-                    iconPath = "file:///android_asset/configuracion/languaje.svg",
-                    opciones = listOf("Español", "Inglés")
-                )
-                Spacer(modifier = Modifier.height(28.dp))
-                
-                // Agrupación: Cuenta
-                Text(
-                    text = "Cuenta",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp,
-                    color = Color(0xFF222222),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OptionConfiguracion(
-                    nombre = "Cambiar contraseña",
-                    iconPath = "file:///android_asset/configuracion/lock.svg"
-                )
-                OptionConfiguracion(
-                    nombre = "Cerrar sesión",
-                    iconPath = "file:///android_asset/configuracion/logout.svg"
-                )
-                Spacer(modifier = Modifier.height(28.dp))
-                
-                // Agrupación: Soporte
+
+                // Mostrar opciones solo si el usuario está autenticado
+                if (viewModel.state.isAuthenticated) {
+                    Text(
+                        text = "Cuenta",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF222222),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OptionConfiguracion(
+                        nombre = "Cambiar contraseña",
+                        iconPath = "file:///android_asset/configuracion/lock.svg",
+                        onClick = {  }
+                    )
+                    OptionConfiguracion(
+                        nombre = "Cerrar sesión",
+                        iconPath = "file:///android_asset/configuracion/logout.svg",
+                        onClick = { showSignOutConfirmation = true }
+                    )
+
+                    if (showSignOutConfirmation) {
+                        SignOutConfirmationDialog(
+                            onDismiss = { showSignOutConfirmation = false },
+                            onConfirm = {
+                                isSigningOut = true
+                                viewModel.signOut { success ->
+                                    isSigningOut = false
+                                    if (success) {
+                                        showSignOutConfirmation = false
+                                        navigateToIntro()
+                                    }
+                                }
+                            },
+                            isLoading = isSigningOut
+                        )
+                    }
+
+                    if (isSigningOut) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = CorporatePurple,
+                                modifier = Modifier.size(28.dp),
+                                strokeWidth = 3.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Cerrando sesión...", color = CorporatePurple)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(28.dp))
+                }
+
                 Text(
                     text = "Soporte",
                     fontWeight = FontWeight.SemiBold,
@@ -177,17 +312,59 @@ fun ConfigurationScreen(
                 )
                 OptionConfiguracion(
                     nombre = "Ayuda",
-                    iconPath = "file:///android_asset/configuracion/help.svg"
+                    iconPath = "file:///android_asset/configuracion/help.svg",
+                    onClick = { isModalHelpOpen = true }
                 )
+                //modal de ayuda
+                if (isModalHelpOpen) {
+                    ModalInfo(
+                        title = "Ayuda",
+                        info = inforHelp,
+                        onDismiss = { isModalHelpOpen = false },
+                        githubUrl = null
+                    )
+                }
+
                 OptionConfiguracion(
                     nombre = "Sobre nosotros",
-                    iconPath = "file:///android_asset/configuracion/about.svg"
+                    iconPath = "file:///android_asset/configuracion/about.svg",
+                    onClick = { isModalAboutUsOpen = true },
                 )
-                Spacer(modifier = Modifier.height(100.dp)) // Espacio para el navbar
+                //modal sobre nosotros
+                if (isModalAboutUsOpen) {
+                    ModalInfo(
+                        title = "Sobre nosotros",
+                        info = listOf(
+                            "Somos un equipo de estudiantes de la Universidad Católica Andrés Bello (UCAB) Guayana, apasionados por la tecnología y cursando la cátedra de Ingeniería de Software. Este proyecto es el resultado de nuestro esfuerzo y aprendizaje en esta materia, donde aplicamos los conocimientos adquiridos para desarrollar soluciones innovadoras.",
+                            "Tecnologías utilizadas:\n" +
+                            "• Kotlin y Jetpack Compose para el desarrollo Android\n" +
+                            "• Firebase para autenticación y base de datos\n" +
+                            "• ARCore para realidad aumentada\n" +
+                            "• Material Design 3 para la interfaz de usuario\n" +
+                            "• Git y GitHub para control de versiones",
+                            "¡Proyecto de código abierto!\nExplora nuestro código, contribuye y aprende con nosotros."
+                        ),
+                        onDismiss = { isModalAboutUsOpen = false },
+                        githubUrl = "https://github.com/DanielCarrenoMar/Deco-AR/tree/dev"
+                    )
+                }
+                Spacer(modifier = Modifier.height(32.dp))
+                Text(
+                    text = "Zona de Peligro",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF222222),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OptionConfiguracion(
+                    nombre = "Borrar Proyectos",
+                    iconPath = "file:///android_asset/configuracion/about.svg",
+                    onClick = { viewModel.deleteAllProjectandSpaces() }
+                )
+                Spacer(modifier = Modifier.height(100.dp))
             }
         }
 
-        // Barra de navegación en la parte inferior
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -198,202 +375,199 @@ fun ConfigurationScreen(
                 toCamera = navigateToCamera,
                 toTutorial = navigateToTutorial,
                 toCatalog = navigateToCatalog,
-                toProfile = navigateToProfile,
+                toSpaces = navigateToSpaces,
                 toConfiguration = null,
             )
         }
     }
 }
 
-/**
- * Esta funcion es para celdas estaticas
-esta funcion composable define a las celdas de las opciones
-@param nombre: define el texto que va a tener la opcion
-@param iconPath: recibe la ruta del icono SVG en assets
- */
 @Composable
-fun OptionConfiguracion(nombre: String, iconPath: String) {
-    val context = LocalContext.current
-    // Configuración de la animación de escala
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else 1f, // Escala 90% cuando se presiona
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "scaleAnimation"
-    )
-    Box(modifier = Modifier.scale(scale).fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(width = 2.dp, color = Color.Gray, shape = RoundedCornerShape(15.dp))
-                .padding(10.dp)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null
-                ) {
-                    //codigo que reaacione al click
-                }
-        ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = nombre,
-                    modifier = Modifier.align(Alignment.CenterStart),
-                    fontSize = 20.sp,
-                )
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(iconPath)
-                        .decoderFactory(SvgDecoder.Factory())
-                        .build(),
-                    contentDescription = "icono",
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(40.dp)
-                )
-            }
-        }
+fun LoadingProfileCard() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0xFFE0E0E0)),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = CorporatePurple,
+            modifier = Modifier.size(32.dp)
+        )
     }
-    Spacer(modifier = Modifier.height(10.dp))
 }
 
-/**
- *    esta funcion es para celdas tipo CheckBox
- *     esta funcion composable define a las celdas de las opciones
- *     @param nombre: define el texto que va a tener la opcion
- *     @param iconPath: recibe la ruta del icono SVG en assets
- *    @param active: define el estado inicial del objeto
- */
-
 @Composable
-fun OptionConfiguracionCheck(nombre: String, iconPath: String, active: Boolean)
-{
-    val context = LocalContext.current
-    var isActive by remember { mutableStateOf(active) }
-    val scope = rememberCoroutineScope()
-
-    // Configuración de la animación de escala
+fun UnauthenticatedProfileCard(
+    navigateToProfile: () -> Unit
+) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else 1f, // Escala 90% cuando se presiona
+        targetValue = if (isPressed) 0.97f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMedium
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
         ),
-        label = "scaleAnimation"
+        label = "scaleUnauthenticatedProfileCard"
     )
 
     Box(
         modifier = Modifier
             .scale(scale)
             .fillMaxWidth()
-    )
-    {
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0xFF6D6D6D))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { navigateToProfile() }
+            )
+            .padding(24.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.iconoperfil),
+                contentDescription = "Imagen de usuario",
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(Color.White, RoundedCornerShape(50))
+                    .padding(8.dp),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Iniciar Sesión",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Toca aquí para acceder a tu cuenta",
+                fontSize = 14.sp,
+                color = Color(0xFFE0E0E0),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
 
+@Composable
+fun UserProfileCard(
+    name: String,
+    email: String,
+    role: String,
+    navigateToProfile: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scaleUserProfileCard"
+    )
+
+    Box(
+        modifier = Modifier
+            .scale(scale)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(CorporatePurple)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { navigateToProfile() }
+            )
+            .padding(18.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.iconoperfil),
+                    contentDescription = "Imagen de usuario",
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(Color.White, RoundedCornerShape(50))
+                        .padding(8.dp),
+                    contentScale = ContentScale.Crop
+                )
+                Column {
+                    Text(
+                        text = name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = email,
+                        fontSize = 14.sp,
+                        color = Color(0xFFE0E0E0)
+                    )
+                    Text(
+                        text = role,
+                        fontSize = 12.sp,
+                        color = Color(0xFFE0E0E0)
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = "Ir al perfil",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun OptionConfiguracion(nombre: String, iconPath: String, onClick: () -> Unit){
+    val context = LocalContext.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.9f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "scaleOption"
+    )
+
+    Box(modifier = Modifier
+        .scale(scale)
+        .fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(
-                    width = 2.dp, 
-                    color = if (isActive) com.app.homear.ui.theme.CorporatePurple else Color.Gray, 
-                    shape = RoundedCornerShape(15.dp)
-                )
+                .border(2.dp, Color.Gray, RoundedCornerShape(15.dp))
                 .padding(10.dp)
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null
                 ) {
-                    scope.launch {
-                        isActive = !isActive
-                    }
+                    onClick()
                 }
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = nombre,
-                    modifier = Modifier.align(Alignment.CenterStart),
-                    fontSize = 20.sp,
-                )
-                // Icono toggle dinámico
-                androidx.compose.foundation.Image(
-                    painter = painterResource(id = if (isActive) com.app.homear.R.drawable.icono_toggle_on else com.app.homear.R.drawable.icono_toggle_off),
-                    contentDescription = "toggle",
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(40.dp),
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                        if (isActive) com.app.homear.ui.theme.CorporatePurple else Color.Gray
-                    )
-                )
-            }
-        }
-    }
-
-    //este es el margin entre los elementos
-    Spacer(modifier = Modifier.height(10.dp))
-}
-
-
-/**
- *    esta funcion es para celdas tipo DropMenu
- *     esta funcion composable define a las celdas de las opciones
- *     @param nombre: define el texto que va a tener la opcion
- *     @param iconPath: recibe la ruta del icono SVG en assets
- *    @param opciones: son las opciones disponibles en el dropMenu
- */
-@Composable
-fun OptionConfiguracionDropMenu(nombre: String, iconPath: String, opciones: List<String>)
-{
-    val context = LocalContext.current
-    
-    // Configuración de la animación de escala
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else 1f, // Escala 90% cuando se presiona
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "scaleAnimation"
-    )
-
-    //variable para cambiar nombre
-    var name by remember { mutableStateOf(nombre) }
-    //variables para el dropMenu
-    var expanded by remember { mutableStateOf(false) } // Estado para controlar el DropdownMenu
-    //lista de opciones para el dropMenu
-    val menuItems = opciones
-
-    Box(modifier = Modifier
-        .scale(scale)
-        .fillMaxWidth())
-    {
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(width = 2.dp, color = Color.Gray, shape = RoundedCornerShape(15.dp))
-                .padding(10.dp)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null
-                )
-                {
-                    expanded = true
-                }
-
-
-        )
-        {
-            Box(modifier = Modifier.fillMaxWidth())
-            {
-                Text(
-                    text = name,
                     modifier = Modifier.align(Alignment.CenterStart),
                     fontSize = 20.sp,
                 )
@@ -409,83 +583,6 @@ fun OptionConfiguracionDropMenu(nombre: String, iconPath: String, opciones: List
                 )
             }
         }
-
-        //logica del dropMenu
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .background(Color.White)
-        )
-        {
-            menuItems.forEach {
-                    item ->
-                DropdownMenuItem(
-                    text = {Text(item)},
-                    onClick = {
-                        name = "IDIOMA: $item"
-                        expanded = false
-                    }
-
-                )
-            }
-        }
     }
-
-    //este es el margin entre los elementos
     Spacer(modifier = Modifier.height(10.dp))
-}
-
-@Composable
-fun UserProfileCard(
-    name: String = "Juan Pérez",
-    email: String = "juan.perez@gmail.com",
-    role: String = "Usuario"
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(com.app.homear.ui.theme.CorporatePurple, RoundedCornerShape(18.dp))
-            .padding(18.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Imagen de usuario de ejemplo
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                contentDescription = "Imagen de usuario",
-                modifier = Modifier
-                    .size(64.dp)
-                    .background(Color.White, RoundedCornerShape(50))
-                    .padding(4.dp),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(18.dp))
-            Column {
-                Text(
-                    text = name,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = email,
-                    fontSize = 15.sp,
-                    color = Color(0xFFE0E0E0)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = role,
-                        fontSize = 13.sp,
-                        color = Color(0xFF6D6D6D),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
 }

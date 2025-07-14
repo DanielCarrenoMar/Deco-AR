@@ -33,7 +33,7 @@ fun NavBar(
     toTutorial: (() -> Unit)? = null,
     toCatalog: (() -> Unit)? = null,
     toCamera: (() -> Unit)? = null,
-    toProfile: (() -> Unit)? = null,
+    toSpaces: (() -> Unit)? = null,
     toConfiguration: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -42,7 +42,7 @@ fun NavBar(
         toTutorial == null -> 0
         toCatalog == null -> 1
         toCamera == null -> 2
-        toProfile == null -> 3
+        toSpaces == null -> 3
         toConfiguration == null -> 4
         else -> -1
     }
@@ -50,7 +50,7 @@ fun NavBar(
         Triple("Inicio", "home", toTutorial),
         Triple("Catálogo", "furniture", toCatalog),
         Triple("Cámara", "camera", toCamera),
-        Triple("Usuario", "user", toProfile),
+        Triple("Espacio", "space", toSpaces),
         Triple("Configuración", "settings", toConfiguration)
     )
     Box(

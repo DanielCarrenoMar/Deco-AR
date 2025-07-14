@@ -35,10 +35,33 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.cos
 
+// IMPORT: FurnitureItem definition
+import com.app.homear.ui.screens.catalog.FurnitureItem
+import java.io.File
+import dagger.hilt.android.qualifiers.ApplicationContext
+
 data class ARModel(
     val name: String,
     val modelPath: String,
+    val imagePath: String? = null
 )
+
+// Actualizar: Clase para almacenar información de modelos renderizados con contador
+data class RenderedModelInfo(
+    val name: String,
+    val path: String,
+    val imagePath: String? = null,  // Agregamos el campo para la ruta de la imagen
+    val count: Int = 1
+)
+
+// Extension for converting FurnitureItem to ARModel
+fun FurnitureItem.toARModel(): ARModel {
+    return ARModel(
+        name = this.name,
+        modelPath = this.modelPath,
+        imagePath = this.imagePath
+    )
+}
 
 // NUEVO: Clase para representar un modelo colocado en AR con información de selección
 data class PlacedARModel(
@@ -50,42 +73,42 @@ data class PlacedARModel(
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
+    @ApplicationContext private val context: Context
+): ViewModel() {
+    companion object {
+        // Shared singleton list of renderable ARModels in the app
+        val sharedAvailableModels = mutableListOf<ARModel>()
 
-): ViewModel(){
-    // NUEVO: Lista de modelos disponibles (debe estar antes de selectedModel)
-    val availableModels = listOf(
-        ARModel(
-            name = "Mueble Moderno",
-            modelPath = "models/Mueble-1.glb"
-        ),
-        ARModel(
-            name = "BoomBox Retro",
-            modelPath = "models/BoomBox.glb"
-        ),
-        ARModel(
-            name = "Caja Decorativa",
-            modelPath = "models/Box.glb"
-        ),
-        ARModel(
-            name = "Decoración Apple",
-            modelPath = "models/apple.glb"
-        ),
-        ARModel(
-            name = "Pato Decorativo",
-            modelPath = "models/Duck.glb"
-        ),
-        ARModel(
-            name = "Baldosa",
-            modelPath = "models/baldosa.glb"
-        )
-    )
+        // Function to add new model from FurnitureItem ("+" in catalog)
+        fun addARModelFromFurniture(furniture: FurnitureItem) {
+            val newModel = furniture.toARModel()
+            // Prevent duplicates
+            if (sharedAvailableModels.none { it.name == newModel.name && it.modelPath == newModel.modelPath }) {
+                sharedAvailableModels.add(newModel)
+            }
+        }
+    }
+
+    // NUEVO: Lista de modelos disponibles como State
+    private val _availableModels = mutableStateOf(sharedAvailableModels.toList())
+    val availableModels: List<ARModel>
+        get() = _availableModels.value
 
     // NUEVO: Dimensiones de pantalla para proyección precisa
     private var screenWidth = 800f
     private var screenHeight = 600f
 
+    // Actualizar la lista de modelos disponibles
+    fun updateAvailableModels() {
+        _availableModels.value = sharedAvailableModels.toList()
+        // Si el modelo seleccionado ya no está en la lista, deseleccionarlo
+        if (selectedModel.value != null && !_availableModels.value.contains(selectedModel.value)) {
+            selectedModel.value = null
+        }
+    }
+
     // NUEVO: Modelo seleccionado para colocación
-    var selectedModel = mutableStateOf<ARModel?>(availableModels.firstOrNull())
+    var selectedModel = mutableStateOf<ARModel?>(null)
         set(value) {
             Log.d(
                 "AR_DEBUG",
@@ -105,13 +128,27 @@ class CameraViewModel @Inject constructor(
     private val _placedARModels = mutableStateListOf<PlacedARModel>()
     val placedARModels = _placedARModels
 
+    // Nuevo: Lista de modelos renderizados
+    private val _renderedModels = mutableStateListOf<RenderedModelInfo>()
+    val renderedModels = _renderedModels
+
+    // Nuevo: Estado para mostrar/ocultar el diálogo de lista
+    private val _showModelsList = mutableStateOf(false)
+    val showModelsList = _showModelsList
+
     // Renderizado de Muebles
 
     private val kModelFile: String
         get() {
-            val path = selectedModel.value?.modelPath ?: "models/Mueble-1.glb"
-            Log.d("AR_DEBUG", "kModelFile getter - Path seleccionado: $path")
-            return path
+            val modelPath = selectedModel.value?.modelPath ?: "models/Mueble-1.glb"
+            // Asegurarnos de que tenemos la ruta completa al archivo en el almacenamiento interno
+            val internalPath = if (modelPath.startsWith("/")) {
+                modelPath
+            } else {
+                File(context.filesDir, "assets/$modelPath").absolutePath
+            }
+            Log.d("AR_DEBUG", "Loading model from: $internalPath")
+            return internalPath
         }
     private val kMaxModelInstances = 10
 
@@ -166,12 +203,6 @@ class CameraViewModel @Inject constructor(
 
     private val _areaSideDistance2 = mutableStateOf<Float?>(null)
     val areaSideDistance2 = _areaSideDistance2
-
-    private val _measurementHistory = mutableStateListOf<Float>()
-    val measurementHistory = _measurementHistory
-
-    private val _showHistory = mutableStateOf(false)
-    val showHistory = _showHistory
 
     private val _showCalculateAreaButton = mutableStateOf(false)
     val showCalculateAreaButton = _showCalculateAreaButton
@@ -319,7 +350,7 @@ class CameraViewModel @Inject constructor(
         materialLoader: MaterialLoader,
         modelInstances: MutableList<ModelInstance>,
         anchor: Anchor
-    ): AnchorNode {
+    ): AnchorNode? {
         Log.d("AR_DEBUG", "Entrando a createAnchorNode")
 
         val anchorNode = AnchorNode(engine = engine, anchor = anchor)
@@ -330,7 +361,20 @@ class CameraViewModel @Inject constructor(
             mutableStateListOf<ModelInstance>().apply {
                 if (isEmpty()) {
                     Log.d("AR_DEBUG", "Cargando nuevo modelo desde archivo: $modelPath")
-                    this += modelLoader.createInstancedModel(modelPath, kMaxModelInstances)
+                    try {
+                        // Intentar cargar el modelo desde el almacenamiento interno
+                        val modelFile = File(modelPath)
+                        if (modelFile.exists()) {
+                            this += modelLoader.createInstancedModel(modelFile, kMaxModelInstances)
+                            Log.d("AR_DEBUG", "Modelo cargado exitosamente desde almacenamiento interno")
+                        } else {
+                            Log.e("AR_DEBUG", "Archivo de modelo no encontrado: $modelPath")
+                            return null
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AR_DEBUG", "Error cargando modelo: ${e.message}")
+                        throw e
+                    }
                 }
             }
         }
@@ -338,7 +382,8 @@ class CameraViewModel @Inject constructor(
         // Verificar si hay instancias disponibles, si no, crear más
         if (modelPool.isEmpty()) {
             Log.d("AR_DEBUG", "Pool vacío, creando más instancias para: $modelPath")
-            modelPool += modelLoader.createInstancedModel(modelPath, kMaxModelInstances)
+            val modelFile = File(modelPath)
+            modelPool += modelLoader.createInstancedModel(modelFile, kMaxModelInstances)
         }
 
         val modelNode = ModelNode(
@@ -373,6 +418,11 @@ class CameraViewModel @Inject constructor(
         )
         _placedARModels.add(placedARModel)
 
+        // Nuevo: Registrar el modelo renderizado
+        selectedModel.value?.let { model ->
+            addRenderedModel(model.name, model.modelPath)
+        }
+
         return anchorNode
     }
 
@@ -397,25 +447,25 @@ class CameraViewModel @Inject constructor(
         val p2 = anchor2.pose
         val p3 = anchor3.pose
 
-        // Calcular las distancias para formar un rectángulo
+        // Calcular las distancias para formar un rectángulo usando la fórmula correcta de distancia euclidiana
         // Distancia del punto 1 al punto 2 (primer lado)
         val distanceP1P2 = sqrt(
-            (p1.tx() - p2.tx()) * (p1.tx() - p2.tz()) +
-                    (p1.ty() - p3.ty()) * (p1.ty() - p3.ty()) +
-                    (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
+            (p1.tx() - p2.tx()) * (p1.tx() - p2.tx()) +
+            (p1.ty() - p2.ty()) * (p1.ty() - p2.ty()) +
+            (p1.tz() - p2.tz()) * (p1.tz() - p2.tz())
         )
 
         // Distancia del punto 2 al punto 3 (segundo lado)
         val distanceP2P3 = sqrt(
-            (p2.tx() - p3.tx()) * (p2.tx() - p3.tz()) +
-                    (p2.ty() - p3.ty()) * (p2.ty() - p3.ty()) +
-                    (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
+            (p2.tx() - p3.tx()) * (p2.tx() - p3.tx()) +
+            (p2.ty() - p3.ty()) * (p2.ty() - p3.ty()) +
+            (p2.tz() - p3.tz()) * (p2.tz() - p3.tz())
         )
 
         // Para un rectángulo: área = lado1 × lado2
         val area = distanceP1P2 * distanceP2P3
 
-        // Almacenar las distancias para mostrarlas en la UI (usar areaSideDistance para área)
+        // Almacenar las distancias para mostrarlas en la UI
         _areaSideDistance1.value = distanceP1P2
         _areaSideDistance2.value = distanceP2P3
 
@@ -725,6 +775,41 @@ class CameraViewModel @Inject constructor(
         }
     }
 
+    // Actualizar: Métodos para manejar modelos renderizados
+    fun addRenderedModel(name: String, path: String) {
+        val existingModelIndex = _renderedModels.indexOfFirst { it.name == name && it.path == path }
+        if (existingModelIndex != -1) {
+            // Si el modelo existe, incrementar su contador
+            val existingModel = _renderedModels[existingModelIndex]
+            _renderedModels[existingModelIndex] = existingModel.copy(count = existingModel.count + 1)
+        } else {
+            // Si es un nuevo modelo, agregarlo con contador en 1
+            _renderedModels.add(RenderedModelInfo(name, path))
+        }
+    }
+
+    fun removeRenderedModel(name: String) {
+        val modelIndex = _renderedModels.indexOfFirst { it.name == name }
+        if (modelIndex != -1) {
+            val model = _renderedModels[modelIndex]
+            if (model.count > 1) {
+                // Si hay más de una instancia, decrementar el contador
+                _renderedModels[modelIndex] = model.copy(count = model.count - 1)
+            } else {
+                // Si es la última instancia, remover el modelo
+                _renderedModels.removeAt(modelIndex)
+            }
+        }
+    }
+
+    fun clearRenderedModels() {
+        _renderedModels.clear()
+    }
+
+    fun toggleModelsList() {
+        _showModelsList.value = !_showModelsList.value
+    }
+
     // OPTIMIZACIÓN: Validar estado de tracking
     private fun isTrackingValid(anchor: Anchor?): Boolean {
         return anchor != null && anchor.trackingState == TrackingState.TRACKING
@@ -1004,6 +1089,11 @@ class CameraViewModel @Inject constructor(
 
             // 5. Remover de la lista de modelos colocados
             _placedARModels.remove(placedModel)
+
+            // Nuevo: Eliminar el modelo de la lista de renderizados
+            selectedModel.value?.let { model ->
+                removeRenderedModel(model.name)
+            }
 
             Log.d(
                 "AR_DEBUG",

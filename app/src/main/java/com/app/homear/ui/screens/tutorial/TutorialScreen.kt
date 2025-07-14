@@ -22,6 +22,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -30,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -37,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
+import com.app.homear.ui.component.TutorialCarousel
 import com.app.homear.ui.component.NavBar
 
 val CustomPurple = Color(0xFF54124E)
@@ -47,11 +53,19 @@ fun TutorialScreen(
     onHowItWorksClick: () -> Unit = {},
     navigateToCatalog: () -> Unit,
     navigateToCamera: () -> Unit,
-    navigateToProfile: () -> Unit,
+    navigateToSpaces: () -> Unit,
     navigateToConfiguration: () -> Unit,
     viewModel: TutorialViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    var isModalOpen by remember { mutableStateOf(false) }
+    val stepsTutorial = listOf(
+        "Explora el Catálogo: Abre la aplicación y navega por nuestro extenso catálogo de muebles. Tómate tu tiempo para explorar las diferentes categorías y estilos.",
+        "Selecciona tus Favoritos: Cuando encuentres un mueble que te interese, selecciónalo. Puedes elegir varios para probar diferentes opciones.",
+        "Abre la Cámara: Ve a la sección \"Cámara\" dentro de la aplicación. Esto activará la función de realidad aumentada (AR) y abrirá la cámara de tu dispositivo.",
+        "Abre el Almacén de Muebles: En la pantalla de la cámara, verás un almacén o galería de tus muebles seleccionados.",
+        "Arrastra y Visualiza: Simplemente arrastra el mueble que deseas probar desde el almacén hacia el espacio real que se muestra en tu cámara. ¡Verás cómo el mueble aparece en tu entorno como si estuviera allí!"
+    )
 
     Box(
         modifier = Modifier
@@ -75,6 +89,13 @@ fun TutorialScreen(
                 )
             }
     ) {
+        // Reemplazar ModalInfo por TutorialCarousel
+        TutorialCarousel(
+            isDialogOpen = isModalOpen,
+            onDismiss = { isModalOpen = false },
+            steps = stepsTutorial
+        )
+
         // Título decorAR
         Box(
             modifier = Modifier
@@ -161,12 +182,16 @@ fun TutorialScreen(
             Spacer(modifier = Modifier.height(28.dp))
 
             Button(
-                onClick = onHowItWorksClick,
+                onClick = {
+                    onHowItWorksClick()
+                    isModalOpen = true
+                          },
                 colors = ButtonDefaults.buttonColors(containerColor = CustomPurple),
                 shape = RoundedCornerShape(50),
                 modifier = Modifier
                     .height(40.dp)
-                    .fillMaxWidth(0.6f)
+                    .fillMaxWidth(0.8f)
+
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
@@ -181,7 +206,7 @@ fun TutorialScreen(
                     text = "Cómo funciona",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
+                    fontSize = 12.sp
                 )
             }
         }
@@ -195,9 +220,17 @@ fun TutorialScreen(
                 toCamera = navigateToCamera,
                 toTutorial = null,
                 toCatalog = navigateToCatalog,
-                toProfile = navigateToProfile,
+                toSpaces = navigateToSpaces,
                 toConfiguration = navigateToConfiguration,
             )
         }
     }
+}
+//composable para preview de la pantalla
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview2() {
+    TutorialScreen(
+        {},{},{},{},{}
+    )
 }

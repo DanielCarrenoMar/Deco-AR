@@ -32,3 +32,30 @@ object Configuration
 
 @Serializable
 object Start
+
+@Serializable
+object Project
+
+@Serializable
+object CreateSpace
+
+@Serializable
+data class SpaceDetail(val spaceId: Int)
+
+@Serializable
+object EditProfile
+
+@Serializable
+object SpacesList
+
+@Serializable
+object CreateProject
+
+@Serializable
+data class ProjectDetail(val projectId: Int)
+
+@Serializable
+object AddProduct
+
+@Serializable
+object ProfileProv

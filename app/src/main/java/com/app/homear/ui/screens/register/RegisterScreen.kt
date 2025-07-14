@@ -36,26 +36,17 @@ import com.app.homear.ui.component.ButtonSwitch
 
 @Composable
 fun RegisterScreen(
-    viewModel: RegisterViewModel = hiltViewModel()
-)
-{
-    //esta variable me va a decir si esta activado el apartado de cliente o no
+    viewModel: RegisterViewModel = hiltViewModel(),
+    onNavigateToLogin: () -> Unit,
+    onRegisterSuccess: () -> Unit
+) {
     var isClientActive by remember { mutableStateOf(true) }
-
-    fun crearUsuarioCliente(nombre: String, email: String, password: String)
-    {}
-
-    fun crearUsuarioEmpresa(nombre: String, rif: String, password: String)
-    {}
-
 
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp)
-    )
-    {
-        //titulo de la pantalla
+    ) {
         Text(
             modifier = Modifier.padding(top = 30.dp, bottom = 20.dp),
             text = "Registrarse",
@@ -64,72 +55,52 @@ fun RegisterScreen(
             color = Color("#8F006D".toColorInt()),
         )
 
-        //Boton que cambia los registrar
-        ButtonSwitch({isClientActive = !isClientActive}, true, "Cliente", "Empresa")
+        ButtonSwitch({ isClientActive = !isClientActive }, true, "Cliente", "Empresa")
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        //condicional que contral que formulario se muestra
-        if (isClientActive)
-        {
-            FormClient(
-                {nombre, email, password -> crearUsuarioCliente(nombre, email, password)}
-                , {}
-            )
+        if (isClientActive) {
+            FormClient(viewModel, onRegisterSuccess, onNavigateToLogin)
+        } else {
+            FormEmpresa(viewModel, onRegisterSuccess, onNavigateToLogin)
         }
-        else
-        {
-            FormEmpresa(
-                {nombre, rif, password -> crearUsuarioEmpresa(nombre, rif, password)}
-                , {}
-            )
-        }
-
     }
 }
 
-//Composable para el formulario del Cliente
 @Composable
 fun FormClient(
-    crearUsuario: (nombre: String, email: String, password: String) -> Unit,
-    onclickText:()-> Unit
-)
-{
-    //variables para captar datos
-    var nombre = remember { mutableStateOf("") }
-    var correoElectronico = remember { mutableStateOf("") }
-    var password = remember { mutableStateOf("") }
-    var confirmPassword = remember { mutableStateOf("") }
-    var error by remember { mutableStateOf(false) }
+    viewModel: RegisterViewModel,
+    onRegisterSuccess: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
+    var name = remember { mutableStateOf("") }
+    var email = remember { mutableStateOf("") }
+    var pass = remember { mutableStateOf("") }
+    var rePass = remember { mutableStateOf("") }
+    var error = remember { mutableStateOf(false) }
 
-    Column()
-    {
+    Column {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 15.dp)
-            ,
+                .padding(horizontal = 15.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
-        )
-        {
-            //input de Nombre
+        ) {
             InputData(
-                dataValue = nombre,
+                dataValue = name,
                 label = "Nombre Completo",
                 placeHolder = "Ingrese su nombre completo"
             )
 
-            //input email
             InputData(
-                dataValue = correoElectronico,
+                dataValue = email,
                 label = "Correo Electrónico",
                 placeHolder = "Ingrese su correo Electrónico"
             )
 
-            //Input password
             InputPassword(
-                dataValue = password,
+                dataValue = pass,
                 label = "Contraseña",
                 placeHolder = "Ingrese su contraseña",
                 messageError = "",
@@ -137,213 +108,41 @@ fun FormClient(
                 forgotPasswordMessage = "",
                 onClickForgotPassword = {}
             )
-
-
         }
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 15.dp)
-            ,
+                .padding(horizontal = 15.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-        )
-        {
-            //Input password confirmar
+        ) {
             InputPassword(
-                dataValue = confirmPassword,
+                dataValue = rePass,
                 label = "Confirmar contraseña",
                 placeHolder = "Ingrese su contraseña",
                 messageError = "Contraseña incorrecta",
-                triggerMessageError = error,
+                triggerMessageError = error.value,
                 forgotPasswordMessage = "",
                 onClickForgotPassword = {}
             )
-
         }
 
-
-        // Botón de enviar
         TextButton(
             onClick = {
-
-                if (password.value == confirmPassword.value)
-                {
-                    error = false
-                    crearUsuario(nombre.value, correoElectronico.value, password.value)
-                    //Limpiar los Input
-                    nombre.value = ""
-                    correoElectronico.value = ""
-                    password.value = ""
-                    confirmPassword.value = ""
+                if (pass.value == rePass.value) {
+                    error.value = false
+                    viewModel.registerUser(email.value, pass.value, name.value, onRegisterSuccess = onRegisterSuccess)
+                } else {
+                    error.value = true
+                    rePass.value = ""
                 }
-                else
-                {
-                    //controla si se muestra el error
-                    error = true
-                    confirmPassword.value =""
-                }
-
-
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(75.dp)
                 .padding(horizontal = 15.dp, vertical = 10.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(Color("#8F006D".toColorInt()))
-            ,
-        )
-        {
-            Text(
-                text = "Crear cuenta",
-                style = TextStyle(
-                    fontSize = 30.sp,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        }
-
-
-        // texto Adicional
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-            horizontalArrangement = Arrangement.Center
-        )
-        {
-            //texto informativo
-            Text(
-                text = "¿Ya tienes una cuenta?  ",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color("#807D7D".toColorInt())
-            )
-
-            //texto Clickable
-            Text(
-                text = "Inicia sesión",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color("#8F006D".toColorInt()),
-                style = TextStyle(
-                    textDecoration = TextDecoration.Underline
-                ),
-                modifier = Modifier
-                    .clickable{
-                        //aqui se ejecuta la funcion que se pase por parametros
-                        onclickText()
-                    }
-            )
-        }
-    }
-
-}
-
-//Composable para el formulario de la Empresa
-@Composable
-fun FormEmpresa(
-    crearUsuario: (nombre: String, rif: String, password: String) -> Unit,
-    onclickText:()-> Unit
-)
-{
-    //variables para captar datos
-    var nombre = remember { mutableStateOf("") }
-    var rif = remember { mutableStateOf("") }
-    var password = remember { mutableStateOf("") }
-    var confirmPassword = remember { mutableStateOf("") }
-    var error by remember { mutableStateOf(false) }
-
-    Column()
-    {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 15.dp)
-            ,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        )
-        {
-            //input de Nombre
-            InputData(
-                dataValue = nombre,
-                label = "Nombre de la Empresa",
-                placeHolder = "Ingrese el nombre completo"
-            )
-
-            //input email
-            InputData(
-                dataValue = rif,
-                label = "RIF",
-                placeHolder = "Ingrese su RIF"
-            )
-
-            //Input password
-            InputPassword(
-                dataValue = password,
-                label = "Contraseña",
-                placeHolder = "Ingrese su contraseña",
-                messageError = "",
-                triggerMessageError = false,
-                forgotPasswordMessage = "",
-                onClickForgotPassword = {}
-            )
-
-
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 15.dp)
-            ,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        )
-        {
-            //Input password confirmar
-            InputPassword(
-                dataValue = confirmPassword,
-                label = "Confirmar contraseña",
-                placeHolder = "Ingrese su contraseña",
-                messageError = "Contraseña incorrecta",
-                triggerMessageError = error,
-                forgotPasswordMessage = "",
-                onClickForgotPassword = {}
-            )
-
-        }
-
-        // Botón de enviar
-        TextButton(
-            onClick = {
-
-                if (password.value == confirmPassword.value)
-                {
-                    error = false
-                    crearUsuario(nombre.value, rif.value, password.value)
-                    //Limpiar los Input
-                    nombre.value = ""
-                    rif.value = ""
-                    password.value = ""
-                    confirmPassword.value = ""
-                }
-                else
-                {
-                    //controla si se muestra el error
-                    error = true
-                    confirmPassword.value =""
-                }
-
-
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(75.dp)
-                .padding(horizontal = 15.dp, vertical = 10.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color("#8F006D".toColorInt()))
-            ,
+                .background(Color("#8F006D".toColorInt())),
         ) {
             Text(
                 text = "Crear cuenta",
@@ -355,14 +154,12 @@ fun FormEmpresa(
             )
         }
 
-
-        // texto Adicional
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp),
             horizontalArrangement = Arrangement.Center
-        )
-        {
-            //texto informativo
+        ) {
             Text(
                 text = "¿Ya tienes una cuenta?  ",
                 fontSize = 15.sp,
@@ -370,7 +167,6 @@ fun FormEmpresa(
                 color = Color("#807D7D".toColorInt())
             )
 
-            //texto Clickable
             Text(
                 text = "Inicia sesión",
                 fontSize = 15.sp,
@@ -379,19 +175,128 @@ fun FormEmpresa(
                 style = TextStyle(
                     textDecoration = TextDecoration.Underline
                 ),
-                modifier = Modifier
-                    .clickable{
-                        //aqui se ejecuta la funcion que se pase por parametros
-                        onclickText()
-                    }
+                modifier = Modifier.clickable { onNavigateToLogin() }
             )
         }
     }
 }
 
+@Composable
+fun FormEmpresa(
+    viewModel: RegisterViewModel,
+    onRegisterSuccess: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
+    var nombre = remember { mutableStateOf("") }
+    var rif = remember { mutableStateOf("") }
+    var password = remember { mutableStateOf("") }
+    var confirmPassword = remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+
+    Column {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 15.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            InputData(
+                dataValue = nombre,
+                label = "Nombre de la Empresa",
+                placeHolder = "Ingrese el nombre completo"
+            )
+
+            InputData(
+                dataValue = rif,
+                label = "RIF",
+                placeHolder = "Ingrese su RIF"
+            )
+
+            InputPassword(
+                dataValue = password,
+                label = "Contraseña",
+                placeHolder = "Ingrese su contraseña",
+                messageError = "",
+                triggerMessageError = false,
+                forgotPasswordMessage = "",
+                onClickForgotPassword = {}
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 15.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            InputPassword(
+                dataValue = confirmPassword,
+                label = "Confirmar contraseña",
+                placeHolder = "Ingrese su contraseña",
+                messageError = "Contraseña incorrecta",
+                triggerMessageError = error,
+                forgotPasswordMessage = "",
+                onClickForgotPassword = {}
+            )
+        }
+
+        TextButton(
+            onClick = {
+                if (password.value == confirmPassword.value) {
+                    error = false
+                    viewModel.registerProvider(rif.value, password.value, nombre.value, onRegisterSuccess = onRegisterSuccess)
+                } else {
+                    error = true
+                    confirmPassword.value = ""
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(75.dp)
+                .padding(horizontal = 15.dp, vertical = 10.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color("#8F006D".toColorInt())),
+        ) {
+            Text(
+                text = "Crear cuenta",
+                style = TextStyle(
+                    fontSize = 30.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "¿Ya tienes una cuenta?  ",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color("#807D7D".toColorInt())
+            )
+
+            Text(
+                text = "Inicia sesión",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color("#8F006D".toColorInt()),
+                style = TextStyle(
+                    textDecoration = TextDecoration.Underline
+                ),
+                modifier = Modifier.clickable { onNavigateToLogin() }
+            )
+        }
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
 fun Preview() {
-    RegisterScreen()
+    RegisterScreen(onRegisterSuccess = {}, onNavigateToLogin = {})
 }

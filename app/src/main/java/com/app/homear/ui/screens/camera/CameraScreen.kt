@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -36,6 +37,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
@@ -45,7 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -83,6 +85,36 @@ import java.io.OutputStream
 import android.view.SurfaceView
 import android.view.PixelCopy
 import android.app.Activity
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.painterResource
+import com.app.homear.R
+import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
+import coil.request.ImageRequest
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import com.app.homear.core.utils.SharedPreferenceHelper
+import org.json.JSONArray
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.window.DialogProperties
 
 // Función para encontrar la vista ARSceneView
 fun View.findARSceneView(): ARSceneView? {
@@ -233,16 +265,49 @@ private fun ModelSelector(
 fun CameraScreen(
     navigateToTutorial: () -> Unit,
     navigateToCatalog: () -> Unit,
-    navigateToProfile: () -> Unit,
+    navigateToSpaces: () -> Unit,
     navigateToConfiguration: () -> Unit,
+    navigateToCreateSpace: () -> Unit,
+    navigateToCreateProject: () -> Unit,
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val sharedPrefHelper = remember { SharedPreferenceHelper(context) }
     val haveAr by remember { mutableStateOf(viewModel.isArCoreSupported(context)) }
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     val engine = rememberEngine()
     val view = rememberView(engine)
     val currentView = LocalView.current
+    var showConfirmSavedModal by remember { mutableStateOf(false) }
+    var showMeasurementsDialog by remember { mutableStateOf(false) }
+
+    // Función para determinar a dónde regresar
+    fun getBackNavigation(): () -> Unit {
+        val origin = sharedPrefHelper.getStringData("camera_navigation_origin") ?: "tutorial"
+        return when (origin) {
+            "create_project" -> { 
+                // Para create_project, usar popBackStack en lugar de navegar hacia adelante
+                { 
+                    // Limpiar el origen de navegación
+                    sharedPrefHelper.saveStringData("camera_navigation_origin", null)
+                    // Usar popBackStack para regresar a la pantalla anterior
+                    (context as? Activity)?.onBackPressed()
+                }
+            }
+            "create_space" -> navigateToCreateSpace
+            "tutorial" -> navigateToTutorial
+            "catalog" -> navigateToCatalog
+            "spaces" -> navigateToSpaces
+            "configuration" -> navigateToConfiguration
+            "profile" -> navigateToTutorial // Profile no tiene navegación directa, regresa a tutorial
+            else -> navigateToTutorial
+        }
+    }
+
+    // Función para manejar el regreso
+    fun handleBackNavigation() {
+        getBackNavigation().invoke()
+    }
 
     // Función para recortar el bitmap y excluir elementos de UI
     fun cropBitmapToARContent(originalBitmap: Bitmap, rootView: View): Bitmap {
@@ -325,7 +390,6 @@ fun CameraScreen(
                     val croppedBitmap = cropBitmapToARContent(bitmap, currentView.rootView)
                     capturedBitmap = croppedBitmap
                     Log.d("CameraScreen", "Captura con PixelCopy exitosa: ${croppedBitmap.width}x${croppedBitmap.height}")
-                    Toast.makeText(context, "Captura de pantalla tomada", Toast.LENGTH_SHORT).show()
                 } else {
                     Log.e("CameraScreen", "PixelCopy falló")
                     Toast.makeText(context, "Error al capturar la pantalla", Toast.LENGTH_SHORT).show()
@@ -362,7 +426,6 @@ fun CameraScreen(
                 }
                 fos?.use {
                     bmp.compress(Bitmap.CompressFormat.JPEG, 100, it)
-                    Toast.makeText(context, "Imagen guardada en la galería", Toast.LENGTH_SHORT).show()
                 } ?: run {
                     Toast.makeText(context, "No se pudo guardar la imagen", Toast.LENGTH_SHORT).show()
                 }
@@ -373,54 +436,82 @@ fun CameraScreen(
         AlertDialog(
             onDismissRequest = { capturedBitmap = null },
             title = {
-                Column {
-                    Text("Vista Previa", fontSize = 18.sp)
-                    Text(
-                        text = "Tamaño: ${bitmap.width}x${bitmap.height}",
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                }
+                Text(
+                    text = "¿Desea guardar la captura?",
+                    fontSize = 16.sp,
+                    color = Color.Black,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
             text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .background(Color.LightGray, shape = RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Vista previa de captura",
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp)
-                            .background(Color.LightGray)
-                    ) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Captura de pantalla",
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Imagen capturada correctamente",
-                        fontSize = 14.sp,
-                        color = Color.Green
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp))
                     )
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    saveImageToGallery(bitmap)
-                    capturedBitmap = null
-                }) {
-                    Text("Guardar")
+                Button(
+                    onClick = {
+                        saveImageToGallery(bitmap)
+                        capturedBitmap = null
+                        showConfirmSavedModal = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E24AA)), // morado
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text(text = "Confirmar", color = Color.White)
                 }
             },
             dismissButton = {
-                Button(onClick = { capturedBitmap = null }) {
-                    Text("Eliminar")
+                Button(
+                    onClick = { capturedBitmap = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0E0)), // gris claro
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text(text = "Cancelar", color = Color.Black)
                 }
+            },
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+    if (showConfirmSavedModal) {
+        ConfirmSpaceCreatedModal(
+            onDismiss = { showConfirmSavedModal = false },
+            onConfirm = {
+                // Guardar la lista de modelos renderizados en SharedPreferences como JSON
+                val modelsJson = JSONArray().apply {
+                    viewModel.renderedModels.forEach { model ->
+                        val obj = org.json.JSONObject()
+                        obj.put("name", model.name)
+                        obj.put("path", model.path)
+                        put(obj)
+                    }
+                }.toString()
+                sharedPrefHelper.saveStringData("furniture_list_json", modelsJson)
+                showConfirmSavedModal = false
+                navigateToCreateSpace()
             }
         )
     }
+
 
     if (haveAr) {
         Box(
@@ -511,7 +602,6 @@ fun CameraScreen(
                                             anchor
                                         )
                                         viewModel.measuredArea.value = area
-                                        viewModel.measurementHistory.add(area)
                                         Log.d("AR_DEBUG", "Tercer punto colocado - Área: ${area}m²")
                                     }
 
@@ -597,13 +687,14 @@ fun CameraScreen(
                                         }
                                     } else {
                                         // Modo normal: crear modelo seleccionado
-                                        childNodes += viewModel.createAnchorNode(
+                                        val anchorNode = viewModel.createAnchorNode(
                                             engine = engine,
                                             modelLoader = modelLoader,
                                             materialLoader = materialLoader,
                                             modelInstances = viewModel.modelInstances,
                                             anchor = anchor
                                         )
+                                        if (anchorNode != null) childNodes +=anchorNode
                                         // Deseleccionar cualquier modelo previamente seleccionado
                                         viewModel.selectModelForDeletion(null)
                                     }
@@ -682,7 +773,7 @@ fun CameraScreen(
 
             // NUEVO: Efecto para actualizar planos detectados y renderizar verticales
             LaunchedEffect(viewModel.planeRenderer.value, viewModel.session.value) {
-                if (viewModel.planeRenderer.value && viewModel.session.value != null) {
+                if (viewModel.planeRenderer.value) {
                     while (viewModel.planeRenderer.value) {
                         viewModel.updateDetectedPlanes(
                             session = viewModel.session.value,
@@ -732,153 +823,390 @@ fun CameraScreen(
                 }
             }
 
-            Text(
-                modifier = Modifier
-                    .systemBarsPadding()
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp, start = 32.dp, end = 32.dp),
-                textAlign = TextAlign.Center,
-                fontSize = 28.sp,
-                color = Color.White,
-                text = viewModel.trackingFailureReason.value?.getDescription(LocalContext.current) ?:
-                if (viewModel.isCoatingMode.value) {
-                    "Modo Baldosa: Detectando suelos para colocar baldosa individual..."
-                } else if (viewModel.isCalculatingArea.value) {
-                    when {
-                        viewModel.firstAnchor.value == null -> "Modo Área: Toque el PRIMER punto"
-                        viewModel.secondAnchor.value == null -> "Modo Área: Toque el SEGUNDO punto"
-                        viewModel.thirdAnchor.value == null -> "Modo Área: Toque el TERCER punto"
-                        else -> "Área calculada! Toque para reiniciar medición"
-                    }
-                } else if (viewModel.isMeasuring.value) {
-                    when {
-                        viewModel.firstAnchor.value == null -> "Modo Medición: Toque el PRIMER punto"
-                        viewModel.secondAnchor.value == null -> "Modo Medición: Toque el SEGUNDO punto"
-                        else -> "Distancia medida! Toque para reiniciar medición"
-                    }
-                } else if (childNodes.isEmpty()) {
-                    "Busque un plano horizontal o vertical"
-                } else {
-                    "Click para agregar"
-                }
-            )
-
+            // Botón de back en la esquina superior izquierda
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 16.dp, top = 16.dp),
-                contentAlignment = Alignment.TopStart
+                    .align(Alignment.TopStart)
+                    .padding(start = 20.dp, top = 48.dp)
+                    .zIndex(10f)
             ) {
-                // Botón de fotos eliminado - ahora está debajo del selector de modelos
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 48.dp, end = 16.dp)
-                    .zIndex(2f)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    ModelSelector(viewModel = viewModel)
-                    
-                    // Botón de foto debajo del selector de modelos
-                    Button(
-                        onClick = {
-                            takeScreenshot()
-                        },
-                        modifier = Modifier.padding(top = 2.dp)
-                    ) {
-                        Text(
-                            text = "📸 Foto",
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-            }
-
-            viewModel.measuredDistance.value?.let { distance ->
-                Text(
+                val interactionSourceBack = remember { MutableInteractionSource() }
+                val isPressedBack by interactionSourceBack.collectIsPressedAsState()
+                val scaleBack by animateFloatAsState(targetValue = if (isPressedBack) 0.92f else 1f, label = "scaleBack")
+                
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(top = 640.dp),
-                    text = "Distancia: ${"%.2f".format(distance)} m",
-                    textAlign = TextAlign.Center,
-                    fontSize = 20.sp,
-                    color = Color.Yellow
+                        .width(80.dp)
+                        .height(80.dp)
+                        .graphicsLayer(
+                            scaleX = scaleBack,
+                            scaleY = scaleBack
+                        )
+                        .clickable(
+                            interactionSource = interactionSourceBack,
+                            indication = null
+                        ) {
+                            handleBackNavigation()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data("file:///android_asset/camara/back.svg")
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Icono back",
+                        modifier = Modifier
+                            .width(70.dp)
+                            .height(70.dp)
+                    )
+                }
+            }
+
+            // Texto superior eliminado
+
+            // Selector de modelos eliminado
+
+            // Actualizar la lógica de mostrar el modal
+            LaunchedEffect(viewModel.measuredDistance.value, viewModel.measuredArea.value) {
+                if (viewModel.measuredDistance.value != null || viewModel.measuredArea.value != null) {
+                    showMeasurementsDialog = true
+                }
+            }
+
+            if (showMeasurementsDialog) {
+                AlertDialog(
+                    onDismissRequest = { 
+                        showMeasurementsDialog = false
+                    },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    containerColor = Color(0xCC000000),
+                    properties = DialogProperties(dismissOnClickOutside = true),
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Resultados de medición",
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            IconButton(
+                                onClick = { 
+                                    showMeasurementsDialog = false
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cerrar",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    },
+                    text = {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            viewModel.measuredDistance.value?.let { distance ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = "Distancia medida",
+                                        fontSize = 16.sp,
+                                        color = Color(0xFFAAAAAA)
+                                    )
+                                    Text(
+                                        text = "${"%.2f".format(distance)} m",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            viewModel.measuredArea.value?.let { area ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text(
+                                        text = "Medidas del área",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        viewModel.areaSideDistance1.value?.let { side1 ->
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "Ancho",
+                                                    fontSize = 14.sp,
+                                                    color = Color(0xFFAAAAAA)
+                                                )
+                                                Text(
+                                                    text = "${"%.2f".format(side1)} m",
+                                                    fontSize = 20.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color.White
+                                                )
+                                            }
+                                        }
+                                        
+                                        viewModel.areaSideDistance2.value?.let { side2 ->
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "Largo",
+                                                    fontSize = 14.sp,
+                                                    color = Color(0xFFAAAAAA)
+                                                )
+                                                Text(
+                                                    text = "${"%.2f".format(side2)} m",
+                                                    fontSize = 20.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color.White
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    Spacer(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(1.dp)
+                                            .background(Color(0x33FFFFFF))
+                                    )
+                                    
+                                    Text(
+                                        text = "Área total: ${"%.2f".format(area)} m²",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = { 
+                                showMeasurementsDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF8F006D)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            Text(
+                                text = "Cerrar",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                    }
                 )
             }
 
-            viewModel.measuredArea.value?.let { area ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(top = 610.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    viewModel.areaSideDistance1.value?.let { side1 ->
-                        Text(
-                            text = "Lado 1: ${"%.2f".format(side1)} m",
-                            textAlign = TextAlign.Center,
-                            fontSize = 16.sp,
-                            color = Color.Cyan
-                        )
-                    }
-                    viewModel.areaSideDistance2.value?.let { side2 ->
-                        Text(
-                            text = "Lado 2: ${"%.2f".format(side2)} m",
-                            textAlign = TextAlign.Center,
-                            fontSize = 16.sp,
-                            color = Color.Cyan
-                        )
-                    }
-                    Text(
-                        text = "Área: ${"%.2f".format(area)} m²",
-                        textAlign = TextAlign.Center,
-                        fontSize = 18.sp,
-                        color = Color.Yellow
-                    )
-                }
-            }
-
-            if (viewModel.isCalculatingArea.value && viewModel.areaSideDistance1.value != null && viewModel.measuredArea.value == null) {
-                viewModel.areaSideDistance1.value?.let { side1 ->
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.TopCenter)
-                            .padding(top = 640.dp),
-                        text = "Lado 1: ${"%.2f".format(side1)} m",
-                        textAlign = TextAlign.Center,
-                        fontSize = 20.sp,
-                        color = Color.Cyan
-                    )
-                }
-            }
+            // Eliminar los Box anteriores de mediciones y mantener el resto del código
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(65.dp)
+                    .padding(32.dp)
                     .padding(bottom = 70.dp),
                 verticalArrangement = Arrangement.Bottom
             ) {
-                Button(
-                    onClick = { viewModel.planeRenderer.value = !viewModel.planeRenderer.value },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (viewModel.planeRenderer.value) Color.Green else Color.Red
-                    )
+                // Espaciado para bajar el bloque de botones
+                Spacer(modifier = Modifier.height(160.dp))
+                // Animación de desplazamiento vertical para el botón de medición
+                val offsetMedicion by animateDpAsState(
+                    targetValue = if (viewModel.isMeasuring.value) (-80).dp else 0.dp,
+                    label = "offsetMedicion"
+                )
+                // Animación de desplazamiento vertical para el botón de plano (ahora sube al activarse el modo medición)
+                val offsetPlano by animateDpAsState(
+                    targetValue = if (viewModel.isMeasuring.value) 0.dp else 80.dp,
+                    label = "offsetPlano"
+                )
+
+                // Espaciado para subir el botón de plano
+                Spacer(modifier = Modifier.height(32.dp))
+                // Botón cuadrado de Plano (activar/desactivar plano)
+                val interactionSourcePlano = remember { MutableInteractionSource() }
+                val isPressedPlano by interactionSourcePlano.collectIsPressedAsState()
+                val scalePlano by animateFloatAsState(targetValue = if (isPressedPlano) 0.92f else 1f, label = "scalePlano")
+                val alphaPlano by animateFloatAsState(targetValue = if (viewModel.planeRenderer.value) 1f else 0.7f, label = "alphaPlano")
+                Box(
+                    modifier = Modifier
+                        .width(65.dp)
+                        .height(65.dp)
+                        .offset(x = 0.dp, y = -55.dp + offsetPlano)
+                        .zIndex(2f)
+                        .graphicsLayer(
+                            scaleX = scalePlano,
+                            scaleY = scalePlano,
+                            alpha = alphaPlano
+                        )
+                        .background(
+                            color = Color.Transparent,
+                            shape = RoundedCornerShape(size = 20.dp)
+                        )
+                        .clickable(
+                            interactionSource = interactionSourcePlano,
+                            indication = null
+                        ) {
+                            viewModel.planeRenderer.value = !viewModel.planeRenderer.value
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = if (viewModel.planeRenderer.value) "Desactivar Plano" else "Activar Plano")
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(
+                                if (viewModel.planeRenderer.value)
+                                    "file:///android_asset/camara/bg-button-on.svg"
+                                else
+                                    "file:///android_asset/camara/bg-button-red.svg"
+                            )
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Fondo botón plano",
+                        modifier = Modifier
+                            .width(65.dp)
+                            .height(65.dp),
+                        contentScale = ContentScale.FillBounds
+                    )
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data("file:///android_asset/camara/flat.svg")
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Icono plano",
+                        modifier = Modifier
+                            .width(55.dp)
+                            .height(55.dp)
+                            .padding(vertical = 5.dp)
+                    )
                 }
 
-                Button(
-                    onClick = {
+                // Stack animado: botón de medición y área (sin offset vertical extra)
+                Box(
+                    modifier = Modifier
+                        .height(145.dp)
+                        .width(65.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Botón de área (detrás)
+                    val showArea = (viewModel.isMeasuring.value || offsetMedicion < 0.dp)
+                    if (showArea) {
+                        val interactionSourceArea = remember { MutableInteractionSource() }
+                        val isPressedArea by interactionSourceArea.collectIsPressedAsState()
+                        val scaleArea by animateFloatAsState(targetValue = if (isPressedArea) 0.92f else 1f, label = "scaleArea")
+                        val alphaArea by animateFloatAsState(targetValue = if (viewModel.isCalculatingArea.value) 1f else 0.7f, label = "alphaArea")
+                        Box(
+                            modifier = Modifier
+                                .width(65.dp)
+                                .height(65.dp)
+                                .zIndex(0f)
+                                .graphicsLayer(
+                                    scaleX = scaleArea,
+                                    scaleY = scaleArea,
+                                    alpha = alphaArea
+                                )
+                                .background(
+                                    color = Color.Transparent,
+                                    shape = RoundedCornerShape(size = 20.dp)
+                                )
+                                .clickable(
+                                    interactionSource = interactionSourceArea,
+                                    indication = null
+                                ) {
+                                    viewModel.isCalculatingArea.value = !viewModel.isCalculatingArea.value
+                                    if (!viewModel.isCalculatingArea.value) {
+                                        viewModel.thirdAnchor.value = null
+                                        viewModel.measuredArea.value = null
+                                        viewModel.areaSideDistance1.value = null
+                                        viewModel.areaSideDistance2.value = null
+                                        viewModel.measurementPoints.forEach { point ->
+                                            childNodes.remove(point)
+                                        }
+                                        viewModel.measurementPoints.clear()
+                                    }
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            val context = LocalContext.current
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(
+                                        if (viewModel.isCalculatingArea.value)
+                                            "file:///android_asset/camara/bg-button-on.svg"
+                                        else
+                                            "file:///android_asset/camara/bg-button-off.svg"
+                                    )
+                                    .decoderFactory(SvgDecoder.Factory())
+                                    .build(),
+                                contentDescription = "Fondo botón área",
+                                modifier = Modifier
+                                    .width(65.dp)
+                                    .height(65.dp),
+                                contentScale = ContentScale.FillBounds
+                            )
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data("file:///android_asset/camara/area.svg")
+                                    .decoderFactory(SvgDecoder.Factory())
+                                    .build(),
+                                contentDescription = "Icono área",
+                                modifier = Modifier
+                                    .width(55.dp)
+                                    .height(55.dp)
+                                    .padding(vertical = 5.dp)
+                            )
+                        }
+                    }
+
+                    // Botón cuadrado de Medición con animación
+                    val interactionSourceMedicion = remember { MutableInteractionSource() }
+                    val isPressedMedicion by interactionSourceMedicion.collectIsPressedAsState()
+                    val scaleMedicion by animateFloatAsState(targetValue = if (isPressedMedicion) 0.92f else 1f, label = "scaleMedicion")
+                    val alphaMedicion by animateFloatAsState(targetValue = if (viewModel.isMeasuring.value) 1f else 0.7f, label = "alphaMedicion")
+                    Box(
+                        modifier = Modifier
+                            .width(65.dp)
+                            .height(65.dp)
+                            .offset(y = offsetMedicion)
+                            .zIndex(1f)
+                            .graphicsLayer(
+                                scaleX = scaleMedicion,
+                                scaleY = scaleMedicion,
+                                alpha = alphaMedicion
+                            )
+                            .background(
+                                color = Color.Transparent,
+                                shape = RoundedCornerShape(size = 20.dp)
+                            )
+                            .clickable(
+                                interactionSource = interactionSourceMedicion,
+                                indication = null
+                            ) {
                         viewModel.isMeasuring.value = !viewModel.isMeasuring.value
                         if (viewModel.isMeasuring.value) {
                             viewModel.isCalculatingArea.value = false
@@ -899,53 +1227,68 @@ fun CameraScreen(
                         }
                         viewModel.measurementPoints.clear()
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (viewModel.isMeasuring.value) Color(0xFF64B5F6) else Color.Gray
-                    ),
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(text = if (viewModel.isMeasuring.value) "Modo Medición: ON" else "Modo Medición: OFF")
-                }
-
-                if (viewModel.isMeasuring.value) {
-                    Button(
-                        onClick = {
-                            viewModel.isCalculatingArea.value = !viewModel.isCalculatingArea.value
-                            if (!viewModel.isCalculatingArea.value) {
-                                viewModel.thirdAnchor.value = null
-                                viewModel.measuredArea.value = null
-                                viewModel.areaSideDistance1.value = null
-                                viewModel.areaSideDistance2.value = null
-                                viewModel.measurementPoints.forEach { point ->
-                                    childNodes.remove(point)
-                                }
-                                viewModel.measurementPoints.clear()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (viewModel.isCalculatingArea.value) Color(0xFF2196F3) else Color(
-                                0xFF4CAF50
-                            )
-                        ),
-                        modifier = Modifier.padding(top = 8.dp)
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(text = if (viewModel.isCalculatingArea.value) "Modo Área: ON" else "Modo Área: OFF")
+                        val context = LocalContext.current
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(
+                                    if (offsetMedicion == 0.dp)
+                                        "file:///android_asset/camara/bg-button-off.svg"
+                                    else
+                                        "file:///android_asset/camara/bg-button-on.svg"
+                                )
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Fondo botón medición",
+                            modifier = Modifier
+                                .width(65.dp)
+                                .height(65.dp),
+                            contentScale = ContentScale.FillBounds
+                        )
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data("file:///android_asset/camara/measure-ruler.svg")
+                                .decoderFactory(SvgDecoder.Factory())
+                                .build(),
+                            contentDescription = "Regla de medición",
+                            modifier = Modifier
+                                .width(55.dp)
+                                .height(55.dp)
+                                .padding(vertical = 5.dp)
+                        )
                     }
                 }
 
-                Button(
-                    onClick = {
+                // Botón cuadrado de Modo Baldosa (estático, decorado igual que los otros)
+                val interactionSourceBaldosa = remember { MutableInteractionSource() }
+                val isPressedBaldosa by interactionSourceBaldosa.collectIsPressedAsState()
+                val scaleBaldosa by animateFloatAsState(targetValue = if (isPressedBaldosa) 0.92f else 1f, label = "scaleBaldosa")
+                val alphaBaldosa by animateFloatAsState(targetValue = if (viewModel.isCoatingMode.value) 1f else 0.7f, label = "alphaBaldosa")
+                Box(
+                    modifier = Modifier
+                        .width(65.dp)
+                        .height(65.dp)
+                        .offset(x = 0.dp, y = -25.dp)
+                        .graphicsLayer(
+                            scaleX = scaleBaldosa,
+                            scaleY = scaleBaldosa,
+                            alpha = alphaBaldosa
+                        )
+                        .background(
+                            color = Color.Transparent,
+                            shape = RoundedCornerShape(size = 20.dp)
+                        )
+                        .clickable(
+                            interactionSource = interactionSourceBaldosa,
+                            indication = null
+                        ) {
                         viewModel.isCoatingMode.value = !viewModel.isCoatingMode.value
                         if (!viewModel.isCoatingMode.value) {
-                            // Solo cuando salimos del modo baldosa: eliminar la baldosa si existe
                             if (viewModel.tileNode != null) {
                                 childNodes.remove(viewModel.tileNode)
                                 (viewModel.tileNode as? AnchorNode)?.anchor?.detach()
                                 viewModel.resetTileNode()
-                                Log.d(
-                                    "AR_DEBUG",
-                                    "Modo baldosa desactivado - baldosa eliminada"
-                                )
                             }
                         } else {
                             viewModel.isMeasuring.value = false
@@ -964,59 +1307,80 @@ fun CameraScreen(
                             viewModel.measurementPoints.clear()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (viewModel.isCoatingMode.value) Color(0xFFFF9800) else Color.Gray
-                    ),
-                    modifier = Modifier.padding(top = 8.dp)
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = if (viewModel.isCoatingMode.value) "Modo Baldosa: ON" else "Modo Baldosa: OFF")
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(
+                                if (viewModel.isCoatingMode.value)
+                                    "file:///android_asset/camara/bg-button-on.svg"
+                                else
+                                    "file:///android_asset/camara/bg-button-off.svg"
+                            )
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Fondo botón baldosa",
+                        modifier = Modifier
+                            .width(65.dp)
+                            .height(65.dp),
+                        contentScale = ContentScale.FillBounds
+                    )
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data("file:///android_asset/camara/tile.svg")
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Icono baldosa",
+                        modifier = Modifier
+                            .width(55.dp)
+                            .height(55.dp)
+                            .padding(vertical = 5.dp)
+                    )
                 }
             }
 
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 148.dp)
+                    .padding(end = 15.dp, bottom = 120.dp) // Más arriba y más visible
             ) {
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Button(onClick = { viewModel.showHistory.value = !viewModel.showHistory.value }) {
-                        Text(text = "Historial")
-                    }
-                    if (viewModel.showHistory.value) {
-                        Box(
-                            modifier = Modifier
-                                .background(Color.DarkGray.copy(alpha = 0.9f))
-                                .padding(8.dp)
-                                .zIndex(2f)
+                // Botón de captura tipo cámara
+                val interactionSourceCapture = remember { MutableInteractionSource() }
+                val isPressedCapture by interactionSourceCapture.collectIsPressedAsState()
+                val scaleCapture by animateFloatAsState(targetValue = if (isPressedCapture) 0.92f else 1f, label = "scaleCapture")
+                Box(
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(80.dp)
+                        .graphicsLayer(
+                            scaleX = scaleCapture,
+                            scaleY = scaleCapture
+                        )
+                        .background(
+                            color = Color.Transparent,
+                            shape = RoundedCornerShape(size = 20.dp)
+                        )
+                        .clickable(
+                            interactionSource = interactionSourceCapture,
+                            indication = null
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.Start
-                            ) {
-                                LazyColumn(
-                                    modifier = Modifier
-                                        .height(150.dp)
-                                        .width(200.dp)
-                                ) {
-                                    items(viewModel.measurementHistory) { dist ->
-                                        Text(
-                                            text = "${"%.2f".format(dist)} m²",
-                                            color = Color.White,
-                                            fontSize = 16.sp
-                                        )
-                                    }
-                                }
-                                Button(
-                                    onClick = { viewModel.measurementHistory.clear() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                                    modifier = Modifier.padding(top = 8.dp)
-                                ) {
-                                    Text(text = "Limpiar", color = Color.White)
-                                }
-                            }
-                        }
-                    }
+                            takeScreenshot()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data("file:///android_asset/camara/capture.svg")
+                            .decoderFactory(SvgDecoder.Factory())
+                            .build(),
+                        contentDescription = "Botón capturar foto",
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(80.dp)
+                            .padding(vertical = 5.dp)
+                    )
                 }
             }
 
@@ -1043,6 +1407,21 @@ fun CameraScreen(
                 )
             }
 
+            // Animación de la NavBar deslizándose hacia abajo
+            var startNavBarAnimation by remember { mutableStateOf(false) }
+            val navBarOffset by animateDpAsState(
+                targetValue = if (startNavBarAnimation) 200.dp else 0.dp, // Se desliza hacia abajo y desaparece
+                animationSpec = androidx.compose.animation.core.tween(durationMillis = 800),
+                label = "navBarOffset"
+            )
+            
+            // Iniciar la animación cuando se carga la pantalla
+            LaunchedEffect(Unit) {
+                kotlinx.coroutines.delay(500) // Pequeña pausa antes de animar
+                startNavBarAnimation = true
+            }
+
+            // NUEVO: Menú de muebles en la parte inferior
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1055,18 +1434,13 @@ fun CameraScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
-                        .zIndex(1f),
+                        .zIndex(2f),
                     verticalArrangement = Arrangement.Bottom
                 ) {
-                    NavBar(
-                        toCamera = null,
-                        toTutorial = navigateToTutorial,
-                        toCatalog = navigateToCatalog,
-                        toProfile = navigateToProfile,
-                        toConfiguration = navigateToConfiguration,
-                    )
+                    FurnitureBottomMenu(viewModel)
                 }
             }
+
         }
     } else {
         Column(
@@ -1075,5 +1449,395 @@ fun CameraScreen(
         ) {
             Text(text = "ARCore no está soportado en este dispositivo.")
         }
+    }
+
+    // Botón de lista de modelos eliminado
+
+    // Diálogo de lista de modelos eliminado
+}
+
+@Composable
+private fun FurnitureBottomMenu(
+    viewModel: CameraViewModel,
+    modifier: Modifier = Modifier
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    
+    // Animación para el menú deslizable
+    val menuHeight by animateDpAsState(
+        targetValue = if (isExpanded) 200.dp else 60.dp,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+        label = "menuHeight"
+    )
+    
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+        label = "arrowRotation"
+    )
+
+    // Efecto para actualizar la lista cuando cambia sharedAvailableModels
+    LaunchedEffect(CameraViewModel.sharedAvailableModels.size) {
+        viewModel.updateAvailableModels()
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(menuHeight)
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            // Barra superior con título y botón de expandir/contraer
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Muebles Disponibles",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    // Indicador de cantidad de muebles
+                    if (viewModel.availableModels.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(10.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = viewModel.availableModels.size.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                }
+                
+                // Botón de expandir/contraer
+                IconButton(
+                    onClick = { isExpanded = !isExpanded }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = if (isExpanded) "Contraer" else "Expandir",
+                        modifier = Modifier.graphicsLayer(rotationZ = arrowRotation)
+                    )
+                }
+            }
+            
+            // Lista horizontal de muebles o mensaje cuando está vacía
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+                if (viewModel.availableModels.isEmpty()) {
+                    // Mensaje cuando no hay muebles disponibles
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = "Sin muebles",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "No hay muebles disponibles",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        items(viewModel.availableModels) { model ->
+                            FurnitureItem(
+                                model = model,
+                                isSelected = viewModel.selectedModel.value?.name == model.name,
+                                onSelect = {
+                                    viewModel.selectedModel.value = model
+                                    isExpanded = false
+                                },
+                                viewModel = viewModel
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FurnitureItem(
+    model: ARModel,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    viewModel: CameraViewModel,
+    modifier: Modifier = Modifier
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        label = "scale"
+    )
+    
+    // Efecto de selección
+    val selectionScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.05f else 1f,
+        label = "selectionScale"
+    )
+
+    // Si se muestra el diálogo de confirmación
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Eliminar del catálogo") },
+            text = { Text("¿Deseas eliminar '${model.name}' del catálogo de la cámara?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Si el modelo a eliminar es el seleccionado, primero lo deseleccionamos
+                        if (viewModel.selectedModel.value == model) {
+                            viewModel.selectedModel.value = null
+                        }
+                        
+                        // Eliminar el modelo del catálogo
+                        val updatedList = CameraViewModel.sharedAvailableModels.filter { it != model }
+                        CameraViewModel.sharedAvailableModels.clear()
+                        CameraViewModel.sharedAvailableModels.addAll(updatedList)
+                        
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Eliminar", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    Card(
+        modifier = Modifier
+            .width(120.dp)
+            .height(80.dp)
+            .graphicsLayer(
+                scaleX = scale * selectionScale,
+                scaleY = scale * selectionScale
+            )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onSelect() },
+                    onLongPress = { showDeleteDialog = true }
+                )
+            }
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(12.dp)
+            ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Imagen del mueble
+            AsyncImage(
+                model = File(model.imagePath ?: ""),
+                contentDescription = "Imagen de ${model.name}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            
+            // Nombre del mueble (en la parte inferior con fondo semitransparente)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(4.dp)
+            ) {
+                Text(
+                    text = model.name,
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ConfirmSpaceCreatedModal(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit // 🚩 NUEVO
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(16.dp),
+        title = {
+            Text(
+                text = "¿Desea crear un espacio?",
+                fontSize = 18.sp,
+                color = Color.Black,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirm() // 🚩 Ejecutar navegación a CreateSpaceScreen
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E24AA)), // morado
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .defaultMinSize(minWidth = 100.dp)
+            ) {
+                Text(text = "Confirmar", color = Color.White)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0E0)), // gris claro
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .defaultMinSize(minWidth = 100.dp)
+            ) {
+                Text(text = "Cancelar", color = Color.Black)
+            }
+        }
+    )
+}
+
+// Función para guardar la lista de modelos como JSON
+private fun saveModelsListToJson(
+    context: Context,
+    models: List<RenderedModelInfo>,
+    timestamp: Long
+) {
+    try {
+        val directory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "DecorAR")
+        } else {
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + "/DecorAR")
+        }
+
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+
+        val jsonFile = File(directory, "models_$timestamp.json")
+        val jsonContent = buildString {
+            append("{\n")
+            append("  \"timestamp\": \"$timestamp\",\n")
+            append("  \"models\": [\n")
+            models.forEachIndexed { index, model ->
+                append("    {\n")
+                append("      \"name\": \"${model.name}\",\n")
+                append("      \"type\": \"${model.name.split(" ").lastOrNull() ?: model.name}\"\n")
+                append("    }")
+                if (index < models.size - 1) append(",")
+                append("\n")
+            }
+            append("  ]\n")
+            append("}")
+        }
+
+        jsonFile.writeText(jsonContent)
+        Log.d("CameraScreen", "Lista de modelos guardada en: ${jsonFile.absolutePath}")
+    } catch (e: Exception) {
+        Log.e("CameraScreen", "Error al guardar la lista de modelos: ${e.message}")
+    }
+}
+
+// Modificar la función de captura existente
+private fun captureAndSaveImage(
+    context: Context,
+    bitmap: Bitmap,
+    viewModel: CameraViewModel,
+    onSuccess: () -> Unit
+) {
+    try {
+        val timestamp = System.currentTimeMillis()
+        val directory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "DecorAR")
+        } else {
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + "/DecorAR")
+        }
+
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+
+        val imageFile = File(directory, "space_$timestamp.jpg")
+        val fos = FileOutputStream(imageFile)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+        fos.close()
+
+        // Guardar la lista de modelos
+        saveModelsListToJson(context, viewModel.renderedModels, timestamp)
+
+        // Notificar al sistema de archivos usando MediaStore (método moderno)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, "space_$timestamp.jpg")
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/DecorAR")
+            }
+            context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        } else {
+            // Para versiones anteriores, usar MediaScanner
+            MediaScannerConnection.scanFile(
+                context,
+                arrayOf(imageFile.absolutePath),
+                arrayOf("image/jpeg")
+            ) { path, uri -> 
+                Log.d("CameraScreen", "Escaneo completado: $path")
+            }
+        }
+
+        onSuccess()
+    } catch (e: Exception) {
+        Log.e("CameraScreen", "Error al guardar la imagen: ${e.message}")
     }
 }

@@ -8,7 +8,7 @@ import java.io.File
 import com.app.homear.domain.model.Superficie
 
 @Entity(tableName = "furniture")
-data class FurnitureEntity (
+data class FurnitureEntity(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id") val id: Int = 0,
     @ColumnInfo(name = "name") val name: String,
@@ -21,18 +21,32 @@ data class FurnitureEntity (
     @ColumnInfo(name = "width") val width: Float,
     @ColumnInfo(name = "length") val length: Float,
     @ColumnInfo(name = "superficie") val superficie: Superficie
-){
-    constructor() : this(1, "", "", "", "", "", "", 0f, 0f, 0f, Superficie.TODAS)
-}
+)
 
-fun FurnitureEntity.toFurnitureModel(): FurnitureModel{
+fun FurnitureEntity.toFurnitureModel(): FurnitureModel {
     return FurnitureModel(
         name = this.name,
         description = this.description,
-        material = HashSet(this.material.split(",")),
-        keywords = HashSet(this.keywords.split(",")),
+        materials = HashSet(this.material.split(",").filter { it.isNotBlank() }),
+        keywords = HashSet(this.keywords.split(",").filter { it.isNotBlank() }),
         modelFile = File(this.modelPath),
         imageFile = File(this.imagePath),
+        height = this.height,
+        width = this.width,
+        length = this.length,
+        superficie = this.superficie
+    )
+}
+
+fun FurnitureModel.toFurnitureEntity(): FurnitureEntity {
+    return FurnitureEntity(
+        id = 0,
+        name = this.name,
+        description = this.description,
+        material = this.materials.joinToString(","),
+        keywords = this.keywords.joinToString(","),
+        modelPath = this.modelFile.path,
+        imagePath = this.imageFile.path,
         height = this.height,
         width = this.width,
         length = this.length,

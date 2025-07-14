@@ -1,14 +1,12 @@
 package com.app.homear.domain.model
 
-data class SpaceModel(val idUser: String,
-    val listFurniture: List<FurnitureModel>,
-    val idImageGD: String
-){
-    companion object{
-        val DEFAULT = SpaceModel(
-            idUser = "",
-            listFurniture = emptyList(),
-            idImageGD = ""
-        )
-    }
-}
+data class SpaceModel(
+    val id: Int,
+    val projectId: Int,
+    val idUser: String,
+    val name: String,
+    val description: String,
+    val imagePath: String,
+    val createdDate: String,
+    val lastModified: String
+)

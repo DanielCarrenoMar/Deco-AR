@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.app.homear.ui.theme.CorporatePurple
 
 /**
  *  @param isDialogoOpen es un booleano que controla si el modal se muestra o no
@@ -84,7 +85,7 @@ fun ModalVistaMueble(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(100.dp)
+                            .height(150.dp)
                             .align(Alignment.CenterHorizontally)
                             .clip(RoundedCornerShape(10.dp))
                     )
@@ -180,7 +181,7 @@ fun ModalVistaMueble(
                             onClick = {onConfirm()},
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color.Magenta)
+                                .background(CorporatePurple)
                                 .width(120.dp)
                                 .height(35.dp)
                                 .semantics { contentDescription = "Agregar objeto" }
